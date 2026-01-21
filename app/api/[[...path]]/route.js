@@ -4,8 +4,11 @@ import { NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 
-// JWT Secret - in production use env variable
-const JWT_SECRET = process.env.JWT_SECRET || 'clb-french-trainer-secret-key-2024'
+// JWT Secret - MUST be set in environment for production
+const JWT_SECRET = process.env.JWT_SECRET
+if (!JWT_SECRET) {
+  console.warn('WARNING: JWT_SECRET not set in environment variables')
+}
 
 // MongoDB connection with better error handling
 let client = null
