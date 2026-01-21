@@ -61,9 +61,13 @@ class DebugTester:
         self.log("✅ First registration successful")
         
         # Duplicate registration
+        self.log("Making duplicate registration request...")
         response2 = self.make_request("POST", "/auth/register", data)
         
-        if not response2:
+        self.log(f"Response2 after make_request: {response2}")
+        self.log(f"Response2 type: {type(response2)}")
+        
+        if response2 is None:
             self.log("❌ Duplicate registration request failed - response is None")
             return False
             
