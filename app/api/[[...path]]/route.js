@@ -29,7 +29,10 @@ async function connectToMongo() {
   }
   
   await clientPromise
-  db = client.db(process.env.DB_NAME || 'clb_french_trainer')
+  db = client.db(process.env.DB_NAME)
+  if (!process.env.DB_NAME) {
+    console.warn('WARNING: DB_NAME not set in environment variables')
+  }
   return db
 }
 
