@@ -47,8 +47,17 @@ class CLBFrenchTrainerTester:
                 
             self.log(f"🔍 {method} {endpoint} -> Status: {response.status_code}")
             return response
+        except requests.exceptions.Timeout as e:
+            self.log(f"❌ Request timeout for {method} {endpoint}: {str(e)}")
+            return None
+        except requests.exceptions.ConnectionError as e:
+            self.log(f"❌ Connection error for {method} {endpoint}: {str(e)}")
+            return None
         except requests.exceptions.RequestException as e:
             self.log(f"❌ Request failed for {method} {endpoint}: {str(e)}")
+            return None
+        except Exception as e:
+            self.log(f"❌ Unexpected error for {method} {endpoint}: {str(e)}")
             return None
             
     def test_user_registration(self):
