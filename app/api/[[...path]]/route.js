@@ -7,16 +7,26 @@ import jwt from 'jsonwebtoken'
 // JWT Secret - in production use env variable
 const JWT_SECRET = process.env.JWT_SECRET || 'clb-french-trainer-secret-key-2024'
 
-// MongoDB connection
-let client
-let db
+// MongoDB connection with better error handling
+let client = null
+let db = null
+let clientPromise = null
 
 async function connectToMongo() {
-  if (!client) {
-    client = new MongoClient(process.env.MONGO_URL)
-    await client.connect()
-    db = client.db(process.env.DB_NAME || 'clb_french_trainer')
+  if (db) {
+    return db
   }
+  
+  if (!clientPromise) {
+    client = new MongoClient(process.env.MONGO_URL, {
+      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 5000,
+    })
+    clientPromise = client.connect()
+  }
+  
+  await clientPromise
+  db = client.db(process.env.DB_NAME || 'clb_french_trainer')
   return db
 }
 
