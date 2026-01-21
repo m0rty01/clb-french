@@ -279,7 +279,7 @@ class CLBFrenchTrainerTester:
         headers = {"Authorization": f"Bearer {self.token}"}
         response = self.make_request("POST", "/onboarding", data, headers)
         
-        if not response:
+        if response is None:
             self.log("❌ Invalid pathway request failed")
             return False
             
