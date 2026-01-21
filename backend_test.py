@@ -104,7 +104,7 @@ class CLBFrenchTrainerTester:
         
         response = self.make_request("POST", "/auth/register", data)
         
-        if not response:
+        if response is None:
             self.log("❌ Duplicate registration request failed")
             return False
             
