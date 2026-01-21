@@ -45,9 +45,10 @@ class CLBFrenchTrainerTester:
             else:
                 raise ValueError(f"Unsupported method: {method}")
                 
+            self.log(f"🔍 {method} {endpoint} -> Status: {response.status_code}")
             return response
         except requests.exceptions.RequestException as e:
-            self.log(f"❌ Request failed: {str(e)}")
+            self.log(f"❌ Request failed for {method} {endpoint}: {str(e)}")
             return None
             
     def test_user_registration(self):
