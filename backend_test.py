@@ -95,14 +95,21 @@ class CLBFrenchTrainerTester:
         
         response = self.make_request("POST", "/auth/register", data)
         
-        if response and response.status_code == 400:
+        if not response:
+            self.log("❌ Duplicate registration request failed")
+            return False
+            
+        if response.status_code == 400:
             result = response.json()
             if "already exists" in result.get("error", "").lower():
                 self.log("✅ Duplicate registration properly rejected")
                 return True
-                
-        self.log(f"❌ Duplicate registration test failed - Status: {response.status_code if response else 'None'}")
-        return False
+            else:
+                self.log(f"❌ Wrong error message: {result.get('error')}")
+                return False
+        else:
+            self.log(f"❌ Expected 400, got {response.status_code}: {response.text}")
+            return False
         
     def test_user_login(self):
         """Test POST /api/auth/login"""
