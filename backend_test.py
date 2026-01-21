@@ -151,14 +151,21 @@ class CLBFrenchTrainerTester:
         
         response = self.make_request("POST", "/auth/login", data)
         
-        if response and response.status_code == 401:
+        if not response:
+            self.log("❌ Invalid login request failed")
+            return False
+            
+        if response.status_code == 401:
             result = response.json()
             if "invalid credentials" in result.get("error", "").lower():
                 self.log("✅ Invalid login properly rejected")
                 return True
-                
-        self.log(f"❌ Invalid login test failed - Status: {response.status_code if response else 'None'}")
-        return False
+            else:
+                self.log(f"❌ Wrong error message: {result.get('error')}")
+                return False
+        else:
+            self.log(f"❌ Expected 401, got {response.status_code}: {response.text}")
+            return False
         
     def test_get_current_user(self):
         """Test GET /api/auth/me"""
