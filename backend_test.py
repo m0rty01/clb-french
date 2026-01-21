@@ -211,7 +211,7 @@ class CLBFrenchTrainerTester:
         
         response = self.make_request("GET", "/auth/me")
         
-        if not response:
+        if response is None:
             self.log("❌ Unauthorized access request failed")
             return False
             
