@@ -34,9 +34,13 @@ class DebugTester:
                 raise ValueError(f"Unsupported method: {method}")
                 
             self.log(f"🔍 {method} {endpoint} -> Status: {response.status_code}")
+            self.log(f"Response type: {type(response)}")
             return response
         except Exception as e:
-            self.log(f"❌ Request failed for {method} {endpoint}: {str(e)}")
+            self.log(f"❌ Exception caught for {method} {endpoint}: {str(e)}")
+            self.log(f"Exception type: {type(e)}")
+            import traceback
+            traceback.print_exc()
             return None
             
     def test_registration_and_duplicate(self):
