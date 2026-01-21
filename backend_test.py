@@ -202,14 +202,21 @@ class CLBFrenchTrainerTester:
         
         response = self.make_request("GET", "/auth/me")
         
-        if response and response.status_code == 401:
+        if not response:
+            self.log("❌ Unauthorized access request failed")
+            return False
+            
+        if response.status_code == 401:
             result = response.json()
             if "unauthorized" in result.get("error", "").lower():
                 self.log("✅ Unauthorized access properly rejected")
                 return True
-                
-        self.log(f"❌ Unauthorized access test failed - Status: {response.status_code if response else 'None'}")
-        return False
+            else:
+                self.log(f"❌ Wrong error message: {result.get('error')}")
+                return False
+        else:
+            self.log(f"❌ Expected 401, got {response.status_code}: {response.text}")
+            return False
         
     def test_onboarding(self):
         """Test POST /api/onboarding"""
