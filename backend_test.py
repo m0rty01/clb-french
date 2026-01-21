@@ -160,7 +160,7 @@ class CLBFrenchTrainerTester:
         
         response = self.make_request("POST", "/auth/login", data)
         
-        if not response:
+        if response is None:
             self.log("❌ Invalid login request failed")
             return False
             
