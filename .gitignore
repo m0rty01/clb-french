@@ -80,6 +80,9 @@ android-sdk/ node_modules/@next/swc-linux-arm64-gnu/next-swc.linux-arm64-gnu.nod
 node_modules/@next/swc-linux-arm64-musl/next-swc.linux-arm64-musl.node
 node_modules/@next/swc-linux-arm64-gnu/next-swc.linux-arm64-gnu.node
 -e 
-# Environment files
-*.env
-*.env.*
+# Environment files (keep .env.example for documentation)
+# Note: .env files are managed by deployment platform
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
