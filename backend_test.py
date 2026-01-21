@@ -270,14 +270,21 @@ class CLBFrenchTrainerTester:
         headers = {"Authorization": f"Bearer {self.token}"}
         response = self.make_request("POST", "/onboarding", data, headers)
         
-        if response and response.status_code == 400:
+        if not response:
+            self.log("❌ Invalid pathway request failed")
+            return False
+            
+        if response.status_code == 400:
             result = response.json()
             if "invalid pathway" in result.get("error", "").lower():
                 self.log("✅ Invalid pathway properly rejected")
                 return True
-                
-        self.log(f"❌ Invalid pathway test failed - Status: {response.status_code if response else 'None'}")
-        return False
+            else:
+                self.log(f"❌ Wrong error message: {result.get('error')}")
+                return False
+        else:
+            self.log(f"❌ Expected 400, got {response.status_code}: {response.text}")
+            return False
         
     def test_get_daily_log_today(self):
         """Test GET /api/daily-log/today"""
