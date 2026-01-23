@@ -18,10 +18,11 @@ import {
   BookOpen, Headphones, Mic, FileText, PenTool, 
   Trophy, Flame, Clock, Calendar, Target, ChevronRight,
   Moon, Sun, LogOut, RotateCcw, Check, Play, Pause,
-  AlertTriangle, Lock, Unlock
+  AlertTriangle, Lock, Unlock, ExternalLink, TrendingUp
 } from 'lucide-react'
 import Cookies from 'js-cookie'
 import { getPathway, getCurrentMonthData, getDailyActivities, calculateProgress, getWeekNumber, getDayOfWeek } from '@/lib/pathways'
+import { getDailyResources, getProgressDescription } from '@/lib/daily-resources'
 
 // Activity Icons Map
 const activityIcons = {
@@ -38,6 +39,13 @@ const activityColors = {
   speaking: 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20',
   reading: 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20',
   writing: 'bg-pink-500/10 text-pink-600 dark:text-pink-400 border-pink-500/20'
+}
+
+const levelColors = {
+  'A1': 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30',
+  'A2': 'bg-blue-500/10 text-blue-600 border-blue-500/30',
+  'B1': 'bg-purple-500/10 text-purple-600 border-purple-500/30',
+  'B2': 'bg-orange-500/10 text-orange-600 border-orange-500/30'
 }
 
 // Auth Component
