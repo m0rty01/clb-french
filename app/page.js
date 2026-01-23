@@ -417,6 +417,8 @@ function Dashboard({ user, token, onLogout, onReset }) {
   const pathwayData = getPathway(user.pathway)
   const currentMonthData = getCurrentMonthData(user.pathway, user.currentDay)
   const dailyActivities = getDailyActivities(user.pathway, user.currentDay)
+  const dailyResources = getDailyResources(user.currentDay, user.pathway)
+  const levelProgress = getProgressDescription(user.currentDay, user.pathway)
   
   useEffect(() => {
     fetchData()
