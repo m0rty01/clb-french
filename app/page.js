@@ -647,11 +647,23 @@ function Dashboard({ user, token, onLogout, onReset }) {
                 <CardTitle className="text-lg">Month {currentMonthData.month}: {currentMonthData.name}</CardTitle>
                 <CardDescription className="mt-1">{currentMonthData.goal}</CardDescription>
               </div>
-              <Badge variant="outline" className="border-primary text-primary">
-                Week {getWeekNumber(user.currentDay)}
-              </Badge>
+              <div className="flex items-center gap-2">
+                <Badge className={`${levelColors[dailyResources.level]} border`}>
+                  Level {dailyResources.level}
+                </Badge>
+                <Badge variant="outline" className="border-primary text-primary">
+                  Week {getWeekNumber(user.currentDay)}
+                </Badge>
+              </div>
             </div>
           </CardHeader>
+          <CardContent className="pt-0">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <TrendingUp className="h-4 w-4" />
+              <span>{levelProgress.description}</span>
+              <span className="ml-auto">Target: {levelProgress.targetLevel}</span>
+            </div>
+          </CardContent>
         </Card>
         
         {/* Daily Activities */}
@@ -666,6 +678,7 @@ function Dashboard({ user, token, onLogout, onReset }) {
               const Icon = activityIcons[key]
               const logActivity = dailyLog?.activities?.[key] || { completed: false, timeSpent: 0, notes: '' }
               const isTimerActive = activeTimer === key
+              const resource = dailyResources[key]
               
               return (
                 <Card key={key} className={`transition-all ${logActivity.completed ? 'bg-green-500/5 border-green-500/30' : ''}`}>
@@ -677,10 +690,13 @@ function Dashboard({ user, token, onLogout, onReset }) {
                           <Icon className="h-5 w-5" />
                         </div>
                         <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
                             <h3 className="font-semibold capitalize">{key}</h3>
                             <Badge variant="secondary" className="text-xs">
                               {activity.duration} min
+                            </Badge>
+                            <Badge className={`${levelColors[resource?.level || 'A1']} border text-xs`}>
+                              {resource?.level || 'A1'}
                             </Badge>
                             {logActivity.completed && (
                               <Badge className="bg-green-500 text-white text-xs">
@@ -699,6 +715,91 @@ function Dashboard({ user, token, onLogout, onReset }) {
                                   <li key={i} className="text-muted-foreground">• {chapter}</li>
                                 ))}
                               </ul>
+                            </div>
+                          )}
+                          
+                          {/* Daily Resource - Listening */}
+                          {key === 'listening' && resource && (
+                            <div className="bg-purple-500/5 border border-purple-500/20 rounded-lg p-3 mt-2">
+                              <p className="text-xs font-medium text-purple-600 dark:text-purple-400 mb-2">🎧 Today's Listening Exercise:</p>
+                              <div className="space-y-2">
+                                <div className="flex items-start justify-between gap-2">
+                                  <div>
+                                    <p className="font-medium text-sm">{resource.title}</p>
+                                    <p className="text-xs text-muted-foreground">{resource.description}</p>
+                                  </div>
+                                  <a 
+                                    href={resource.url} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-1 text-xs bg-purple-500 text-white px-3 py-1.5 rounded-md hover:bg-purple-600 transition-colors whitespace-nowrap"
+                                  >
+                                    Open <ExternalLink className="h-3 w-3" />
+                                  </a>
+                                </div>
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                  <Badge variant="outline" className="text-xs">{resource.type}</Badge>
+                                  {resource.duration && <span>⏱️ {resource.duration}</span>}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Daily Resource - Reading */}
+                          {key === 'reading' && resource && (
+                            <div className="bg-orange-500/5 border border-orange-500/20 rounded-lg p-3 mt-2">
+                              <p className="text-xs font-medium text-orange-600 dark:text-orange-400 mb-2">📚 Today's Reading Material:</p>
+                              <div className="space-y-2">
+                                <div className="flex items-start justify-between gap-2">
+                                  <div>
+                                    <p className="font-medium text-sm">{resource.title}</p>
+                                    <p className="text-xs text-muted-foreground">{resource.description}</p>
+                                  </div>
+                                  <a 
+                                    href={resource.url} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-1 text-xs bg-orange-500 text-white px-3 py-1.5 rounded-md hover:bg-orange-600 transition-colors whitespace-nowrap"
+                                  >
+                                    Open <ExternalLink className="h-3 w-3" />
+                                  </a>
+                                </div>
+                                <Badge variant="outline" className="text-xs">{resource.type}</Badge>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Daily Resource - Writing */}
+                          {key === 'writing' && resource && (
+                            <div className="bg-pink-500/5 border border-pink-500/20 rounded-lg p-3 mt-2">
+                              <p className="text-xs font-medium text-pink-600 dark:text-pink-400 mb-2">✍️ Today's Writing Exercise:</p>
+                              <div className="space-y-2">
+                                <p className="font-medium text-sm">{resource.title}</p>
+                                <p className="text-sm text-muted-foreground">{resource.prompt}</p>
+                                {resource.example && (
+                                  <div className="bg-muted/50 rounded p-2 mt-1">
+                                    <p className="text-xs text-muted-foreground">💡 Example start: <em>{resource.example}</em></p>
+                                  </div>
+                                )}
+                                <Badge variant="outline" className="text-xs">📝 {resource.wordCount}</Badge>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Daily Resource - Speaking */}
+                          {key === 'speaking' && resource && (
+                            <div className="bg-green-500/5 border border-green-500/20 rounded-lg p-3 mt-2">
+                              <p className="text-xs font-medium text-green-600 dark:text-green-400 mb-2">🎤 Today's Speaking Exercise:</p>
+                              <div className="space-y-2">
+                                <p className="font-medium text-sm">{resource.title}</p>
+                                <p className="text-sm text-muted-foreground">{resource.prompt}</p>
+                                {resource.tips && (
+                                  <div className="bg-muted/50 rounded p-2 mt-1">
+                                    <p className="text-xs text-muted-foreground">💡 Tips: {resource.tips}</p>
+                                  </div>
+                                )}
+                                <Badge variant="outline" className="text-xs">⏱️ {resource.duration}</Badge>
+                              </div>
                             </div>
                           )}
                           
