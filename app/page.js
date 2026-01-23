@@ -18,9 +18,11 @@ import {
   BookOpen, Headphones, Mic, FileText, PenTool, 
   Trophy, Flame, Clock, Calendar, Target, ChevronRight,
   Moon, Sun, LogOut, RotateCcw, Check, Play, Pause,
-  AlertTriangle, Lock, Unlock, ExternalLink, TrendingUp
+  AlertTriangle, Lock, Unlock, ExternalLink, TrendingUp,
+  ClipboardList
 } from 'lucide-react'
 import Cookies from 'js-cookie'
+import Link from 'next/link'
 import { getPathway, getCurrentMonthData, getDailyActivities, calculateProgress, getWeekNumber, getDayOfWeek } from '@/lib/pathways'
 import { getDailyResources, getProgressDescription } from '@/lib/daily-resources'
 
