@@ -503,6 +503,299 @@ async function handleRoute(request, { params }) {
       return handleCORS(NextResponse.json({ logs }))
     }
 
+    // ============ GRAMMAR ROUTES ============
+    
+    // Get daily grammar topic - GET /api/grammar/daily-topic
+    if (route === '/grammar/daily-topic' && method === 'GET') {
+      const decoded = verifyToken(request)
+      if (!decoded) {
+        return handleCORS(NextResponse.json(
+          { error: 'Unauthorized' },
+          { status: 401 }
+        ))
+      }
+      
+      const user = await db.collection('users').findOne({ id: decoded.userId })
+      if (!user || !user.onboardingComplete) {
+        return handleCORS(NextResponse.json(
+          { error: 'Please complete onboarding first' },
+          { status: 400 }
+        ))
+      }
+      
+      const topic = getGrammarForDay(user.pathway, user.currentDay)
+      
+      if (!topic) {
+        return handleCORS(NextResponse.json({
+          topic: null,
+          message: 'No grammar topic for today'
+        }))
+      }
+      
+      // Check if user has already completed this topic today
+      const existingProgress = (user.grammarProgress || []).find(
+        p => p.topicId === topic.id && p.day === user.currentDay
+      )
+      
+      return handleCORS(NextResponse.json({
+        topic,
+        completed: !!existingProgress,
+        score: existingProgress?.score || null,
+        userProgress: {
+          currentDay: user.currentDay,
+          pathway: user.pathway,
+          weakTopics: user.weakGrammarTopics || []
+        }
+      }))
+    }
+    
+    // Submit grammar quiz - POST /api/grammar/submit-quiz
+    if (route === '/grammar/submit-quiz' && method === 'POST') {
+      const decoded = verifyToken(request)
+      if (!decoded) {
+        return handleCORS(NextResponse.json(
+          { error: 'Unauthorized' },
+          { status: 401 }
+        ))
+      }
+      
+      const body = await request.json()
+      const { topicId, answers, score, totalQuestions } = body
+      
+      if (!topicId || answers === undefined || score === undefined) {
+        return handleCORS(NextResponse.json(
+          { error: 'topicId, answers, and score are required' },
+          { status: 400 }
+        ))
+      }
+      
+      const user = await db.collection('users').findOne({ id: decoded.userId })
+      if (!user) {
+        return handleCORS(NextResponse.json(
+          { error: 'User not found' },
+          { status: 404 }
+        ))
+      }
+      
+      const topic = getGrammarTopicById(topicId)
+      if (!topic) {
+        return handleCORS(NextResponse.json(
+          { error: 'Topic not found' },
+          { status: 404 }
+        ))
+      }
+      
+      // Calculate percentage
+      const percentage = Math.round((score / totalQuestions) * 100)
+      const isWeak = percentage < 70 // Below 70% is considered weak
+      
+      // Update grammar progress
+      const progressEntry = {
+        topicId,
+        score,
+        totalQuestions,
+        percentage,
+        day: user.currentDay,
+        completedAt: new Date()
+      }
+      
+      // Get current progress and weak topics
+      const currentProgress = user.grammarProgress || []
+      const currentWeakTopics = user.weakGrammarTopics || []
+      
+      // Update or add progress entry
+      const existingIndex = currentProgress.findIndex(
+        p => p.topicId === topicId && p.day === user.currentDay
+      )
+      
+      if (existingIndex >= 0) {
+        currentProgress[existingIndex] = progressEntry
+      } else {
+        currentProgress.push(progressEntry)
+      }
+      
+      // Update weak topics
+      let newWeakTopics = [...currentWeakTopics]
+      if (isWeak && !newWeakTopics.includes(topicId)) {
+        newWeakTopics.push(topicId)
+      } else if (!isWeak && newWeakTopics.includes(topicId)) {
+        // Remove from weak topics if score improved
+        newWeakTopics = newWeakTopics.filter(t => t !== topicId)
+      }
+      
+      await db.collection('users').updateOne(
+        { id: decoded.userId },
+        {
+          $set: {
+            grammarProgress: currentProgress,
+            weakGrammarTopics: newWeakTopics
+          }
+        }
+      )
+      
+      return handleCORS(NextResponse.json({
+        success: true,
+        result: {
+          score,
+          totalQuestions,
+          percentage,
+          isWeak,
+          topicTitle: topic.title
+        },
+        weakTopics: newWeakTopics
+      }))
+    }
+    
+    // Get weak grammar topics - GET /api/grammar/weak-topics
+    if (route === '/grammar/weak-topics' && method === 'GET') {
+      const decoded = verifyToken(request)
+      if (!decoded) {
+        return handleCORS(NextResponse.json(
+          { error: 'Unauthorized' },
+          { status: 401 }
+        ))
+      }
+      
+      const user = await db.collection('users').findOne({ id: decoded.userId })
+      if (!user) {
+        return handleCORS(NextResponse.json(
+          { error: 'User not found' },
+          { status: 404 }
+        ))
+      }
+      
+      const weakTopicIds = user.weakGrammarTopics || []
+      const weakTopics = weakTopicIds.map(id => getGrammarTopicById(id)).filter(Boolean)
+      
+      return handleCORS(NextResponse.json({
+        weakTopics,
+        count: weakTopics.length
+      }))
+    }
+    
+    // Get topic by ID (for review) - GET /api/grammar/topic/:id
+    if (route.startsWith('/grammar/topic/') && method === 'GET') {
+      const decoded = verifyToken(request)
+      if (!decoded) {
+        return handleCORS(NextResponse.json(
+          { error: 'Unauthorized' },
+          { status: 401 }
+        ))
+      }
+      
+      const topicId = route.split('/grammar/topic/')[1]
+      const topic = getGrammarTopicById(topicId)
+      
+      if (!topic) {
+        return handleCORS(NextResponse.json(
+          { error: 'Topic not found' },
+          { status: 404 }
+        ))
+      }
+      
+      const user = await db.collection('users').findOne({ id: decoded.userId })
+      const progress = (user?.grammarProgress || []).filter(p => p.topicId === topicId)
+      
+      return handleCORS(NextResponse.json({
+        topic,
+        userProgress: progress,
+        isWeak: (user?.weakGrammarTopics || []).includes(topicId)
+      }))
+    }
+    
+    // Get all grammar topics - GET /api/grammar/all-topics
+    if (route === '/grammar/all-topics' && method === 'GET') {
+      const decoded = verifyToken(request)
+      if (!decoded) {
+        return handleCORS(NextResponse.json(
+          { error: 'Unauthorized' },
+          { status: 401 }
+        ))
+      }
+      
+      const user = await db.collection('users').findOne({ id: decoded.userId })
+      if (!user) {
+        return handleCORS(NextResponse.json(
+          { error: 'User not found' },
+          { status: 404 }
+        ))
+      }
+      
+      const allTopics = getAllGrammarTopics()
+      const dayField = user.pathway === 'clb5' ? 'clb5Day' : 'clb7Day'
+      
+      // Filter topics relevant to user's pathway and mark completion status
+      const topicsWithStatus = allTopics
+        .filter(t => t[dayField])
+        .map(topic => {
+          const progress = (user.grammarProgress || []).find(p => p.topicId === topic.id)
+          const isWeak = (user.weakGrammarTopics || []).includes(topic.id)
+          const isAvailable = topic[dayField] <= user.currentDay
+          
+          return {
+            id: topic.id,
+            title: topic.title,
+            titleEn: topic.titleEn,
+            chapter: topic.chapter,
+            level: topic.level,
+            day: topic[dayField],
+            completed: !!progress,
+            score: progress?.percentage || null,
+            isWeak,
+            isAvailable,
+            isCurrent: topic[dayField] === user.currentDay
+          }
+        })
+        .sort((a, b) => a.day - b.day)
+      
+      return handleCORS(NextResponse.json({
+        topics: topicsWithStatus,
+        currentDay: user.currentDay,
+        pathway: user.pathway
+      }))
+    }
+    
+    // Remove topic from weak list - POST /api/grammar/remove-weak
+    if (route === '/grammar/remove-weak' && method === 'POST') {
+      const decoded = verifyToken(request)
+      if (!decoded) {
+        return handleCORS(NextResponse.json(
+          { error: 'Unauthorized' },
+          { status: 401 }
+        ))
+      }
+      
+      const body = await request.json()
+      const { topicId } = body
+      
+      if (!topicId) {
+        return handleCORS(NextResponse.json(
+          { error: 'topicId is required' },
+          { status: 400 }
+        ))
+      }
+      
+      const user = await db.collection('users').findOne({ id: decoded.userId })
+      if (!user) {
+        return handleCORS(NextResponse.json(
+          { error: 'User not found' },
+          { status: 404 }
+        ))
+      }
+      
+      const newWeakTopics = (user.weakGrammarTopics || []).filter(t => t !== topicId)
+      
+      await db.collection('users').updateOne(
+        { id: decoded.userId },
+        { $set: { weakGrammarTopics: newWeakTopics } }
+      )
+      
+      return handleCORS(NextResponse.json({
+        success: true,
+        weakTopics: newWeakTopics
+      }))
+    }
+
     // Root endpoint
     if (route === '/' && method === 'GET') {
       return handleCORS(NextResponse.json({ message: 'CLB French Trainer API', version: '1.0.0' }))
