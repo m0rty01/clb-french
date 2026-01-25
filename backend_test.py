@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 import uuid
 
 # Base URL from environment
-BASE_URL = "https://frenchpath.preview.emergentagent.com/api"
+BASE_URL = "https://clbfrench.preview.emergentagent.com/api"
 
 class CLBFrenchTrainerTester:
     def __init__(self):

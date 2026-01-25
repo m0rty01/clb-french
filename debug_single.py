@@ -8,7 +8,7 @@ import json
 import uuid
 from datetime import datetime
 
-BASE_URL = "https://frenchpath.preview.emergentagent.com/api"
+BASE_URL = "https://clbfrench.preview.emergentagent.com/api"
 
 class DebugTester:
     def __init__(self):

@@ -7,7 +7,7 @@ import requests
 import json
 import uuid
 
-BASE_URL = "https://frenchpath.preview.emergentagent.com/api"
+BASE_URL = "https://clbfrench.preview.emergentagent.com/api"
 
 def test_duplicate_registration():
     test_email = f"testuser_{uuid.uuid4().hex[:8]}@example.com"
