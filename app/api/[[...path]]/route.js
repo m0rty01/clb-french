@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
+import { getGrammarForDay, getGrammarTopicById, getAllGrammarTopics } from '@/lib/grammar-curriculum'
 
 // JWT Secret - MUST be set in environment for production
 const JWT_SECRET = process.env.JWT_SECRET
