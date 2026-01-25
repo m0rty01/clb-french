@@ -387,16 +387,24 @@ async function handleRoute(request, { params }) {
         ))
       }
       
-      const today = new Date().toISOString().split('T')[0]
+      // Get user to find their current day
+      const user = await db.collection('users').findOne({ id: decoded.userId })
+      if (!user) {
+        return handleCORS(NextResponse.json(
+          { error: 'User not found' },
+          { status: 404 }
+        ))
+      }
       
+      // Find log by dayNumber instead of date
       const dailyLog = await db.collection('daily_logs').findOne({
         userId: decoded.userId,
-        date: today
+        dayNumber: user.currentDay
       })
       
       if (!dailyLog) {
         return handleCORS(NextResponse.json(
-          { error: 'No log found for today' },
+          { error: 'No log found for current day' },
           { status: 404 }
         ))
       }
