@@ -5,6 +5,13 @@ import { Toaster } from '@/components/ui/sonner'
 export const metadata = {
   title: 'CLB French Trainer',
   description: 'Discipline-focused French training for CLB 5 and CLB 7 certification',
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/icon.svg', type: 'image/svg+xml' },
+    ],
+    apple: '/apple-icon.png',
+  },
 }
 
 export default function RootLayout({ children }) {
