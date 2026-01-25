@@ -210,6 +210,96 @@ backend:
         agent: "testing"
         comment: "✅ TESTED: Pathway Reset API working correctly. Resets user pathway data (pathway=null, onboardingComplete=false, currentDay=0), deletes all daily logs for user. Complete data wipe functionality verified."
 
+  - task: "Grammar Daily Topic API"
+    implemented: true
+    working: true
+    file: "app/api/[[...path]]/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "GET /api/grammar/daily-topic - Returns today's grammar topic based on user's current day and pathway"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Grammar Daily Topic API working correctly. Returns correct topic for Day 1 (articles-definite) with proper authentication. Includes topic details, completion status, and user progress."
+
+  - task: "Grammar Quiz Submission API"
+    implemented: true
+    working: true
+    file: "app/api/[[...path]]/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "POST /api/grammar/submit-quiz - Processes quiz answers, calculates score and percentage, updates weak topics"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Grammar Quiz Submission API working correctly. Calculates score (5/8 = 63%), determines weak status (< 70%), updates user progress and weak topics list. Returns proper result structure."
+
+  - task: "Grammar Weak Topics API"
+    implemented: true
+    working: true
+    file: "app/api/[[...path]]/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "GET /api/grammar/weak-topics - Returns user's weak grammar topics for review"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Grammar Weak Topics API working correctly. Returns list of weak topics with count. Properly tracks topics with scores below 70%."
+
+  - task: "Grammar Topic by ID API"
+    implemented: true
+    working: true
+    file: "app/api/[[...path]]/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "GET /api/grammar/topic/:id - Returns specific grammar topic details with quiz questions"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Grammar Topic by ID API working correctly. Returns topic details with 8 quiz questions, user progress, and weak status for articles-definite topic."
+
+  - task: "Grammar All Topics API"
+    implemented: true
+    working: true
+    file: "app/api/[[...path]]/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "GET /api/grammar/all-topics - Returns all grammar topics with availability status based on user's progress"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Grammar All Topics API working correctly. Returns 20 topics for CLB5 pathway with availability status. Only 1 topic available on day 1 as expected."
+
+  - task: "Grammar Remove Weak Topic API"
+    implemented: true
+    working: true
+    file: "app/api/[[...path]]/route.js"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "POST /api/grammar/remove-weak - Removes topic from user's weak topics list"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Grammar Remove Weak Topic API working correctly. Successfully removes topic from weak list and returns updated weak topics array."
+
 frontend:
   - task: "Authentication UI"
     implemented: true
