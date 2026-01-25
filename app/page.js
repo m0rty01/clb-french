@@ -1183,6 +1183,18 @@ function Dashboard({ user, token, onLogout, onReset }) {
           </CardContent>
         </Card>
         
+        {/* Daily Grammar Section */}
+        <div>
+          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            <Brain className="h-5 w-5 text-blue-500" />
+            Daily Grammar Lesson
+          </h2>
+          <DailyGrammarSection token={token} onGrammarComplete={fetchData} />
+        </div>
+        
+        {/* Weak Topics Review */}
+        <WeakTopicsSection token={token} />
+        
         {/* Daily Activities */}
         <div>
           <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
