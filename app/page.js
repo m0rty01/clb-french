@@ -409,6 +409,513 @@ function ActivityTimer({ activity, timeSpent, onTimeUpdate, isActive, onToggle }
   )
 }
 
+// Grammar Quiz Component
+function GrammarQuiz({ topic, token, onComplete, onClose }) {
+  const [currentQuestion, setCurrentQuestion] = useState(0)
+  const [answers, setAnswers] = useState({})
+  const [showResults, setShowResults] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [results, setResults] = useState(null)
+  const [showExplanation, setShowExplanation] = useState(false)
+  
+  const questions = topic.quiz || []
+  const totalQuestions = questions.length
+  const currentQ = questions[currentQuestion]
+  
+  const handleAnswer = (optionIndex) => {
+    setAnswers(prev => ({
+      ...prev,
+      [currentQuestion]: optionIndex
+    }))
+    setShowExplanation(true)
+  }
+  
+  const nextQuestion = () => {
+    setShowExplanation(false)
+    if (currentQuestion < totalQuestions - 1) {
+      setCurrentQuestion(prev => prev + 1)
+    } else {
+      submitQuiz()
+    }
+  }
+  
+  const submitQuiz = async () => {
+    setSubmitting(true)
+    
+    // Calculate score
+    let correct = 0
+    questions.forEach((q, idx) => {
+      if (answers[idx] === q.correctAnswer) {
+        correct++
+      }
+    })
+    
+    try {
+      const res = await fetch('/api/grammar/submit-quiz', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          topicId: topic.id,
+          answers,
+          score: correct,
+          totalQuestions
+        })
+      })
+      
+      const data = await res.json()
+      
+      if (res.ok) {
+        setResults(data.result)
+        setShowResults(true)
+        toast.success(`Quiz completed! Score: ${correct}/${totalQuestions}`)
+      } else {
+        throw new Error(data.error)
+      }
+    } catch (error) {
+      toast.error('Failed to submit quiz')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+  
+  if (showResults && results) {
+    return (
+      <Card className="border-2 border-blue-500/30 bg-blue-500/5">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            {results.percentage >= 70 ? (
+              <CheckCircle2 className="h-6 w-6 text-green-500" />
+            ) : (
+              <XCircle className="h-6 w-6 text-orange-500" />
+            )}
+            Quiz Results
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="text-center py-4">
+            <p className="text-4xl font-bold mb-2">
+              {results.score}/{results.totalQuestions}
+            </p>
+            <p className="text-lg text-muted-foreground">
+              {results.percentage}% correct
+            </p>
+          </div>
+          
+          <div className={`p-4 rounded-lg ${results.percentage >= 70 ? 'bg-green-500/10 border border-green-500/30' : 'bg-orange-500/10 border border-orange-500/30'}`}>
+            {results.percentage >= 70 ? (
+              <p className="text-sm text-green-600 dark:text-green-400">
+                ✅ Great job! You've mastered this topic. Keep up the excellent work!
+              </p>
+            ) : (
+              <p className="text-sm text-orange-600 dark:text-orange-400">
+                ⚠️ This topic has been added to your weak areas for review. Don't worry - practice makes perfect!
+              </p>
+            )}
+          </div>
+          
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={onClose} className="flex-1">
+              Close
+            </Button>
+            <Button onClick={() => onComplete(results)} className="flex-1">
+              Continue
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+  
+  return (
+    <Card className="border-2 border-blue-500/30">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Brain className="h-5 w-5 text-blue-500" />
+            {topic.title}
+          </CardTitle>
+          <Badge variant="secondary">
+            Question {currentQuestion + 1}/{totalQuestions}
+          </Badge>
+        </div>
+        <Progress value={((currentQuestion + (showExplanation ? 1 : 0)) / totalQuestions) * 100} className="h-2" />
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {currentQ && (
+          <>
+            <div className="p-4 bg-muted/50 rounded-lg">
+              <p className="text-lg font-medium">{currentQ.question}</p>
+            </div>
+            
+            <div className="space-y-2">
+              {currentQ.options.map((option, idx) => {
+                const isSelected = answers[currentQuestion] === idx
+                const isCorrect = idx === currentQ.correctAnswer
+                const showCorrectness = showExplanation && isSelected
+                
+                return (
+                  <button
+                    key={idx}
+                    onClick={() => !showExplanation && handleAnswer(idx)}
+                    disabled={showExplanation}
+                    className={`w-full p-3 text-left rounded-lg border transition-all ${
+                      showExplanation
+                        ? isCorrect
+                          ? 'bg-green-500/10 border-green-500 text-green-700 dark:text-green-300'
+                          : isSelected
+                            ? 'bg-red-500/10 border-red-500 text-red-700 dark:text-red-300'
+                            : 'bg-muted/30 border-border opacity-50'
+                        : isSelected
+                          ? 'bg-primary/10 border-primary'
+                          : 'bg-background border-border hover:border-primary/50 hover:bg-muted/50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      {showExplanation && isCorrect && <CheckCircle2 className="h-4 w-4 text-green-500" />}
+                      {showExplanation && isSelected && !isCorrect && <XCircle className="h-4 w-4 text-red-500" />}
+                      <span>{option}</span>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+            
+            {showExplanation && (
+              <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                <div className="flex items-start gap-2">
+                  <Lightbulb className="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-medium text-sm text-blue-600 dark:text-blue-400">Explanation:</p>
+                    <p className="text-sm text-muted-foreground">{currentQ.explanation}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {showExplanation && (
+              <Button onClick={nextQuestion} className="w-full" disabled={submitting}>
+                {currentQuestion < totalQuestions - 1 ? 'Next Question' : (submitting ? 'Submitting...' : 'See Results')}
+                <ChevronRight className="ml-2 h-4 w-4" />
+              </Button>
+            )}
+          </>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+// Daily Grammar Section Component
+function DailyGrammarSection({ token, onGrammarComplete }) {
+  const [loading, setLoading] = useState(true)
+  const [grammarData, setGrammarData] = useState(null)
+  const [showQuiz, setShowQuiz] = useState(false)
+  const [showExplanation, setShowExplanation] = useState(false)
+  
+  useEffect(() => {
+    fetchGrammarTopic()
+  }, [])
+  
+  const fetchGrammarTopic = async () => {
+    try {
+      const res = await fetch('/api/grammar/daily-topic', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setGrammarData(data)
+      }
+    } catch (error) {
+      console.error('Failed to fetch grammar topic')
+    } finally {
+      setLoading(false)
+    }
+  }
+  
+  const handleQuizComplete = (results) => {
+    setShowQuiz(false)
+    setGrammarData(prev => ({ ...prev, completed: true, score: results.percentage }))
+    if (onGrammarComplete) onGrammarComplete()
+  }
+  
+  if (loading) {
+    return (
+      <Card className="border-blue-500/30 bg-blue-500/5">
+        <CardContent className="pt-6">
+          <div className="animate-pulse flex items-center gap-4">
+            <div className="w-12 h-12 bg-blue-500/20 rounded-lg"></div>
+            <div className="flex-1 space-y-2">
+              <div className="h-4 bg-blue-500/20 rounded w-1/3"></div>
+              <div className="h-3 bg-blue-500/20 rounded w-2/3"></div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+  
+  if (!grammarData?.topic) {
+    return (
+      <Card className="border-dashed border-blue-500/30">
+        <CardContent className="pt-6">
+          <div className="flex items-center gap-4 text-muted-foreground">
+            <BookOpen className="h-8 w-8" />
+            <div>
+              <p className="font-medium">No grammar lesson today</p>
+              <p className="text-sm">Review your weak topics instead!</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+  
+  const { topic, completed, score } = grammarData
+  
+  if (showQuiz) {
+    return (
+      <GrammarQuiz
+        topic={topic}
+        token={token}
+        onComplete={handleQuizComplete}
+        onClose={() => setShowQuiz(false)}
+      />
+    )
+  }
+  
+  return (
+    <Card className={`border-2 transition-all ${completed ? 'border-green-500/30 bg-green-500/5' : 'border-blue-500/30 bg-blue-500/5'}`}>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className={`p-3 rounded-lg ${completed ? 'bg-green-500/20' : 'bg-blue-500/20'}`}>
+              <Brain className={`h-6 w-6 ${completed ? 'text-green-500' : 'text-blue-500'}`} />
+            </div>
+            <div>
+              <CardTitle className="text-lg flex items-center gap-2">
+                Today's Grammar: {topic.title}
+                {completed && <CheckCircle2 className="h-5 w-5 text-green-500" />}
+              </CardTitle>
+              <CardDescription className="flex items-center gap-2 mt-1">
+                <span>{topic.titleEn}</span>
+                <span>•</span>
+                <Badge className={`${levelColors[topic.level]} border text-xs`}>{topic.level}</Badge>
+                <span>•</span>
+                <span className="text-xs">{topic.chapter}</span>
+              </CardDescription>
+            </div>
+          </div>
+          {completed && score && (
+            <Badge variant="secondary" className="text-lg px-3 py-1">
+              {score}%
+            </Badge>
+          )}
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Collapsible Explanation */}
+        <div className="border rounded-lg overflow-hidden">
+          <button
+            onClick={() => setShowExplanation(!showExplanation)}
+            className="w-full p-4 flex items-center justify-between bg-muted/30 hover:bg-muted/50 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <BookMarked className="h-4 w-4 text-blue-500" />
+              <span className="font-medium text-sm">View Lesson Explanation</span>
+            </div>
+            {showExplanation ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </button>
+          
+          {showExplanation && (
+            <div className="p-4 bg-background border-t">
+              <div className="prose prose-sm dark:prose-invert max-w-none">
+                <div className="whitespace-pre-wrap text-sm text-muted-foreground">
+                  {topic.explanation}
+                </div>
+              </div>
+              <div className="mt-4 p-3 bg-orange-500/10 border border-orange-500/30 rounded-lg">
+                <p className="text-xs text-orange-600 dark:text-orange-400 flex items-center gap-2">
+                  <BookOpen className="h-4 w-4" />
+                  📖 For detailed exercises, refer to "{topic.chapter}" in "Practice Makes Perfect: Complete French Grammar"
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+        
+        {/* Quiz Button */}
+        {!completed ? (
+          <Button onClick={() => setShowQuiz(true)} className="w-full bg-blue-500 hover:bg-blue-600">
+            <Brain className="mr-2 h-4 w-4" />
+            Start Quiz ({topic.quiz?.length || 8} questions)
+          </Button>
+        ) : (
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setShowQuiz(true)} className="flex-1">
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Retake Quiz
+            </Button>
+            <Button variant="secondary" onClick={() => setShowExplanation(true)} className="flex-1">
+              <BookOpen className="mr-2 h-4 w-4" />
+              Review Lesson
+            </Button>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+// Weak Topics Section Component
+function WeakTopicsSection({ token }) {
+  const [loading, setLoading] = useState(true)
+  const [weakTopics, setWeakTopics] = useState([])
+  const [selectedTopic, setSelectedTopic] = useState(null)
+  const [showQuiz, setShowQuiz] = useState(false)
+  const [expanded, setExpanded] = useState(false)
+  
+  useEffect(() => {
+    fetchWeakTopics()
+  }, [])
+  
+  const fetchWeakTopics = async () => {
+    try {
+      const res = await fetch('/api/grammar/weak-topics', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setWeakTopics(data.weakTopics || [])
+      }
+    } catch (error) {
+      console.error('Failed to fetch weak topics')
+    } finally {
+      setLoading(false)
+    }
+  }
+  
+  const handleQuizComplete = async (results) => {
+    setShowQuiz(false)
+    setSelectedTopic(null)
+    // Refresh weak topics list
+    fetchWeakTopics()
+  }
+  
+  const removeFromWeak = async (topicId) => {
+    try {
+      const res = await fetch('/api/grammar/remove-weak', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ topicId })
+      })
+      
+      if (res.ok) {
+        setWeakTopics(prev => prev.filter(t => t.id !== topicId))
+        toast.success('Topic removed from weak areas')
+      }
+    } catch (error) {
+      toast.error('Failed to remove topic')
+    }
+  }
+  
+  if (loading) {
+    return null
+  }
+  
+  if (weakTopics.length === 0) {
+    return null
+  }
+  
+  if (showQuiz && selectedTopic) {
+    return (
+      <GrammarQuiz
+        topic={selectedTopic}
+        token={token}
+        onComplete={handleQuizComplete}
+        onClose={() => {
+          setShowQuiz(false)
+          setSelectedTopic(null)
+        }}
+      />
+    )
+  }
+  
+  return (
+    <Card className="border-orange-500/30 bg-orange-500/5">
+      <CardHeader>
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="flex items-center justify-between w-full"
+        >
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-orange-500/20">
+              <AlertTriangle className="h-5 w-5 text-orange-500" />
+            </div>
+            <div className="text-left">
+              <CardTitle className="text-base">Weak Topics for Review</CardTitle>
+              <CardDescription>{weakTopics.length} topic(s) need attention</CardDescription>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary" className="bg-orange-500/20 text-orange-600">
+              {weakTopics.length}
+            </Badge>
+            {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </div>
+        </button>
+      </CardHeader>
+      
+      {expanded && (
+        <CardContent className="pt-0">
+          <div className="space-y-2">
+            {weakTopics.map(topic => (
+              <div
+                key={topic.id}
+                className="flex items-center justify-between p-3 bg-background rounded-lg border"
+              >
+                <div className="flex items-center gap-3">
+                  <Badge className={`${levelColors[topic.level]} border text-xs`}>{topic.level}</Badge>
+                  <div>
+                    <p className="font-medium text-sm">{topic.title}</p>
+                    <p className="text-xs text-muted-foreground">{topic.titleEn}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => removeFromWeak(topic.id)}
+                  >
+                    Mark Mastered
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      setSelectedTopic(topic)
+                      setShowQuiz(true)
+                    }}
+                  >
+                    Practice
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground mt-3">
+            💡 Topics are added here when you score below 70% on quizzes. Practice them anytime to improve!
+          </p>
+        </CardContent>
+      )}
+    </Card>
+  )
+}
+
 // Dashboard Component
 function Dashboard({ user, token, onLogout, onReset }) {
   const [dailyLog, setDailyLog] = useState(null)
