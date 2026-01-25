@@ -336,7 +336,14 @@ async function handleRoute(request, { params }) {
       const body = await request.json()
       const { activities } = body
       
-      const today = new Date().toISOString().split('T')[0]
+      // Get user's current day number
+      const user = await db.collection('users').findOne({ id: decoded.userId })
+      if (!user) {
+        return handleCORS(NextResponse.json(
+          { error: 'User not found' },
+          { status: 404 }
+        ))
+      }
       
       // Calculate totals
       let totalTimeSpent = 0
@@ -349,8 +356,9 @@ async function handleRoute(request, { params }) {
         }
       }
       
+      // Update by dayNumber to ensure we're updating the correct day's log
       await db.collection('daily_logs').updateOne(
-        { userId: decoded.userId, date: today },
+        { userId: decoded.userId, dayNumber: user.currentDay },
         {
           $set: {
             activities,
@@ -363,7 +371,7 @@ async function handleRoute(request, { params }) {
       
       const updatedLog = await db.collection('daily_logs').findOne({
         userId: decoded.userId,
-        date: today
+        dayNumber: user.currentDay
       })
       
       return handleCORS(NextResponse.json({ dailyLog: updatedLog }))
