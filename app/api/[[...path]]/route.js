@@ -291,12 +291,14 @@ async function handleRoute(request, { params }) {
       
       const today = new Date().toISOString().split('T')[0]
       
+      // Find log for current day number (not just by date)
+      // This ensures each training day gets its own fresh log
       let dailyLog = await db.collection('daily_logs').findOne({
         userId: decoded.userId,
-        date: today
+        dayNumber: user.currentDay
       })
       
-      // If no log exists for today, create one
+      // If no log exists for this training day, create one
       if (!dailyLog) {
         dailyLog = {
           id: uuidv4(),
