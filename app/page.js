@@ -19,7 +19,8 @@ import {
   Trophy, Flame, Clock, Calendar, Target, ChevronRight,
   Moon, Sun, LogOut, RotateCcw, Check, Play, Pause,
   AlertTriangle, Lock, Unlock, ExternalLink, TrendingUp,
-  ClipboardList
+  ClipboardList, Brain, CheckCircle2, XCircle, RefreshCw,
+  ChevronDown, ChevronUp, Lightbulb, BookMarked
 } from 'lucide-react'
 import Cookies from 'js-cookie'
 import Link from 'next/link'
