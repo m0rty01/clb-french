@@ -1,56 +1,77 @@
 <analysis>
 
-**original_problem_statement**: The user wants to build a production-quality MVP web app called “CLB French Trainer”. This app is designed to be a disciplined, grammar-heavy training tool for users preparing for the Canadian Language Benchmark (CLB) French test.
+**original_problem_statement**: The user wants to build a production-quality MVP web app called “CLB French Trainer”. This app is a disciplined, grammar-heavy training tool for users preparing for the Canadian Language Benchmark (CLB) French test.
 
 **PRODUCT REQUIREMENTS**:
--   **Learning Pathways**: Two strict, non-negotiable pathways: CLB 5 (4-month plan) and CLB 7 (8–12 month plan).
--   **Core Principle**: The app's main differentiator is enforcing a strict daily routine. It is meant to be training software, not a casual app.
--   **Content Anchor**: The curriculum is anchored to the external book Practice Makes Perfect: Complete French Grammar. The app must NOT reproduce copyrighted content but can reference chapter numbers and topics.
--   **Onboarding**: Users select a target (CLB 5 or 7), set an optional exam date, and a daily time budget. Once a pathway is started, it's locked until a user explicitly resets their progress.
--   **Daily Routine**: The app must track daily compliance with activities like grammar exercises, reading, listening, and writing.
--   **Testing Platform**: A separate platform for mock TEF (Test d'Évaluation de Français) exams, simulating the real test environment (timer, question format, difficulty) for all four skills (Reading, Listening, Writing, Speaking). This platform must use original content to avoid copyright infringement.
+-   **Learning Pathways**: Strict CLB 5 (4-month) and CLB 7 (8–12 month) plans.
+-   **Daily Routine**: Enforce a strict daily routine of grammar, reading, listening, and writing, anchored to the Practice Makes Perfect: Complete French Grammar book (by reference, not by copying content).
+-   **Testing Platform**: A separate platform for 20 full, original mock TEF exams simulating the real test environment.
+-   **NEW - Grammar Learning System**: A day-by-day incremental grammar system.
+    -   Suggests a specific grammar topic daily based on the user's pathway.
+    -   Provides brief, in-app explanations for each topic, referencing the textbook chapter.
+    -   Presents a multiple-choice quiz (7-8 questions) for the daily topic.
+    -   Tracks the user's weak grammar topics based on quiz performance.
+    -   Allows the user to choose when to review these weak topics.
 
 **User's preferred language**: English
 
 **what currently exists?**
-A functional full-stack Next.js application using a MongoDB backend. The application includes:
--   User authentication (email/password registration and login).
--   An onboarding flow where users can select either the CLB 5 or CLB 7 pathway.
--   A main dashboard that displays the user's daily non-negotiable routine based on their selected pathway and current day.
--   A Daily Resources feature that provides specific, leveled (A1, A2, etc.) learning materials with external links for each skill (e.g., links to podcasts for listening, articles for reading).
--   A separate TEF-style testing platform UI accessible from the dashboard, designed to mimic an IELTS/TEF exam interface with sections for Listening, Reading, Writing, and Speaking.
--   A large, structured database of original mock exam content being built.
+A full-stack Next.js application with MongoDB.
+-   User authentication (registration/login).
+-   Onboarding to select a CLB pathway (5 or 7).
+-   A main dashboard showing a daily routine.
+-   A fully functional TEF-style testing platform under  populated with 20 original, complete mock exams for each of the four skills (Listening, Reading, Writing, Speaking). The UI for selecting and taking these exams is complete and verified.
+-   A new data file  has been created, which contains the structured data for the new grammar learning feature.
 
 **Last working item**:
--   Last item agent was working: The agent was in the process of generating a massive amount of original content for 20 complete, TEF-style mock exams. It had structured the content into separate files for maintainability (e.g., ). The agent had successfully generated content for 15 out of the 20 required listening exams.
+-   Last item agent was working: The agent started implementing the new Grammar Learning System feature. It created the curriculum data file () and was about to add the necessary API endpoints to the main backend handler ().
 -   Status: IN PROGRESS
 -   Agent Testing Done: N
--   Which testing method agent to use? manual testing by screenshot tool. After the content is fully generated and integrated, the agent should take screenshots of the  page to confirm the new exams are listed and can be accessed.
+-   Which testing method agent to use? backend testing agent. Once the API endpoints are created, they should be tested to ensure they can fetch grammar topics and process quiz results correctly.
 -   User Testing Done: N
 
 **All Pending/In progress Issue list**:
-There are no outstanding bugs or issues. The primary pending item is the completion of a large, user-requested feature.
+There are no outstanding bugs. The work is focused on new feature development.
 
 **In progress Task List**:
--   Task 1: Generate content for 20 original mock TEF exams (P0)
-    -   Where to resume: The agent has created 15 listening exams across three files in . The next step is to generate the content for the remaining 5 listening exams. After that, the agent must generate the content for all 20 Reading, Writing, and Speaking exams, following a similar file structure. Finally, the agent needs to update the testing platform UI in  to load and display all 20 of these new, comprehensive exams.
-    -   What will be achieved with this?: This will populate the testing platform with a substantial bank of practice material, fulfilling a key user requirement for a realistic, simulated exam experience.
+-   Task 1: Implement the Grammar Learning System (P0)
+    -   Where to resume: The next step is to add API endpoints to  to handle grammar-related requests.
+    -   What will be achieved with this?: This will complete the new user-requested feature for a structured, daily grammar training regimen with progress tracking.
     -   Status: IN PROGRESS
-    -   Should Test frontend/backend/both after fix?: Frontend
-    -   Blocked on something: No
+    -   Should Test frontend/backend/both after fix?: Both. The backend API needs to be tested first, followed by frontend UI verification.
+    -   Blocked on something: No.
 
 **Upcoming and Future Tasks**
-There are no other upcoming tasks defined by the user at this moment. The current focus is entirely on completing the mock exam content generation.
+-   **Upcoming Tasks**:
+    1.  **Backend for Grammar System (P0)**:
+        -   Modify the user DB schema to track grammar progress and weak topics.
+        -   In , create endpoints like  (to get the current day's lesson) and  (to record results and update weak topics).
+    2.  **Frontend for Grammar System (P1)**:
+        -   In , create a new component to display the daily grammar topic, its explanation, and the associated quiz.
+        -   Add a section to the user's dashboard to view and review their identified weak topics.
+-   **Future Tasks**:
+    1.  **Test Score History (P2)**: Implement a feature to track and display user scores over time for the TEF mock exams.
+    2.  **Answer Review (P2)**: Add the ability for users to review their answers (and the correct ones) after completing a mock exam.
 
 **Completed work in this session**
--   **Core MVP Application**: Built the initial CLB French Trainer app with user authentication, pathway selection, and a dynamic daily dashboard based on user progress.
--   **Database and Auth Setup**: Implemented email/password authentication with JWT and connected the app to a MongoDB database.
--   **Deployment Preparation**: Fixed deployment-blocking issues (e.g., added  to ) and provided the user with a comprehensive deployment guide for Vercel.
--   **Daily Resources Feature**: Implemented a system to provide users with daily, leveled (A1-B2) learning resources (podcasts, articles, writing prompts) with external links, integrated directly into the daily activity cards.
--   **TEF Testing Platform UI**: Created a separate, full-featured UI for a TEF-style mock testing platform, including a timer, question navigation, and separate interfaces for listening, reading, and writing sections.
+-   **TEF Mock Exam Platform (DONE)**:
+    -   Generated original content for 20 complete mock exams for Listening, Reading, Writing, and Speaking.
+    -   Structured the content into new, maintainable files: , , , , , and .
+    -   Updated  to aggregate and serve all the new exam content.
+    -   Updated the  UI to correctly load and display all 80 exams (20 per skill).
+    -   Verified functionality via screenshots, confirming that exams can be selected and questions are loaded correctly with the timer and navigation.
 
 **Earlier issues found/mentioned but not fixed**
-None.
+-   **Issue 1: Redundant/Obsolete Exam Files**
+    -   The agent created a new set of exam content files but did not delete the old, fragmented files ( through ). These files are no longer used and should be removed to avoid confusion.
+    -   **Debug checklist**: Run  and verify the app still works.
+    -   **Why fix this?**: To maintain a clean and understandable codebase.
+    -   **Is recurring issue?**: N
+-   **Issue 2: Missing  File**
+    -   The agent attempted to view  but it did not exist. The agent ignored this error. The initial handover summary stated this file existed, indicating a discrepancy. The logic for CLB pathways might be hardcoded elsewhere or was in a file that has since been deleted.
+    -   **Debug checklist**: Investigate  and  to find where the CLB pathway data and logic are actually defined.
+    -   **Why fix this?**: To understand the true source of the pathway data before attempting to integrate the new grammar curriculum, which is dependent on the user's pathway.
+    -   **Is recurring issue?**: N
 
 **Known issue recurrence from previous fork**
 N/A
@@ -62,74 +83,78 @@ N/A
 -   **Frontend**: Next.js (App Router), React, Tailwind CSS, shadcn/ui
 -   **Backend**: Next.js API Routes
 -   **Database**: MongoDB
--   **Authentication**: JSON Web Tokens (JWT) with email/password
+-   **Authentication**: JSON Web Tokens (JWT)
 
 **key DB schema**
-The application uses MongoDB, which is schemaless. Based on the code, the collections have the following implicit structure:
 -   **users**: 
+    -   **Proposed additions for grammar feature**: , 
 -   **daily_logs**: 
 
 **changes in tech stack**
-The user initially requested a Postgres database, but the agent identified that the provided environment was configured for MongoDB. The user agreed to proceed with MongoDB to accelerate development.
+None in this session.
 
 **All files of reference**
--   : The UI for the TEF testing platform. This file will need to be updated to load the 20 new exams.
--   : The directory where the new exam content is being created.
--   : The main application dashboard component.
--   : The single file handling all backend API logic.
+-   : The main API file to be modified for the grammar feature.
+-   : The main dashboard UI file where the new grammar component will be added.
+-   : The newly created data source for the grammar lessons.
+-   : The updated file that aggregates all 20 mock exams for each skill.
+-   : The completed TEF testing platform UI.
 
-**Areas that need refactoring**
--   : This is a very large client component (God Component) that handles all state, UI, and logic for the main dashboard. It should be broken down into smaller, more manageable components (e.g., , , ).
--   : This is a monolithic API file handling all endpoints. It should be split into function-specific routes (e.g., , ) for better maintainability.
--   : This file contains the initial, small-scale test data. It is likely redundant now that the new  structure is being implemented and can probably be removed once the new system is fully integrated.
+**Areas that need refactoring**:
+-   : Still a very large God Component. It urgently needs to be broken down into smaller components, especially before adding the new grammar UI.
+-   : A monolithic API file that is becoming increasingly difficult to manage. It should be split into function-specific routes (e.g., , ).
+-   : The old, unused  files should be deleted.
 
 **key api endpoints**
-All endpoints are handled within :
 -   
 -   
 -   
 -   
--   
--   
--   
--   
+-   **Upcoming**: , 
 
 **Critical Info for New Agent**
--   **Copyright is a hard constraint**: The user has repeatedly requested using real TEF exam content. You MUST NOT use, copy, or reword any copyrighted material. Continue the current strategy of generating 100% original mock exams that only mimic the TEF format, structure, and difficulty.
--   **The current task is large**: Generating content for 20 full exams is a significant undertaking. Continue the established pattern of creating content in structured, separate files within  to ensure maintainability.
+-   **New Grammar Feature Logic**: The user has specified the requirements: include brief in-app explanations, reference the textbook, use multiple-choice quizzes, and let the user decide when to review weak topics. Adhere to these choices.
+-   **Codebase Discrepancy**: Be aware that the file  does not exist, contrary to earlier logs. You must identify where the pathway logic resides before integrating the grammar curriculum, as the daily grammar topic depends on the user's selected pathway.
 
 **documents created in this job**
 -   
+-   
+-   
+-   
+-   
+-   
+-   
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User (Msg 132):** Agreed to the agent's proposal to create 20 original mock exams. (Status: In Progress)
-2.  **Agent (Msg 131):** Re-iterated the copyright constraint against using real TEF papers and proposed creating 20 original mock exams matching the TEF format, asking for user confirmation.
-3.  **User (Msg 130):** Repeated the request for a testing platform with 20 TEF exams, asking the agent to find and reword online papers. (Status: Addressed by agent)
-4.  **Agent (Msg 129):** Summarized the completion of the TEF testing platform UI and asked for feedback.
-5.  **User (Msg 104 -> 128):** Agent built the TEF testing platform UI, created initial content, integrated it, and verified it with screenshots. (Status: Completed)
-6.  **User (Msg 103):** Confirmed they want the agent to build the testing platform UI with original content now, and the ability to add more content later. (Status: In Progress)
-7.  **Agent (Msg 102):** Identified the copyright issue with using TEF materials and proposed creating original practice exercises instead, asking the user for direction.
-8.  **User (Msg 101):** Requested a separate TEF-style testing platform with mock exercises based on past exam papers. (Status: In Progress)
-9.  **Agent (Msg 100):** Summarized the completion of the Daily Resources feature and asked for feedback.
-10. **User (Msg 75 -> 99):** Agent implemented the Daily Resources feature, adding specific, leveled exercises with links to the dashboard. (Status: Completed)
+1.  **User (Msg 53):** Answered agent's clarifying questions for the grammar feature: wants in-app explanations, user-controlled review frequency, and multiple-choice quizzes. (Status: Acknowledged, implementation started).
+2.  **Agent (Msg 52):** Asked user for clarification on the new grammar feature.
+3.  **User (Msg 50):** Requested a new, comprehensive grammar learning system with daily topics, quizzes, and weak-point tracking. (Status: In Progress).
+4.  **Agent (Msg 49):** Confirmed the TEF platform was complete and functional, and proposed future enhancements like score history.
+5.  **Agent (Msg 48):** Verified with a screenshot that the reading exams work correctly.
+6.  **Agent (Msg 47):** Took a screenshot to test a reading exam.
+7.  **Agent (Msg 46):** Verified with a screenshot that the listening exams load and function correctly.
+8.  **Agent (Msg 45):** Took a screenshot to test clicking on a listening exam.
+9.  **Agent (Msg 44):** Confirmed via screenshot analysis that all 20 exams for all 4 skills were visible on the tests page.
+10. **Agent (Msg 43):** Took a screenshot to view the bottom half of the tests page.
 
 **Project Health Check:**
 -   **Broken**: None.
--   **Mocked**: All TEF exam content is, by design, original mock content that simulates the real exam without infringing on copyright.
+-   **Mocked**: All TEF exam content is mock content by design.
 
 **3rd Party Integrations**
-None, the application is self-contained.
+None.
 
 **Testing status**
--   **Testing agent used after significant changes**: YES, the  agent was used after the initial MVP was built, and all tests passed.
+-   **Testing agent used after significant changes**: NO. Manual testing via  was performed by the agent to verify the TEF platform.
 -   **Troubleshoot agent used after agent stuck in loop**: NO
 -   **Test files created**: None.
 -   **Known regressions**: None.
 
 **Credentials to test flow:**
-No credentials are required. The agent can test the flow by registering a new user on the authentication page.
+No credentials are required. A new user can be registered to test the application flow.
 
 **What agent forgot to execute**
-The agent has been diligent and has not forgotten to execute any requested tasks. It is currently in the middle of a large, multi-step implementation requested by the user.
+-   The agent did not delete the old, fragmented, and now obsolete exam files ( to ) after creating the new, complete ones.
+-   The agent encountered an error when trying to view  (file not found) but did not investigate or resolve the discrepancy.
 
 </analysis>
