@@ -109,36 +109,35 @@ function SubscriptionBanner({ user, onUpgrade }) {
 // Upgrade Modal Component
 function UpgradeModal({ isOpen, onClose, token, onUpgradeSuccess }) {
   const [upgrading, setUpgrading] = useState(false)
-  const [selectedTier, setSelectedTier] = useState(null)
+  const [selectedPlan, setSelectedPlan] = useState(null)
+  const [billingCycle, setBillingCycle] = useState('monthly') // 'monthly' or 'yearly'
   
-  const handleUpgrade = async (tier) => {
+  const handleStripeCheckout = async (priceKey) => {
     setUpgrading(true)
-    setSelectedTier(tier)
+    setSelectedPlan(priceKey)
     
     try {
-      const res = await fetch('/api/subscription/upgrade', {
+      const res = await fetch('/api/stripe/create-checkout', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ tier })
+        body: JSON.stringify({ priceKey })
       })
       
       const data = await res.json()
       
-      if (res.ok) {
-        toast.success(`Successfully upgraded to ${tier} plan!`)
-        onUpgradeSuccess(data.user)
-        onClose()
+      if (res.ok && data.url) {
+        // Redirect to Stripe Checkout
+        window.location.href = data.url
       } else {
-        throw new Error(data.error)
+        throw new Error(data.error || 'Failed to create checkout session')
       }
     } catch (error) {
       toast.error(error.message)
-    } finally {
       setUpgrading(false)
-      setSelectedTier(null)
+      setSelectedPlan(null)
     }
   }
   
@@ -157,12 +156,44 @@ function UpgradeModal({ isOpen, onClose, token, onUpgradeSuccess }) {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Billing Cycle Toggle */}
+          <div className="flex items-center justify-center gap-4 p-4 bg-muted/50 rounded-lg">
+            <button
+              onClick={() => setBillingCycle('monthly')}
+              className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                billingCycle === 'monthly' 
+                  ? 'bg-primary text-primary-foreground' 
+                  : 'hover:bg-muted'
+              }`}
+            >
+              Monthly
+            </button>
+            <button
+              onClick={() => setBillingCycle('yearly')}
+              className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                billingCycle === 'yearly' 
+                  ? 'bg-primary text-primary-foreground' 
+                  : 'hover:bg-muted'
+              }`}
+            >
+              Yearly
+              <Badge className="ml-2 bg-green-100 text-green-700">Save 17%</Badge>
+            </button>
+          </div>
+
           {/* Basic Plan */}
           <div className="p-4 border rounded-lg hover:border-blue-500 transition-colors">
             <div className="flex items-center justify-between mb-3">
               <div>
                 <h3 className="font-bold text-lg">Basic Plan</h3>
-                <p className="text-2xl font-bold">$19<span className="text-sm font-normal text-muted-foreground">/month</span></p>
+                {billingCycle === 'monthly' ? (
+                  <p className="text-2xl font-bold">$19<span className="text-sm font-normal text-muted-foreground">/month</span></p>
+                ) : (
+                  <div>
+                    <p className="text-2xl font-bold">$190<span className="text-sm font-normal text-muted-foreground">/year</span></p>
+                    <p className="text-sm text-green-600">Save $38/year</p>
+                  </div>
+                )}
               </div>
               <Badge className="bg-blue-100 text-blue-700">Popular</Badge>
             </div>
@@ -175,10 +206,20 @@ function UpgradeModal({ isOpen, onClose, token, onUpgradeSuccess }) {
             <Button 
               className="w-full" 
               variant="outline"
-              onClick={() => handleUpgrade('basic')}
+              onClick={() => handleStripeCheckout(billingCycle === 'monthly' ? 'basic_monthly' : 'basic_yearly')}
               disabled={upgrading}
             >
-              {upgrading && selectedTier === 'basic' ? 'Processing...' : 'Upgrade to Basic'}
+              {upgrading && selectedPlan?.includes('basic') ? (
+                <>
+                  <span className="animate-spin mr-2">⏳</span>
+                  Redirecting to checkout...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Upgrade to Basic
+                </>
+              )}
             </Button>
           </div>
           
@@ -187,7 +228,14 @@ function UpgradeModal({ isOpen, onClose, token, onUpgradeSuccess }) {
             <div className="flex items-center justify-between mb-3">
               <div>
                 <h3 className="font-bold text-lg">Premium Plan</h3>
-                <p className="text-2xl font-bold">$39<span className="text-sm font-normal text-muted-foreground">/month</span></p>
+                {billingCycle === 'monthly' ? (
+                  <p className="text-2xl font-bold">$39<span className="text-sm font-normal text-muted-foreground">/month</span></p>
+                ) : (
+                  <div>
+                    <p className="text-2xl font-bold">$390<span className="text-sm font-normal text-muted-foreground">/year</span></p>
+                    <p className="text-sm text-green-600">Save $78/year</p>
+                  </div>
+                )}
               </div>
               <Badge className="bg-purple-100 text-purple-700">Best Value</Badge>
             </div>
@@ -198,6 +246,42 @@ function UpgradeModal({ isOpen, onClose, token, onUpgradeSuccess }) {
               <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-green-500" />Priority support</li>
               <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-green-500" />Certificate of completion</li>
             </ul>
+            <Button 
+              className="w-full bg-purple-600 hover:bg-purple-700" 
+              onClick={() => handleStripeCheckout(billingCycle === 'monthly' ? 'premium_monthly' : 'premium_yearly')}
+              disabled={upgrading}
+            >
+              {upgrading && selectedPlan?.includes('premium') ? (
+                <>
+                  <span className="animate-spin mr-2">⏳</span>
+                  Redirecting to checkout...
+                </>
+              ) : (
+                <>
+                  <Crown className="mr-2 h-4 w-4" />
+                  Upgrade to Premium
+                </>
+              )}
+            </Button>
+          </div>
+          
+          <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1">
+              <Shield className="h-3 w-3" />
+              Secure payment via Stripe
+            </span>
+            <span>•</span>
+            <span>Cancel anytime</span>
+          </div>
+          
+          <Button variant="ghost" className="w-full" onClick={onClose}>
+            Maybe Later
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
             <Button 
               className="w-full bg-purple-600 hover:bg-purple-700" 
               onClick={() => handleUpgrade('premium')}
