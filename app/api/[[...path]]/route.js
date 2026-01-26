@@ -168,6 +168,48 @@ async function handleRoute(request, { params }) {
       }))
     }
     
+    // MOCKED Google Login - POST /api/auth/google-mock
+    // NOTE: This is a MOCKED implementation. In production, implement real Google OAuth
+    if (route === '/auth/google-mock' && method === 'POST') {
+      const body = await request.json()
+      const { mockEmail, mockName } = body
+      
+      const email = mockEmail || `google_user_${Date.now()}@gmail.com`
+      const name = mockName || 'Google User'
+      
+      // Check if user exists with this email
+      let user = await db.collection('users').findOne({ email: email.toLowerCase() })
+      
+      if (!user) {
+        // Create new user for Google login
+        user = {
+          id: uuidv4(),
+          email: email.toLowerCase(),
+          password: await bcrypt.hash(uuidv4(), 10), // Random password for OAuth users
+          name: name,
+          authProvider: 'google', // Track that this user signed up via Google
+          createdAt: new Date(),
+          pathway: null,
+          pathwayStartDate: null,
+          targetExamDate: null,
+          dailyTimeBudget: 210,
+          currentDay: 0,
+          onboardingComplete: false
+        }
+        
+        await db.collection('users').insertOne(user)
+      }
+      
+      const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, { expiresIn: '30d' })
+      
+      const { password: _, ...userWithoutPassword } = user
+      
+      return handleCORS(NextResponse.json({
+        user: userWithoutPassword,
+        token
+      }))
+    }
+    
     // Get current user - GET /api/auth/me
     if (route === '/auth/me' && method === 'GET') {
       const decoded = verifyToken(request)
