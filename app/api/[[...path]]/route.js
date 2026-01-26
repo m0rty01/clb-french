@@ -155,6 +155,9 @@ async function handleRoute(request, { params }) {
       // Hash password
       const hashedPassword = await bcrypt.hash(password, 10)
       
+      // Determine subscription tier (admin gets admin tier, others get free)
+      const subscriptionTier = isAdmin(email) ? 'admin' : 'free'
+      
       // Create user
       const user = {
         id: uuidv4(),
@@ -162,13 +165,20 @@ async function handleRoute(request, { params }) {
         password: hashedPassword,
         name: name || email.split('@')[0],
         createdAt: new Date(),
+        // Subscription fields
+        subscriptionTier: subscriptionTier,
+        subscriptionStartDate: new Date(),
+        subscriptionEndDate: null, // null for free/admin, set for paid tiers
         // Pathway fields - null until onboarding
         pathway: null,
         pathwayStartDate: null,
         targetExamDate: null,
         dailyTimeBudget: 210, // Default 3.5 hours in minutes
         currentDay: 0,
-        onboardingComplete: false
+        onboardingComplete: false,
+        // Grammar tracking
+        grammarLessonsThisWeek: 0,
+        grammarWeekStart: new Date()
       }
       
       await db.collection('users').insertOne(user)
