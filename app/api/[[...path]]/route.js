@@ -341,6 +341,17 @@ async function handleRoute(request, { params }) {
         ))
       }
       
+      // Check if user's tier allows this pathway
+      const user = await db.collection('users').findOne({ id: decoded.userId })
+      const tierLimits = getTierLimits(user)
+      
+      if (!tierLimits.pathways.includes(pathway)) {
+        return handleCORS(NextResponse.json(
+          { error: `Your subscription (${user.subscriptionTier || 'free'}) does not include the ${pathway.toUpperCase()} pathway. Please upgrade to Premium.` },
+          { status: 403 }
+        ))
+      }
+      
       const updateData = {
         pathway,
         pathwayStartDate: new Date(),
@@ -357,6 +368,9 @@ async function handleRoute(request, { params }) {
       
       const updatedUser = await db.collection('users').findOne({ id: decoded.userId })
       const { password: _, ...userWithoutPassword } = updatedUser
+      
+      // Add tier info
+      userWithoutPassword.tierLimits = getTierLimits(updatedUser)
       
       return handleCORS(NextResponse.json({ user: userWithoutPassword }))
     }
