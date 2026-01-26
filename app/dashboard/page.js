@@ -20,12 +20,20 @@ import {
   Moon, Sun, LogOut, RotateCcw, Check, Play, Pause,
   AlertTriangle, Lock, Unlock, ExternalLink, TrendingUp,
   ClipboardList, Brain, CheckCircle2, XCircle, RefreshCw,
-  ChevronDown, ChevronUp, Lightbulb, BookMarked
+  ChevronDown, ChevronUp, Lightbulb, BookMarked, Crown, Sparkles
 } from 'lucide-react'
 import Cookies from 'js-cookie'
 import Link from 'next/link'
 import { getPathway, getCurrentMonthData, getDailyActivities, calculateProgress, getWeekNumber, getDayOfWeek } from '@/lib/pathways'
 import { getDailyResources, getProgressDescription } from '@/lib/daily-resources'
+
+// Subscription tier display info
+const tierInfo = {
+  free: { name: 'Free', color: 'bg-gray-500', badge: 'bg-gray-100 text-gray-700' },
+  basic: { name: 'Basic', color: 'bg-blue-500', badge: 'bg-blue-100 text-blue-700' },
+  premium: { name: 'Premium', color: 'bg-purple-500', badge: 'bg-purple-100 text-purple-700' },
+  admin: { name: 'Admin', color: 'bg-red-500', badge: 'bg-red-100 text-red-700' }
+}
 
 // Activity Icons Map
 const activityIcons = {
