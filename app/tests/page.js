@@ -13,11 +13,13 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { toast } from 'sonner'
 import { useTheme } from 'next-themes'
 import Link from 'next/link'
+import Cookies from 'js-cookie'
 import { 
   Headphones, FileText, PenTool, Mic, Clock, 
   ChevronLeft, ChevronRight, Check, X, Play, Pause,
   Home, Trophy, Target, Moon, Sun, Volume2, AlertTriangle,
-  BookOpen, ArrowLeft, RotateCcw, Eye, CheckCircle2, XCircle
+  BookOpen, ArrowLeft, RotateCcw, Eye, CheckCircle2, XCircle,
+  Lock, Crown
 } from 'lucide-react'
 import { 
   TEF_TEST_STRUCTURE, 
@@ -76,7 +78,7 @@ function TestTimer({ duration, onTimeUp, isActive }) {
 }
 
 // Test Selection Page
-function TestSelection({ onSelectTest }) {
+function TestSelection({ onSelectTest, accessibleExams, subscriptionTier, isAdmin }) {
   const { theme, setTheme } = useTheme()
   
   const testTypes = [
