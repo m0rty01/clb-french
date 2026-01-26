@@ -88,18 +88,32 @@ function TestSelection({ onSelectTest, accessibleExams, subscriptionTier, isAdmi
     { key: 'expressionOrale', tests: SPEAKING_TESTS, color: 'green' }
   ]
   
+  // Determine how many exams are accessible
+  const maxExamsPerSkill = isAdmin ? 20 : accessibleExams
+  
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b sticky top-0 bg-background/95 backdrop-blur z-50">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link href="/" className="flex items-center gap-2 text-muted-foreground hover:text-foreground">
+            <Link href="/dashboard" className="flex items-center gap-2 text-muted-foreground hover:text-foreground">
               <ArrowLeft className="h-5 w-5" />
               <span>Back to Dashboard</span>
             </Link>
           </div>
           <div className="flex items-center gap-4">
             <h1 className="font-bold text-lg">TEF Practice Tests</h1>
+            {/* Subscription Badge */}
+            <Badge className={subscriptionTier === 'premium' || isAdmin ? 'bg-purple-100 text-purple-700' : subscriptionTier === 'basic' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'}>
+              {isAdmin ? (
+                <>
+                  <Crown className="h-3 w-3 mr-1" />
+                  Admin
+                </>
+              ) : (
+                subscriptionTier?.charAt(0).toUpperCase() + subscriptionTier?.slice(1) || 'Free'
+              )}
+            </Badge>
             <Button
               variant="ghost"
               size="icon"
@@ -116,6 +130,13 @@ function TestSelection({ onSelectTest, accessibleExams, subscriptionTier, isAdmi
         <div className="text-center mb-8">
           <h2 className="text-3xl font-bold mb-2">TEF Mock Exams</h2>
           <p className="text-muted-foreground">Practice with TEF-style questions to prepare for your exam</p>
+          {!isAdmin && subscriptionTier !== 'premium' && (
+            <p className="text-sm text-muted-foreground mt-2">
+              <Lock className="inline h-4 w-4 mr-1" />
+              You have access to {maxExamsPerSkill} exams per skill. 
+              <Link href="/dashboard" className="text-blue-600 hover:underline ml-1">Upgrade to Premium</Link> for all 20.
+            </p>
+          )}
         </div>
         
         {/* Test Categories */}
@@ -145,21 +166,45 @@ function TestSelection({ onSelectTest, accessibleExams, subscriptionTier, isAdmi
                     <span className="flex items-center gap-1">
                       <Target className="h-4 w-4" /> {structure.totalQuestions} questions
                     </span>
+                    <span className="flex items-center gap-1">
+                      <CheckCircle2 className="h-4 w-4 text-green-500" /> {maxExamsPerSkill}/{tests.length} accessible
+                    </span>
                   </div>
                   <p className="text-sm text-muted-foreground mb-4">{structure.description}</p>
                   
                   {/* Available Tests */}
-                  <div className="space-y-2">
-                    {tests.map(test => (
-                      <Button
-                        key={test.id}
-                        variant="outline"
-                        className="w-full justify-between"
-                        onClick={() => onSelectTest(key, test)}
-                      >
-                        <span>{test.title}</span>
-                        <Badge variant="secondary">{test.level}</Badge>
-                      </Button>
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {tests.map((test, index) => {
+                      const isLocked = !isAdmin && index >= maxExamsPerSkill
+                      
+                      return (
+                        <Button
+                          key={test.id}
+                          variant="outline"
+                          className={`w-full justify-between ${isLocked ? 'opacity-60' : ''}`}
+                          onClick={() => {
+                            if (isLocked) {
+                              toast.error(`This exam requires Premium subscription. You have access to ${maxExamsPerSkill} exams per skill.`)
+                            } else {
+                              onSelectTest(key, test)
+                            }
+                          }}
+                          disabled={isLocked}
+                        >
+                          <span className="flex items-center gap-2">
+                            {isLocked && <Lock className="h-4 w-4 text-muted-foreground" />}
+                            {test.title}
+                          </span>
+                          <div className="flex items-center gap-2">
+                            {isLocked && (
+                              <Badge variant="outline" className="text-xs">
+                                <Crown className="h-3 w-3 mr-1" />
+                                Premium
+                              </Badge>
+                            )}
+                            <Badge variant="secondary">{test.level}</Badge>
+                          </div>
+                        </Button>
                     ))}
                   </div>
                 </CardContent>
