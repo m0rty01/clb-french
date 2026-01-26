@@ -312,7 +312,6 @@ const features = [
 export default function HomePage() {
   const router = useRouter()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [currentTestimonial, setCurrentTestimonial] = useState(0)
   const [showExitPopup, setShowExitPopup] = useState(false)
   const [hasShownPopup, setHasShownPopup] = useState(false)
   
@@ -340,14 +339,6 @@ export default function HomePage() {
       document.removeEventListener('mouseleave', handleMouseLeave)
     }
   }, [hasShownPopup])
-  
-  // Auto-rotate testimonials
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentTestimonial((prev) => (prev + 1) % testimonials.length)
-    }, 5000)
-    return () => clearInterval(interval)
-  }, [])
 
   const handleGetStarted = () => {
     router.push('/dashboard')
