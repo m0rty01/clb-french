@@ -3,12 +3,46 @@ import { v4 as uuidv4 } from 'uuid'
 import { NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
+import Stripe from 'stripe'
 import { getGrammarForDay, getGrammarTopicById, getAllGrammarTopics } from '@/lib/grammar-curriculum'
 
 // JWT Secret - MUST be set in environment for production
 const JWT_SECRET = process.env.JWT_SECRET
 if (!JWT_SECRET) {
   console.warn('WARNING: JWT_SECRET not set in environment variables')
+}
+
+// Initialize Stripe
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+  apiVersion: '2024-12-18.acacia'
+})
+
+// Stripe Price Configuration (in cents)
+const STRIPE_PRICES = {
+  basic_monthly: {
+    amount: 1900, // $19.00
+    name: 'Basic Monthly',
+    tier: 'basic',
+    interval: 'month'
+  },
+  basic_yearly: {
+    amount: 19000, // $190.00
+    name: 'Basic Yearly',
+    tier: 'basic',
+    interval: 'year'
+  },
+  premium_monthly: {
+    amount: 3900, // $39.00
+    name: 'Premium Monthly',
+    tier: 'premium',
+    interval: 'month'
+  },
+  premium_yearly: {
+    amount: 39000, // $390.00
+    name: 'Premium Yearly',
+    tier: 'premium',
+    interval: 'year'
+  }
 }
 
 // Admin email with full access
