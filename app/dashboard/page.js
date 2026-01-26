@@ -282,27 +282,6 @@ function UpgradeModal({ isOpen, onClose, token, onUpgradeSuccess }) {
     </div>
   )
 }
-            <Button 
-              className="w-full bg-purple-600 hover:bg-purple-700" 
-              onClick={() => handleUpgrade('premium')}
-              disabled={upgrading}
-            >
-              {upgrading && selectedTier === 'premium' ? 'Processing...' : 'Upgrade to Premium'}
-            </Button>
-          </div>
-          
-          <p className="text-xs text-center text-muted-foreground">
-            🔒 This is a demo. In production, this would process payment via Stripe.
-          </p>
-          
-          <Button variant="ghost" className="w-full" onClick={onClose}>
-            Maybe Later
-          </Button>
-        </CardContent>
-      </Card>
-    </div>
-  )
-}
 
 // Auth Component
 function AuthPage({ onAuth }) {
