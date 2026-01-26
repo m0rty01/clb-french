@@ -173,55 +173,6 @@ function ExitIntentPopup({ isOpen, onClose, onSubmit }) {
   )
 }
 
-// Testimonials data
-const testimonials = [
-  {
-    name: "Marie Dubois",
-    role: "Immigration Applicant",
-    location: "Toronto, Canada",
-    avatar: "MD",
-    rating: 5,
-    text: "I needed CLB 7 for Express Entry and was struggling with French. This platform's structured approach helped me go from CLB 5 to CLB 7 in just 3 months. The daily grammar lessons were exactly what I needed!",
-    improvement: "CLB 5 → CLB 7 in 3 months"
-  },
-  {
-    name: "Jean-Pierre Martin",
-    role: "Healthcare Worker",
-    location: "Montreal, Canada",
-    avatar: "JP",
-    rating: 5,
-    text: "As a nurse applying for permanent residence, I needed to prove my French proficiency quickly. The TEF mock exams were incredibly realistic and prepared me perfectly for the real test.",
-    improvement: "CLB 6 → CLB 8 in 8 weeks"
-  },
-  {
-    name: "Sarah Chen",
-    role: "Software Engineer",
-    location: "Vancouver, Canada",
-    avatar: "SC",
-    rating: 5,
-    text: "The disciplined daily routine kept me accountable. I loved how the grammar lessons built on each other progressively. Passed my TEF with flying colors!",
-    improvement: "CLB 4 → CLB 7 in 4 months"
-  },
-  {
-    name: "Ahmed Hassan",
-    role: "Business Professional",
-    location: "Ottawa, Canada",
-    avatar: "AH",
-    rating: 5,
-    text: "The weak topic tracking feature is genius. It identified my grammar gaps and helped me focus on what mattered. Best investment in my immigration journey.",
-    improvement: "CLB 5 → CLB 9 in 6 months"
-  },
-  {
-    name: "Elena Rodriguez",
-    role: "Teacher",
-    location: "Calgary, Canada",
-    avatar: "ER",
-    rating: 5,
-    text: "I tried many French learning apps but this is the only one that treats CLB preparation seriously. The 20 mock TEF exams gave me the confidence I needed.",
-    improvement: "CLB 6 → CLB 8 in 10 weeks"
-  }
-]
-
 // Pricing plans
 const pricingPlans = [
   {
