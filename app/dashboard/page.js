@@ -1784,7 +1784,7 @@ function Dashboard({ user, token, onLogout, onReset }) {
 }
 
 // Main App Component
-export default function App() {
+function AppContent() {
   const [user, setUser] = useState(null)
   const [token, setToken] = useState(null)
   const [loading, setLoading] = useState(true)
