@@ -1941,3 +1941,21 @@ function AppContent() {
     />
   )
 }
+
+// Loading fallback component
+function LoadingFallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="animate-pulse text-muted-foreground">Loading...</div>
+    </div>
+  )
+}
+
+// Export default with Suspense boundary for useSearchParams
+export default function App() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <AppContent />
+    </Suspense>
+  )
+}
