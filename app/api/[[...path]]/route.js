@@ -1485,6 +1485,104 @@ async function handleRoute(request, { params }) {
       }))
     }
 
+    // Email subscription for marketing - POST /api/subscribe
+    if (route === '/subscribe' && method === 'POST') {
+      try {
+        const body = await request.json()
+        const { email, source } = body
+        
+        if (!email) {
+          return handleCORS(NextResponse.json(
+            { error: 'Email is required' },
+            { status: 400 }
+          ))
+        }
+        
+        // Validate email format
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+        if (!emailRegex.test(email)) {
+          return handleCORS(NextResponse.json(
+            { error: 'Invalid email format' },
+            { status: 400 }
+          ))
+        }
+        
+        // Check if email already exists
+        const existingSubscriber = await db.collection('email_subscribers').findOne({ 
+          email: email.toLowerCase() 
+        })
+        
+        if (existingSubscriber) {
+          return handleCORS(NextResponse.json({
+            success: true,
+            message: 'You are already subscribed!',
+            alreadySubscribed: true
+          }))
+        }
+        
+        // Save new subscriber
+        const subscriber = {
+          id: uuidv4(),
+          email: email.toLowerCase(),
+          source: source || 'exit_intent_popup',
+          subscribedAt: new Date(),
+          isActive: true,
+          metadata: {
+            userAgent: request.headers.get('user-agent'),
+            referrer: request.headers.get('referer')
+          }
+        }
+        
+        await db.collection('email_subscribers').insertOne(subscriber)
+        
+        return handleCORS(NextResponse.json({
+          success: true,
+          message: 'Successfully subscribed! Check your inbox for updates.',
+          alreadySubscribed: false
+        }))
+        
+      } catch (error) {
+        console.error('Subscribe error:', error)
+        return handleCORS(NextResponse.json(
+          { error: 'Failed to subscribe. Please try again.' },
+          { status: 500 }
+        ))
+      }
+    }
+    
+    // Get all subscribers (admin only) - GET /api/admin/subscribers
+    if (route === '/admin/subscribers' && method === 'GET') {
+      const decoded = verifyToken(request)
+      if (!decoded) {
+        return handleCORS(NextResponse.json(
+          { error: 'Unauthorized' },
+          { status: 401 }
+        ))
+      }
+      
+      const user = await db.collection('users').findOne({ id: decoded.userId })
+      if (!user || !isAdmin(user.email)) {
+        return handleCORS(NextResponse.json(
+          { error: 'Admin access required' },
+          { status: 403 }
+        ))
+      }
+      
+      const subscribers = await db.collection('email_subscribers')
+        .find({ isActive: true })
+        .sort({ subscribedAt: -1 })
+        .toArray()
+      
+      return handleCORS(NextResponse.json({
+        total: subscribers.length,
+        subscribers: subscribers.map(s => ({
+          email: s.email,
+          source: s.source,
+          subscribedAt: s.subscribedAt
+        }))
+      }))
+    }
+
     // Root endpoint
     if (route === '/' && method === 'GET') {
       return handleCORS(NextResponse.json({ message: 'CLB French Trainer API', version: '1.0.0' }))
