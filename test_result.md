@@ -373,6 +373,30 @@ frontend:
         agent: "main"
         comment: "Stats cards, progress bar, current month/week info"
 
+  - task: "Subscription Upgrade Modal"
+    implemented: true
+    working: true
+    file: "app/dashboard/page.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Upgrade modal with Basic/Premium plans, monthly/yearly billing toggle. Integrates with Stripe checkout - redirects to Stripe payment page on plan selection."
+
+  - task: "Payment Success/Cancel Handling"
+    implemented: true
+    working: true
+    file: "app/dashboard/page.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Handles URL params from Stripe redirect (payment=success&tier=X or payment=cancelled). Shows toast notifications and refreshes user data."
+
 metadata:
   created_by: "main_agent"
   version: "1.0"
