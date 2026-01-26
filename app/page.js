@@ -502,12 +502,6 @@ export default function HomePage() {
         <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-red-50 dark:from-blue-950/20 dark:via-background dark:to-red-950/20" />
         <div className="container mx-auto px-4 relative">
           <div className="max-w-4xl mx-auto text-center">
-            {/* Badge */}
-            <Badge className="mb-6 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 px-4 py-1">
-              <Sparkles className="w-4 h-4 mr-2" />
-              Trusted by 10,000+ CLB Test Takers
-            </Badge>
-
             {/* Main Headline */}
             <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6">
               Master French for{' '}
