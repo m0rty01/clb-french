@@ -1810,6 +1810,33 @@ export default function App() {
   const [user, setUser] = useState(null)
   const [token, setToken] = useState(null)
   const [loading, setLoading] = useState(true)
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  
+  // Handle payment callback
+  useEffect(() => {
+    const paymentStatus = searchParams.get('payment')
+    const tier = searchParams.get('tier')
+    
+    if (paymentStatus === 'success' && tier) {
+      toast.success(`🎉 Payment successful! You've been upgraded to ${tier.charAt(0).toUpperCase() + tier.slice(1)}!`, {
+        duration: 5000,
+        description: 'Your new features are now available.'
+      })
+      // Clear URL params
+      router.replace('/dashboard', { scroll: false })
+      // Refresh user data to get new tier
+      const savedToken = Cookies.get('token')
+      if (savedToken) {
+        fetchUser(savedToken)
+      }
+    } else if (paymentStatus === 'cancelled') {
+      toast.info('Payment cancelled. You can upgrade anytime!', {
+        duration: 4000
+      })
+      router.replace('/dashboard', { scroll: false })
+    }
+  }, [searchParams])
   
   useEffect(() => {
     const savedToken = Cookies.get('token')
