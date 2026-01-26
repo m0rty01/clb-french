@@ -245,6 +245,9 @@ async function handleRoute(request, { params }) {
       let user = await db.collection('users').findOne({ email: email.toLowerCase() })
       
       if (!user) {
+        // Determine subscription tier (admin gets admin tier, others get free)
+        const subscriptionTier = isAdmin(email) ? 'admin' : 'free'
+        
         // Create new user for Google login
         user = {
           id: uuidv4(),
@@ -253,12 +256,18 @@ async function handleRoute(request, { params }) {
           name: name,
           authProvider: 'google', // Track that this user signed up via Google
           createdAt: new Date(),
+          // Subscription fields
+          subscriptionTier: subscriptionTier,
+          subscriptionStartDate: new Date(),
+          subscriptionEndDate: null,
           pathway: null,
           pathwayStartDate: null,
           targetExamDate: null,
           dailyTimeBudget: 210,
           currentDay: 0,
-          onboardingComplete: false
+          onboardingComplete: false,
+          grammarLessonsThisWeek: 0,
+          grammarWeekStart: new Date()
         }
         
         await db.collection('users').insertOne(user)
@@ -267,6 +276,9 @@ async function handleRoute(request, { params }) {
       const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, { expiresIn: '30d' })
       
       const { password: _, ...userWithoutPassword } = user
+      
+      // Add tier info to response
+      userWithoutPassword.tierLimits = getTierLimits(user)
       
       return handleCORS(NextResponse.json({
         user: userWithoutPassword,
