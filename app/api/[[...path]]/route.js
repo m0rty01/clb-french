@@ -1214,12 +1214,21 @@ async function handleRoute(request, { params }) {
       const priceConfig = STRIPE_PRICES[priceKey]
       const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
       
+      // Get Stripe instance
+      const stripeInstance = getStripe()
+      if (!stripeInstance) {
+        return handleCORS(NextResponse.json(
+          { error: 'Stripe is not configured. Please set STRIPE_SECRET_KEY environment variable.' },
+          { status: 500 }
+        ))
+      }
+      
       try {
         // Create or retrieve Stripe customer
         let customerId = user.stripeCustomerId
         
         if (!customerId) {
-          const customer = await stripe.customers.create({
+          const customer = await stripeInstance.customers.create({
             email: user.email,
             name: user.name,
             metadata: {
@@ -1236,7 +1245,7 @@ async function handleRoute(request, { params }) {
         }
         
         // Create checkout session
-        const session = await stripe.checkout.sessions.create({
+        const session = await stripeInstance.checkout.sessions.create({
           customer: customerId,
           payment_method_types: ['card'],
           line_items: [
