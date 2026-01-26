@@ -281,7 +281,7 @@ async function handleRoute(request, { params }) {
     // Google OAuth - Initiate login - GET /api/auth/google
     if (route === '/auth/google' && method === 'GET') {
       const clientId = process.env.GOOGLE_CLIENT_ID
-      const redirectUri = `${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/google/callback`
+      const redirectUri = `${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/callback/google`
       
       const googleAuthUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth')
       googleAuthUrl.searchParams.set('client_id', clientId)
@@ -298,8 +298,8 @@ async function handleRoute(request, { params }) {
       return NextResponse.redirect(googleAuthUrl.toString())
     }
     
-    // Google OAuth Callback - GET /api/auth/google/callback
-    if (route === '/auth/google/callback' && method === 'GET') {
+    // Google OAuth Callback - GET /api/auth/callback/google
+    if (route === '/auth/callback/google' && method === 'GET') {
       const { searchParams } = new URL(request.url)
       const code = searchParams.get('code')
       const error = searchParams.get('error')
@@ -326,7 +326,7 @@ async function handleRoute(request, { params }) {
             code,
             client_id: process.env.GOOGLE_CLIENT_ID,
             client_secret: process.env.GOOGLE_CLIENT_SECRET,
-            redirect_uri: `${baseUrl}/api/auth/google/callback`,
+            redirect_uri: `${baseUrl}/api/auth/callback/google`,
             grant_type: 'authorization_code',
           }),
         })
