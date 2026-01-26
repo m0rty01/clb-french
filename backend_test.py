@@ -486,6 +486,132 @@ class CLBFrenchTrainerTester:
         else:
             self.log(f"❌ Pathway reset failed - Status: {response.status_code}, Response: {response.text}")
             return False
+
+    def test_stripe_checkout_unauthorized(self):
+        """Test Stripe checkout without authentication"""
+        self.log("🧪 Testing Stripe Checkout - Unauthorized...")
+        
+        response = self.make_request("POST", "/stripe/create-checkout", {"priceKey": "basic_monthly"})
+        
+        if response.status_code == 401:
+            result = response.json()
+            if "error" in result and "Unauthorized" in result["error"]:
+                self.log("✅ Stripe checkout correctly rejected unauthorized request")
+                return True
+            else:
+                self.log(f"❌ Wrong error message for unauthorized request: {result}")
+                return False
+        else:
+            self.log(f"❌ Expected 401 for unauthorized request, got {response.status_code}: {response.text}")
+            return False
+
+    def test_stripe_checkout_invalid_price(self):
+        """Test Stripe checkout with invalid price key"""
+        self.log("🧪 Testing Stripe Checkout - Invalid Price Key...")
+        
+        if not self.token:
+            self.log("❌ No token available for Stripe checkout test")
+            return False
+            
+        response = self.make_request("POST", "/stripe/create-checkout", 
+                                   {"priceKey": "invalid_price_key"}, 
+                                   {"Authorization": f"Bearer {self.token}"})
+        
+        if response.status_code == 400:
+            result = response.json()
+            if "error" in result and "Invalid price key" in result["error"]:
+                self.log("✅ Stripe checkout correctly rejected invalid price key")
+                return True
+            else:
+                self.log(f"❌ Wrong error message for invalid price key: {result}")
+                return False
+        else:
+            self.log(f"❌ Expected 400 for invalid price key, got {response.status_code}: {response.text}")
+            return False
+
+    def test_stripe_checkout_missing_price(self):
+        """Test Stripe checkout with missing price key"""
+        self.log("🧪 Testing Stripe Checkout - Missing Price Key...")
+        
+        if not self.token:
+            self.log("❌ No token available for Stripe checkout test")
+            return False
+            
+        response = self.make_request("POST", "/stripe/create-checkout", 
+                                   {}, 
+                                   {"Authorization": f"Bearer {self.token}"})
+        
+        if response.status_code == 400:
+            result = response.json()
+            if "error" in result and "Invalid price key" in result["error"]:
+                self.log("✅ Stripe checkout correctly rejected missing price key")
+                return True
+            else:
+                self.log(f"❌ Wrong error message for missing price key: {result}")
+                return False
+        else:
+            self.log(f"❌ Expected 400 for missing price key, got {response.status_code}: {response.text}")
+            return False
+
+    def test_stripe_checkout_valid_prices(self):
+        """Test Stripe checkout with all valid price keys"""
+        self.log("🧪 Testing Stripe Checkout - Valid Price Keys...")
+        
+        if not self.token:
+            self.log("❌ No token available for Stripe checkout test")
+            return False
+        
+        # Need to complete onboarding first for Stripe checkout
+        onboarding_data = {
+            "pathway": "clb5",
+            "targetExamDate": "2024-06-01",
+            "dailyTimeBudget": 210
+        }
+        
+        onboarding_response = self.make_request("POST", "/onboarding", 
+                                              onboarding_data, 
+                                              {"Authorization": f"Bearer {self.token}"})
+        
+        if onboarding_response.status_code != 200:
+            self.log(f"❌ Failed to complete onboarding for Stripe test: {onboarding_response.text}")
+            return False
+        
+        valid_prices = [
+            ("basic_monthly", "Basic Monthly", "$19/month"),
+            ("basic_yearly", "Basic Yearly", "$190/year"),
+            ("premium_monthly", "Premium Monthly", "$39/month"),
+            ("premium_yearly", "Premium Yearly", "$390/year")
+        ]
+        
+        all_passed = True
+        
+        for price_key, name, description in valid_prices:
+            response = self.make_request("POST", "/stripe/create-checkout", 
+                                       {"priceKey": price_key}, 
+                                       {"Authorization": f"Bearer {self.token}"})
+            
+            if response.status_code == 200:
+                result = response.json()
+                
+                # Validate response structure
+                if "sessionId" in result and "url" in result:
+                    # Validate URL format
+                    if result["url"] and result["url"].startswith("https://checkout.stripe.com/"):
+                        self.log(f"✅ Stripe Checkout {name}: SessionId={result['sessionId'][:20]}..., URL valid")
+                    else:
+                        self.log(f"❌ Stripe Checkout {name}: Invalid URL format - {result.get('url', 'No URL')}")
+                        all_passed = False
+                else:
+                    self.log(f"❌ Stripe Checkout {name}: Missing sessionId or url in response - {result}")
+                    all_passed = False
+            else:
+                self.log(f"❌ Stripe Checkout {name}: Status {response.status_code} - {response.text}")
+                all_passed = False
+        
+        if all_passed:
+            self.log("✅ All Stripe checkout price keys working correctly")
+        
+        return all_passed
             
     def test_api_root(self):
         """Test GET /api/ root endpoint"""
