@@ -11,6 +11,60 @@ if (!JWT_SECRET) {
   console.warn('WARNING: JWT_SECRET not set in environment variables')
 }
 
+// Admin email with full access
+const ADMIN_EMAIL = 'ravijha97.01@gmail.com'
+
+// Subscription tier limits
+const SUBSCRIPTION_LIMITS = {
+  free: {
+    maxDays: 7,                    // First 7 days only
+    grammarLessonsPerWeek: 3,      // 3 grammar lessons per week
+    mockExamsPerSkill: 2,          // 2 mock exams per skill (8 total)
+    pathways: ['clb5'],            // Only CLB 5
+    canAccessAllTopics: false
+  },
+  basic: {
+    maxDays: 112,                  // Full CLB 5 pathway
+    grammarLessonsPerWeek: 999,    // Unlimited
+    mockExamsPerSkill: 10,         // 10 per skill (40 total)
+    pathways: ['clb5'],            // Only CLB 5
+    canAccessAllTopics: true
+  },
+  premium: {
+    maxDays: 999,                  // Both pathways
+    grammarLessonsPerWeek: 999,    // Unlimited
+    mockExamsPerSkill: 20,         // All 20 per skill (80 total)
+    pathways: ['clb5', 'clb7'],    // Both pathways
+    canAccessAllTopics: true
+  },
+  admin: {
+    maxDays: 999,
+    grammarLessonsPerWeek: 999,
+    mockExamsPerSkill: 20,
+    pathways: ['clb5', 'clb7'],
+    canAccessAllTopics: true
+  }
+}
+
+// Helper to check if user is admin
+function isAdmin(email) {
+  return email?.toLowerCase() === ADMIN_EMAIL.toLowerCase()
+}
+
+// Helper to get user's effective subscription tier
+function getUserTier(user) {
+  if (isAdmin(user.email)) {
+    return 'admin'
+  }
+  return user.subscriptionTier || 'free'
+}
+
+// Helper to get tier limits for a user
+function getTierLimits(user) {
+  const tier = getUserTier(user)
+  return SUBSCRIPTION_LIMITS[tier] || SUBSCRIPTION_LIMITS.free
+}
+
 // MongoDB connection with better error handling
 let client = null
 let db = null
