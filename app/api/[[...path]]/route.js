@@ -272,8 +272,141 @@ async function handleRoute(request, { params }) {
       }))
     }
     
-    // MOCKED Google Login - POST /api/auth/google-mock
-    // NOTE: This is a MOCKED implementation. In production, implement real Google OAuth
+    // Google OAuth - Initiate login - GET /api/auth/google
+    if (route === '/auth/google' && method === 'GET') {
+      const clientId = process.env.GOOGLE_CLIENT_ID
+      const redirectUri = `${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/google/callback`
+      
+      const googleAuthUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth')
+      googleAuthUrl.searchParams.set('client_id', clientId)
+      googleAuthUrl.searchParams.set('redirect_uri', redirectUri)
+      googleAuthUrl.searchParams.set('response_type', 'code')
+      googleAuthUrl.searchParams.set('scope', 'openid email profile')
+      googleAuthUrl.searchParams.set('access_type', 'offline')
+      googleAuthUrl.searchParams.set('prompt', 'consent')
+      
+      // Generate state for CSRF protection
+      const state = uuidv4()
+      googleAuthUrl.searchParams.set('state', state)
+      
+      return NextResponse.redirect(googleAuthUrl.toString())
+    }
+    
+    // Google OAuth Callback - GET /api/auth/google/callback
+    if (route === '/auth/google/callback' && method === 'GET') {
+      const { searchParams } = new URL(request.url)
+      const code = searchParams.get('code')
+      const error = searchParams.get('error')
+      
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
+      
+      if (error) {
+        console.error('Google OAuth error:', error)
+        return NextResponse.redirect(`${baseUrl}/dashboard?auth_error=${encodeURIComponent(error)}`)
+      }
+      
+      if (!code) {
+        return NextResponse.redirect(`${baseUrl}/dashboard?auth_error=no_code`)
+      }
+      
+      try {
+        // Exchange code for tokens
+        const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: new URLSearchParams({
+            code,
+            client_id: process.env.GOOGLE_CLIENT_ID,
+            client_secret: process.env.GOOGLE_CLIENT_SECRET,
+            redirect_uri: `${baseUrl}/api/auth/google/callback`,
+            grant_type: 'authorization_code',
+          }),
+        })
+        
+        const tokenData = await tokenResponse.json()
+        
+        if (tokenData.error) {
+          console.error('Token exchange error:', tokenData)
+          return NextResponse.redirect(`${baseUrl}/dashboard?auth_error=${encodeURIComponent(tokenData.error)}`)
+        }
+        
+        // Get user info from Google
+        const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+          headers: {
+            Authorization: `Bearer ${tokenData.access_token}`,
+          },
+        })
+        
+        const googleUser = await userInfoResponse.json()
+        
+        if (!googleUser.email) {
+          return NextResponse.redirect(`${baseUrl}/dashboard?auth_error=no_email`)
+        }
+        
+        // Check if user exists
+        let user = await db.collection('users').findOne({ email: googleUser.email.toLowerCase() })
+        
+        if (!user) {
+          // Determine subscription tier (admin gets admin tier, others get free)
+          const subscriptionTier = isAdmin(googleUser.email) ? 'admin' : 'free'
+          
+          // Create new user
+          user = {
+            id: uuidv4(),
+            email: googleUser.email.toLowerCase(),
+            password: await bcrypt.hash(uuidv4(), 10), // Random password for OAuth users
+            name: googleUser.name || googleUser.email.split('@')[0],
+            picture: googleUser.picture || null,
+            authProvider: 'google',
+            googleId: googleUser.id,
+            createdAt: new Date(),
+            subscriptionTier: subscriptionTier,
+            subscriptionStartDate: new Date(),
+            subscriptionEndDate: null,
+            pathway: null,
+            pathwayStartDate: null,
+            targetExamDate: null,
+            dailyTimeBudget: 210,
+            currentDay: 0,
+            onboardingComplete: false,
+            grammarLessonsThisWeek: 0,
+            grammarWeekStart: new Date()
+          }
+          
+          await db.collection('users').insertOne(user)
+          console.log('Created new Google user:', user.email)
+        } else {
+          // Update existing user with Google info if not already set
+          if (!user.googleId) {
+            await db.collection('users').updateOne(
+              { id: user.id },
+              { 
+                $set: { 
+                  googleId: googleUser.id,
+                  picture: googleUser.picture || user.picture,
+                  authProvider: user.authProvider || 'google'
+                } 
+              }
+            )
+          }
+          console.log('Existing user logged in via Google:', user.email)
+        }
+        
+        // Generate JWT token
+        const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, { expiresIn: '30d' })
+        
+        // Redirect to dashboard with token in URL (will be stored in cookie by frontend)
+        return NextResponse.redirect(`${baseUrl}/dashboard?google_auth=success&token=${token}`)
+        
+      } catch (err) {
+        console.error('Google OAuth callback error:', err)
+        return NextResponse.redirect(`${baseUrl}/dashboard?auth_error=callback_failed`)
+      }
+    }
+    
+    // LEGACY: Mocked Google Login - POST /api/auth/google-mock (kept for backwards compatibility)
     if (route === '/auth/google-mock' && method === 'POST') {
       const body = await request.json()
       const { mockEmail, mockName } = body
