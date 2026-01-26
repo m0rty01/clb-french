@@ -306,11 +306,14 @@ backend:
     file: "app/api/[[...path]]/route.js"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "POST /api/stripe/create-checkout - Creates Stripe checkout session for subscription upgrade. Supports basic_monthly, basic_yearly, premium_monthly, premium_yearly price keys. Returns checkout URL for redirect."
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Stripe Checkout Session API working correctly. All test cases passed: 1) Unauthorized access properly rejected with 401, 2) Invalid price key rejected with 400, 3) Missing price key rejected with 400, 4) All valid price keys (basic_monthly, basic_yearly, premium_monthly, premium_yearly) create valid checkout sessions with proper sessionId and checkout.stripe.com URLs. Authentication and error handling working properly. Stripe integration is fully functional."
 
   - task: "Stripe Webhook API"
     implemented: true
