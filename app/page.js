@@ -362,6 +362,33 @@ export default function HomePage() {
   const router = useRouter()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [currentTestimonial, setCurrentTestimonial] = useState(0)
+  const [showExitPopup, setShowExitPopup] = useState(false)
+  const [hasShownPopup, setHasShownPopup] = useState(false)
+  
+  // Exit intent detection
+  useEffect(() => {
+    // Check if popup was already shown in this session
+    const popupShown = sessionStorage.getItem('exitPopupShown')
+    if (popupShown) {
+      setHasShownPopup(true)
+    }
+    
+    const handleMouseLeave = (e) => {
+      // Only trigger when mouse leaves from the top of the page (closing intent)
+      if (e.clientY <= 0 && !hasShownPopup && !sessionStorage.getItem('exitPopupShown')) {
+        setShowExitPopup(true)
+        setHasShownPopup(true)
+        sessionStorage.setItem('exitPopupShown', 'true')
+      }
+    }
+    
+    // Add event listener
+    document.addEventListener('mouseleave', handleMouseLeave)
+    
+    return () => {
+      document.removeEventListener('mouseleave', handleMouseLeave)
+    }
+  }, [hasShownPopup])
   
   // Auto-rotate testimonials
   useEffect(() => {
@@ -383,9 +410,28 @@ export default function HomePage() {
     // Mock Stripe - just redirect to dashboard/signup
     router.push('/dashboard')
   }
+  
+  const handleCloseExitPopup = () => {
+    setShowExitPopup(false)
+  }
+  
+  const handleEmailSubmit = (email) => {
+    console.log('Email captured:', email)
+    // Optionally close popup after a delay
+    setTimeout(() => {
+      setShowExitPopup(false)
+    }, 2000)
+  }
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Exit Intent Popup */}
+      <ExitIntentPopup 
+        isOpen={showExitPopup} 
+        onClose={handleCloseExitPopup}
+        onSubmit={handleEmailSubmit}
+      />
+      
       {/* Navigation Header */}
       <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4">
