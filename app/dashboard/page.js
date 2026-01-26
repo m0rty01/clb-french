@@ -1282,6 +1282,9 @@ function Dashboard({ user, token, onLogout, onReset }) {
   
   const allActivitiesCompleted = dailyLog && Object.values(dailyLog.activities).every(a => a.completed)
   
+  // Check if user has reached their day limit
+  const hasReachedLimit = !isAdmin && currentUser.currentDay >= tierLimits.maxDays
+  
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -1292,6 +1295,14 @@ function Dashboard({ user, token, onLogout, onReset }) {
   
   return (
     <div className="min-h-screen bg-background">
+      {/* Upgrade Modal */}
+      <UpgradeModal 
+        isOpen={showUpgradeModal} 
+        onClose={() => setShowUpgradeModal(false)}
+        token={token}
+        onUpgradeSuccess={handleUpgradeSuccess}
+      />
+      
       {/* Header */}
       <header className="border-b sticky top-0 bg-background/95 backdrop-blur z-50">
         <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
@@ -1301,8 +1312,19 @@ function Dashboard({ user, token, onLogout, onReset }) {
             </div>
             <div>
               <h1 className="font-semibold text-sm">CLB French Trainer</h1>
-              <p className="text-xs text-muted-foreground">{pathwayData.name} • Day {user.currentDay}</p>
+              <p className="text-xs text-muted-foreground">{pathwayData.name} • Day {currentUser.currentDay}</p>
             </div>
+            {/* Subscription Badge */}
+            <Badge className={tierInfo[tier]?.badge || tierInfo.free.badge}>
+              {isAdmin ? (
+                <>
+                  <Crown className="h-3 w-3 mr-1" />
+                  Admin
+                </>
+              ) : (
+                tierInfo[tier]?.name || 'Free'
+              )}
+            </Badge>
           </div>
           
           <div className="flex items-center gap-2">
