@@ -24,6 +24,7 @@ import {
 } from 'lucide-react'
 import Cookies from 'js-cookie'
 import Link from 'next/link'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { getPathway, getCurrentMonthData, getDailyActivities, calculateProgress, getWeekNumber, getDayOfWeek } from '@/lib/pathways'
 import { getDailyResources, getProgressDescription } from '@/lib/daily-resources'
 
