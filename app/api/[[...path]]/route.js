@@ -973,6 +973,174 @@ async function handleRoute(request, { params }) {
       }))
     }
 
+    // ============ SUBSCRIPTION ROUTES ============
+    
+    // Get user's subscription info - GET /api/subscription
+    if (route === '/subscription' && method === 'GET') {
+      const decoded = verifyToken(request)
+      if (!decoded) {
+        return handleCORS(NextResponse.json(
+          { error: 'Unauthorized' },
+          { status: 401 }
+        ))
+      }
+      
+      const user = await db.collection('users').findOne({ id: decoded.userId })
+      if (!user) {
+        return handleCORS(NextResponse.json(
+          { error: 'User not found' },
+          { status: 404 }
+        ))
+      }
+      
+      const tierLimits = getTierLimits(user)
+      const tier = getUserTier(user)
+      
+      return handleCORS(NextResponse.json({
+        subscriptionTier: tier,
+        isAdmin: isAdmin(user.email),
+        tierLimits,
+        subscriptionStartDate: user.subscriptionStartDate,
+        subscriptionEndDate: user.subscriptionEndDate,
+        currentDay: user.currentDay,
+        daysRemaining: Math.max(0, tierLimits.maxDays - user.currentDay),
+        grammarLessonsThisWeek: user.grammarLessonsThisWeek || 0,
+        grammarLessonsLimit: tierLimits.grammarLessonsPerWeek
+      }))
+    }
+    
+    // MOCKED Upgrade subscription - POST /api/subscription/upgrade
+    // NOTE: In production, this would integrate with Stripe
+    if (route === '/subscription/upgrade' && method === 'POST') {
+      const decoded = verifyToken(request)
+      if (!decoded) {
+        return handleCORS(NextResponse.json(
+          { error: 'Unauthorized' },
+          { status: 401 }
+        ))
+      }
+      
+      const body = await request.json()
+      const { tier } = body
+      
+      if (!tier || !['basic', 'premium'].includes(tier)) {
+        return handleCORS(NextResponse.json(
+          { error: 'Invalid tier. Must be basic or premium' },
+          { status: 400 }
+        ))
+      }
+      
+      // MOCKED: In production, verify Stripe payment before upgrading
+      await db.collection('users').updateOne(
+        { id: decoded.userId },
+        {
+          $set: {
+            subscriptionTier: tier,
+            subscriptionStartDate: new Date(),
+            subscriptionEndDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days from now
+          }
+        }
+      )
+      
+      const updatedUser = await db.collection('users').findOne({ id: decoded.userId })
+      const { password: _, ...userWithoutPassword } = updatedUser
+      userWithoutPassword.tierLimits = getTierLimits(updatedUser)
+      
+      return handleCORS(NextResponse.json({
+        success: true,
+        message: `Successfully upgraded to ${tier} plan`,
+        user: userWithoutPassword
+      }))
+    }
+    
+    // Admin: Upgrade any user - POST /api/admin/upgrade-user
+    if (route === '/admin/upgrade-user' && method === 'POST') {
+      const decoded = verifyToken(request)
+      if (!decoded) {
+        return handleCORS(NextResponse.json(
+          { error: 'Unauthorized' },
+          { status: 401 }
+        ))
+      }
+      
+      // Check if requester is admin
+      const adminUser = await db.collection('users').findOne({ id: decoded.userId })
+      if (!isAdmin(adminUser.email)) {
+        return handleCORS(NextResponse.json(
+          { error: 'Admin access required' },
+          { status: 403 }
+        ))
+      }
+      
+      const body = await request.json()
+      const { userEmail, tier } = body
+      
+      if (!userEmail || !tier || !['free', 'basic', 'premium'].includes(tier)) {
+        return handleCORS(NextResponse.json(
+          { error: 'userEmail and valid tier (free, basic, premium) required' },
+          { status: 400 }
+        ))
+      }
+      
+      const targetUser = await db.collection('users').findOne({ email: userEmail.toLowerCase() })
+      if (!targetUser) {
+        return handleCORS(NextResponse.json(
+          { error: 'User not found' },
+          { status: 404 }
+        ))
+      }
+      
+      await db.collection('users').updateOne(
+        { email: userEmail.toLowerCase() },
+        {
+          $set: {
+            subscriptionTier: tier,
+            subscriptionStartDate: new Date(),
+            subscriptionEndDate: tier === 'free' ? null : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) // 1 year for paid
+          }
+        }
+      )
+      
+      return handleCORS(NextResponse.json({
+        success: true,
+        message: `User ${userEmail} upgraded to ${tier}`
+      }))
+    }
+    
+    // Get mock exam access info - GET /api/tests/access
+    if (route === '/tests/access' && method === 'GET') {
+      const decoded = verifyToken(request)
+      if (!decoded) {
+        return handleCORS(NextResponse.json(
+          { error: 'Unauthorized' },
+          { status: 401 }
+        ))
+      }
+      
+      const user = await db.collection('users').findOne({ id: decoded.userId })
+      if (!user) {
+        return handleCORS(NextResponse.json(
+          { error: 'User not found' },
+          { status: 404 }
+        ))
+      }
+      
+      const tierLimits = getTierLimits(user)
+      
+      return handleCORS(NextResponse.json({
+        subscriptionTier: getUserTier(user),
+        mockExamsPerSkill: tierLimits.mockExamsPerSkill,
+        accessibleExams: {
+          listening: tierLimits.mockExamsPerSkill,
+          reading: tierLimits.mockExamsPerSkill,
+          writing: tierLimits.mockExamsPerSkill,
+          speaking: tierLimits.mockExamsPerSkill
+        },
+        totalAccessible: tierLimits.mockExamsPerSkill * 4,
+        isAdmin: isAdmin(user.email)
+      }))
+    }
+
     // Root endpoint
     if (route === '/' && method === 'GET') {
       return handleCORS(NextResponse.json({ message: 'CLB French Trainer API', version: '1.0.0' }))
