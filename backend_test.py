@@ -659,6 +659,10 @@ class CLBFrenchTrainerTester:
             ("Update Daily Log", self.test_update_daily_log),
             ("Complete Daily Log", self.test_complete_daily_log),
             ("Get Progress", self.test_get_progress),
+            ("Stripe Checkout - Unauthorized", self.test_stripe_checkout_unauthorized),
+            ("Stripe Checkout - Invalid Price", self.test_stripe_checkout_invalid_price),
+            ("Stripe Checkout - Missing Price", self.test_stripe_checkout_missing_price),
+            ("Stripe Checkout - Valid Prices", self.test_stripe_checkout_valid_prices),
             ("Pathway Reset", self.test_pathway_reset),
         ]
         
