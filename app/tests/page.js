@@ -1029,6 +1029,36 @@ export default function TestsPage() {
   const [selectedTestType, setSelectedTestType] = useState(null)
   const [selectedTest, setSelectedTest] = useState(null)
   const [testResults, setTestResults] = useState(null)
+  const [subscriptionInfo, setSubscriptionInfo] = useState(null)
+  const [loading, setLoading] = useState(true)
+  
+  useEffect(() => {
+    fetchSubscriptionInfo()
+  }, [])
+  
+  const fetchSubscriptionInfo = async () => {
+    try {
+      const token = Cookies.get('token')
+      if (!token) {
+        // No token, redirect to login
+        window.location.href = '/dashboard'
+        return
+      }
+      
+      const res = await fetch('/api/tests/access', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      
+      if (res.ok) {
+        const data = await res.json()
+        setSubscriptionInfo(data)
+      }
+    } catch (error) {
+      console.error('Failed to fetch subscription info')
+    } finally {
+      setLoading(false)
+    }
+  }
   
   const handleSelectTest = (type, test) => {
     setSelectedTestType(type)
@@ -1048,8 +1078,23 @@ export default function TestsPage() {
     toast.success('Test completed!')
   }
   
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-pulse text-muted-foreground">Loading...</div>
+      </div>
+    )
+  }
+  
   if (currentView === 'selection') {
-    return <TestSelection onSelectTest={handleSelectTest} />
+    return (
+      <TestSelection 
+        onSelectTest={handleSelectTest}
+        accessibleExams={subscriptionInfo?.mockExamsPerSkill || 2}
+        subscriptionTier={subscriptionInfo?.subscriptionTier || 'free'}
+        isAdmin={subscriptionInfo?.isAdmin || false}
+      />
+    )
   }
   
   if (currentView === 'test' && selectedTest) {
