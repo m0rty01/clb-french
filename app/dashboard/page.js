@@ -1186,13 +1186,20 @@ function Dashboard({ user, token, onLogout, onReset }) {
   const [progress, setProgress] = useState(null)
   const [loading, setLoading] = useState(true)
   const [activeTimer, setActiveTimer] = useState(null)
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
+  const [currentUser, setCurrentUser] = useState(user)
   const { theme, setTheme } = useTheme()
   
-  const pathwayData = getPathway(user.pathway)
-  const currentMonthData = getCurrentMonthData(user.pathway, user.currentDay)
-  const dailyActivities = getDailyActivities(user.pathway, user.currentDay)
-  const dailyResources = getDailyResources(user.currentDay, user.pathway)
-  const levelProgress = getProgressDescription(user.currentDay, user.pathway)
+  const pathwayData = getPathway(currentUser.pathway)
+  const currentMonthData = getCurrentMonthData(currentUser.pathway, currentUser.currentDay)
+  const dailyActivities = getDailyActivities(currentUser.pathway, currentUser.currentDay)
+  const dailyResources = getDailyResources(currentUser.currentDay, currentUser.pathway)
+  const levelProgress = getProgressDescription(currentUser.currentDay, currentUser.pathway)
+  
+  // Get tier info
+  const tier = currentUser?.subscriptionTier || 'free'
+  const tierLimits = currentUser?.tierLimits || { maxDays: 7, mockExamsPerSkill: 2 }
+  const isAdmin = currentUser?.email?.toLowerCase() === 'ravijha97.01@gmail.com'
   
   useEffect(() => {
     fetchData()
@@ -1219,6 +1226,11 @@ function Dashboard({ user, token, onLogout, onReset }) {
     } finally {
       setLoading(false)
     }
+  }
+  
+  const handleUpgradeSuccess = (updatedUser) => {
+    setCurrentUser(updatedUser)
+    toast.success('Subscription upgraded! Enjoy your new features.')
   }
   
   const updateActivity = async (activityKey, updates) => {
