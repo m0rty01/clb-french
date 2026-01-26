@@ -205,7 +205,8 @@ function TestSelection({ onSelectTest, accessibleExams, subscriptionTier, isAdmi
                             <Badge variant="secondary">{test.level}</Badge>
                           </div>
                         </Button>
-                    ))}
+                      )
+                    })}
                   </div>
                 </CardContent>
               </Card>
