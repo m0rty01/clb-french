@@ -12,10 +12,16 @@ if (!JWT_SECRET) {
   console.warn('WARNING: JWT_SECRET not set in environment variables')
 }
 
-// Initialize Stripe
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: '2024-12-18.acacia'
-})
+// Initialize Stripe lazily to avoid build-time errors when env vars are not set
+let stripe = null
+function getStripe() {
+  if (!stripe && process.env.STRIPE_SECRET_KEY) {
+    stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: '2024-12-18.acacia'
+    })
+  }
+  return stripe
+}
 
 // Stripe Price Configuration (in cents)
 const STRIPE_PRICES = {
