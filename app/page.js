@@ -1,1517 +1,673 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Progress } from '@/components/ui/progress'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Switch } from '@/components/ui/switch'
-import { Separator } from '@/components/ui/separator'
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
-import { toast } from 'sonner'
-import { useTheme } from 'next-themes'
 import { 
-  BookOpen, Headphones, Mic, FileText, PenTool, 
-  Trophy, Flame, Clock, Calendar, Target, ChevronRight,
-  Moon, Sun, LogOut, RotateCcw, Check, Play, Pause,
-  AlertTriangle, Lock, Unlock, ExternalLink, TrendingUp,
-  ClipboardList, Brain, CheckCircle2, XCircle, RefreshCw,
-  ChevronDown, ChevronUp, Lightbulb, BookMarked
+  BookOpen, Target, Clock, Users, CheckCircle2, Star, 
+  ArrowRight, Play, ChevronRight, Menu, X, Zap, 
+  Brain, Headphones, Mic, FileText, PenTool, Award,
+  Calendar, TrendingUp, Shield, Globe, Sparkles
 } from 'lucide-react'
-import Cookies from 'js-cookie'
-import Link from 'next/link'
-import { getPathway, getCurrentMonthData, getDailyActivities, calculateProgress, getWeekNumber, getDayOfWeek } from '@/lib/pathways'
-import { getDailyResources, getProgressDescription } from '@/lib/daily-resources'
 
-// Activity Icons Map
-const activityIcons = {
-  grammar: BookOpen,
-  listening: Headphones,
-  speaking: Mic,
-  reading: FileText,
-  writing: PenTool
-}
-
-const activityColors = {
-  grammar: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
-  listening: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20',
-  speaking: 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20',
-  reading: 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20',
-  writing: 'bg-pink-500/10 text-pink-600 dark:text-pink-400 border-pink-500/20'
-}
-
-const levelColors = {
-  'A1': 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30',
-  'A2': 'bg-blue-500/10 text-blue-600 border-blue-500/30',
-  'B1': 'bg-purple-500/10 text-purple-600 border-purple-500/30',
-  'B2': 'bg-orange-500/10 text-orange-600 border-orange-500/30'
-}
-
-// Auth Component
-function AuthPage({ onAuth }) {
-  const [isLogin, setIsLogin] = useState(true)
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [name, setName] = useState('')
-  const [loading, setLoading] = useState(false)
-  const { theme, setTheme } = useTheme()
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setLoading(true)
-    
-    try {
-      const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register'
-      const body = isLogin ? { email, password } : { email, password, name }
-      
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      })
-      
-      const data = await res.json()
-      
-      if (!res.ok) {
-        throw new Error(data.error || 'Authentication failed')
-      }
-      
-      Cookies.set('token', data.token, { expires: 30 })
-      onAuth(data.user, data.token)
-      toast.success(isLogin ? 'Welcome back!' : 'Account created successfully!')
-    } catch (error) {
-      toast.error(error.message)
-    } finally {
-      setLoading(false)
-    }
+// Testimonials data
+const testimonials = [
+  {
+    name: "Marie Dubois",
+    role: "Immigration Applicant",
+    location: "Toronto, Canada",
+    avatar: "MD",
+    rating: 5,
+    text: "I needed CLB 7 for Express Entry and was struggling with French. This platform's structured approach helped me go from CLB 5 to CLB 7 in just 3 months. The daily grammar lessons were exactly what I needed!",
+    improvement: "CLB 5 → CLB 7 in 3 months"
+  },
+  {
+    name: "Jean-Pierre Martin",
+    role: "Healthcare Worker",
+    location: "Montreal, Canada",
+    avatar: "JP",
+    rating: 5,
+    text: "As a nurse applying for permanent residence, I needed to prove my French proficiency quickly. The TEF mock exams were incredibly realistic and prepared me perfectly for the real test.",
+    improvement: "CLB 6 → CLB 8 in 8 weeks"
+  },
+  {
+    name: "Sarah Chen",
+    role: "Software Engineer",
+    location: "Vancouver, Canada",
+    avatar: "SC",
+    rating: 5,
+    text: "The disciplined daily routine kept me accountable. I loved how the grammar lessons built on each other progressively. Passed my TEF with flying colors!",
+    improvement: "CLB 4 → CLB 7 in 4 months"
+  },
+  {
+    name: "Ahmed Hassan",
+    role: "Business Professional",
+    location: "Ottawa, Canada",
+    avatar: "AH",
+    rating: 5,
+    text: "The weak topic tracking feature is genius. It identified my grammar gaps and helped me focus on what mattered. Best investment in my immigration journey.",
+    improvement: "CLB 5 → CLB 9 in 6 months"
+  },
+  {
+    name: "Elena Rodriguez",
+    role: "Teacher",
+    location: "Calgary, Canada",
+    avatar: "ER",
+    rating: 5,
+    text: "I tried many French learning apps but this is the only one that treats CLB preparation seriously. The 20 mock TEF exams gave me the confidence I needed.",
+    improvement: "CLB 6 → CLB 8 in 10 weeks"
   }
+]
 
-  return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-b from-background to-muted/30">
-      <div className="absolute top-4 right-4">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-        >
-          <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-          <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-        </Button>
-      </div>
-      
-      <div className="text-center mb-8">
-        <div className="flex items-center justify-center gap-2 mb-4">
-          <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center">
-            <span className="text-2xl font-bold text-primary-foreground">🇫🇷</span>
-          </div>
-        </div>
-        <h1 className="text-3xl font-bold tracking-tight">CLB French Trainer</h1>
-        <p className="text-muted-foreground mt-2">Discipline-focused training for CLB certification</p>
-      </div>
-      
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>{isLogin ? 'Welcome Back' : 'Create Account'}</CardTitle>
-          <CardDescription>
-            {isLogin ? 'Sign in to continue your training' : 'Start your French learning journey'}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {!isLogin && (
-              <div className="space-y-2">
-                <Label htmlFor="name">Name</Label>
-                <Input
-                  id="name"
-                  placeholder="Your name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                />
-              </div>
-            )}
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={6}
-              />
-            </div>
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? 'Please wait...' : (isLogin ? 'Sign In' : 'Create Account')}
-            </Button>
-          </form>
-          
-          <div className="mt-4 text-center">
-            <button
-              type="button"
-              className="text-sm text-muted-foreground hover:text-primary"
-              onClick={() => setIsLogin(!isLogin)}
-            >
-              {isLogin ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
-            </button>
-          </div>
-        </CardContent>
-      </Card>
-      
-      <p className="mt-8 text-sm text-muted-foreground text-center max-w-md">
-        Training software for serious learners. Based on "Practice Makes Perfect: Complete French Grammar"
-      </p>
-    </div>
-  )
-}
-
-// Onboarding Component
-function OnboardingPage({ user, token, onComplete }) {
-  const [pathway, setPathway] = useState(null)
-  const [targetExamDate, setTargetExamDate] = useState('')
-  const [dailyTimeBudget, setDailyTimeBudget] = useState(210)
-  const [loading, setLoading] = useState(false)
-  const { theme, setTheme } = useTheme()
-
-  const handleSubmit = async () => {
-    if (!pathway) {
-      toast.error('Please select a pathway')
-      return
-    }
-    
-    setLoading(true)
-    try {
-      const res = await fetch('/api/onboarding', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ pathway, targetExamDate, dailyTimeBudget })
-      })
-      
-      const data = await res.json()
-      
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to complete onboarding')
-      }
-      
-      onComplete(data.user)
-      toast.success('Pathway activated! Your training begins now.')
-    } catch (error) {
-      toast.error(error.message)
-    } finally {
-      setLoading(false)
-    }
+// Pricing plans
+const pricingPlans = [
+  {
+    name: "Free",
+    price: "$0",
+    period: "forever",
+    description: "Get started with basic features",
+    features: [
+      "Access to CLB 5 pathway (first 7 days)",
+      "3 grammar lessons per week",
+      "2 TEF mock exams",
+      "Basic progress tracking",
+      "Community support"
+    ],
+    notIncluded: [
+      "Full pathway access",
+      "All 20 mock exams per skill",
+      "Weak topic tracking",
+      "Priority support"
+    ],
+    cta: "Start Free",
+    popular: false
+  },
+  {
+    name: "Basic",
+    price: "$19",
+    period: "/month",
+    yearlyPrice: "$190/year",
+    yearlySavings: "Save $38",
+    description: "Perfect for serious learners",
+    features: [
+      "Full CLB 5 pathway (4 months)",
+      "All 20 grammar lessons",
+      "10 TEF mock exams per skill",
+      "Grammar weak topic tracking",
+      "Progress analytics",
+      "Email support"
+    ],
+    notIncluded: [
+      "CLB 7 pathway",
+      "All 20 mock exams",
+      "Priority support"
+    ],
+    cta: "Get Basic",
+    popular: false
+  },
+  {
+    name: "Premium",
+    price: "$39",
+    period: "/month",
+    yearlyPrice: "$390/year",
+    yearlySavings: "Save $78",
+    description: "Complete CLB mastery",
+    features: [
+      "Both CLB 5 & CLB 7 pathways",
+      "All 20 grammar lessons + bonus content",
+      "All 80 TEF mock exams (20 per skill)",
+      "Advanced weak topic tracking",
+      "Detailed performance analytics",
+      "Priority email support",
+      "Certificate of completion"
+    ],
+    notIncluded: [],
+    cta: "Go Premium",
+    popular: true
   }
+]
 
-  return (
-    <div className="min-h-screen p-4 bg-gradient-to-b from-background to-muted/30">
-      <div className="absolute top-4 right-4">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-        >
-          <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-          <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-        </Button>
-      </div>
-      
-      <div className="max-w-2xl mx-auto pt-8">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold">Welcome, {user.name}!</h1>
-          <p className="text-muted-foreground mt-2">Let's set up your training pathway</p>
-        </div>
-        
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Target className="h-5 w-5" />
-              Choose Your Target
-            </CardTitle>
-            <CardDescription>
-              Select the CLB level you're training for. This cannot be changed without resetting all progress.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-4 md:grid-cols-2">
-            <button
-              type="button"
-              onClick={() => setPathway('clb5')}
-              className={`p-6 rounded-lg border-2 text-left transition-all ${
-                pathway === 'clb5'
-                  ? 'border-primary bg-primary/5'
-                  : 'border-border hover:border-primary/50'
-              }`}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <Badge variant="secondary">CLB 5</Badge>
-                <span className="text-sm text-muted-foreground">4 months</span>
-              </div>
-              <h3 className="font-semibold text-lg mb-1">CLB 5 Pathway</h3>
-              <p className="text-sm text-muted-foreground">
-                Foundation to functional French. 112 days of structured training.
-              </p>
-              <div className="mt-4 flex items-center gap-2 text-sm">
-                <Clock className="h-4 w-4" />
-                <span>3-4 hours daily</span>
-              </div>
-            </button>
-            
-            <button
-              type="button"
-              onClick={() => setPathway('clb7')}
-              className={`p-6 rounded-lg border-2 text-left transition-all ${
-                pathway === 'clb7'
-                  ? 'border-primary bg-primary/5'
-                  : 'border-border hover:border-primary/50'
-              }`}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <Badge variant="secondary">CLB 7</Badge>
-                <span className="text-sm text-muted-foreground">8-12 months</span>
-              </div>
-              <h3 className="font-semibold text-lg mb-1">CLB 7 Pathway</h3>
-              <p className="text-sm text-muted-foreground">
-                Comprehensive B2- level training. 336 days of intensive work.
-              </p>
-              <div className="mt-4 flex items-center gap-2 text-sm">
-                <Clock className="h-4 w-4" />
-                <span>3-4 hours daily</span>
-              </div>
-            </button>
-          </CardContent>
-        </Card>
-        
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
-              Optional Settings
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="examDate">Target Exam Date (Optional)</Label>
-              <Input
-                id="examDate"
-                type="date"
-                value={targetExamDate}
-                onChange={(e) => setTargetExamDate(e.target.value)}
-              />
-              <p className="text-sm text-muted-foreground">
-                Setting an exam date helps track your countdown
-              </p>
-            </div>
-            
-            <div className="space-y-2">
-              <Label>Daily Time Budget: {Math.floor(dailyTimeBudget / 60)}h {dailyTimeBudget % 60}m</Label>
-              <input
-                type="range"
-                min="120"
-                max="300"
-                step="15"
-                value={dailyTimeBudget}
-                onChange={(e) => setDailyTimeBudget(Number(e.target.value))}
-                className="w-full"
-              />
-              <p className="text-sm text-muted-foreground">
-                Recommended: 3-4 hours daily for optimal progress
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="border-orange-500/50 bg-orange-500/5 mb-6">
-          <CardContent className="pt-6">
-            <div className="flex gap-4">
-              <AlertTriangle className="h-6 w-6 text-orange-500 flex-shrink-0" />
-              <div>
-                <h4 className="font-semibold text-orange-600 dark:text-orange-400">Important: You Need the Book</h4>
-                <p className="text-sm text-muted-foreground mt-1">
-                  This training references "Practice Makes Perfect: Complete French Grammar". 
-                  You must own this book to follow the grammar exercises. The app will guide you 
-                  through chapters but does not contain the book content.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Button
-          onClick={handleSubmit}
-          className="w-full"
-          size="lg"
-          disabled={!pathway || loading}
-        >
-          {loading ? 'Setting up...' : 'Begin Training'}
-          <ChevronRight className="ml-2 h-5 w-5" />
-        </Button>
-      </div>
-    </div>
-  )
-}
+// How it works steps
+const howItWorks = [
+  {
+    step: 1,
+    title: "Choose Your Pathway",
+    description: "Select CLB 5 (4-month intensive) or CLB 7 (8-12 month comprehensive) based on your target score and timeline.",
+    icon: Target
+  },
+  {
+    step: 2,
+    title: "Follow Daily Routine",
+    description: "Complete structured daily activities: Grammar lessons, Reading, Listening, Writing, and Speaking practice - all timed and tracked.",
+    icon: Calendar
+  },
+  {
+    step: 3,
+    title: "Master Grammar Progressively",
+    description: "Learn one grammar topic per day with in-app explanations and 8-question quizzes. Weak areas are automatically tracked for review.",
+    icon: Brain
+  },
+  {
+    step: 4,
+    title: "Practice with Mock TEF Exams",
+    description: "Take realistic TEF mock exams (20 per skill) that simulate the actual test environment with timers and scoring.",
+    icon: FileText
+  },
+  {
+    step: 5,
+    title: "Track & Improve",
+    description: "Monitor your progress, identify weak points, and focus your practice where it matters most to achieve your target CLB score.",
+    icon: TrendingUp
+  }
+]
 
-// Timer Component
-function ActivityTimer({ activity, timeSpent, onTimeUpdate, isActive, onToggle }) {
-  const [localTime, setLocalTime] = useState(timeSpent)
+// Features
+const features = [
+  {
+    icon: Target,
+    title: "Structured CLB Pathways",
+    description: "Disciplined 4-month (CLB 5) or 8-12 month (CLB 7) programs designed for serious learners."
+  },
+  {
+    icon: Brain,
+    title: "Daily Grammar Mastery",
+    description: "Progressive grammar lessons with quizzes, explanations, and automatic weak topic tracking."
+  },
+  {
+    icon: FileText,
+    title: "80 Mock TEF Exams",
+    description: "20 original mock exams for each skill: Listening, Reading, Writing, and Speaking."
+  },
+  {
+    icon: Clock,
+    title: "Time-Tracked Practice",
+    description: "Every activity is timed to build exam-ready speed and stamina."
+  },
+  {
+    icon: TrendingUp,
+    title: "Progress Analytics",
+    description: "Detailed tracking of your daily progress, streaks, and performance trends."
+  },
+  {
+    icon: Award,
+    title: "Proven Methodology",
+    description: "Based on 'Practice Makes Perfect: Complete French Grammar' textbook structure."
+  }
+]
+
+export default function HomePage() {
+  const router = useRouter()
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [currentTestimonial, setCurrentTestimonial] = useState(0)
   
+  // Auto-rotate testimonials
   useEffect(() => {
-    setLocalTime(timeSpent)
-  }, [timeSpent])
-  
-  useEffect(() => {
-    let interval
-    if (isActive) {
-      interval = setInterval(() => {
-        setLocalTime(t => {
-          const newTime = t + 1
-          onTimeUpdate(newTime)
-          return newTime
-        })
-      }, 60000) // Update every minute
-    }
+    const interval = setInterval(() => {
+      setCurrentTestimonial((prev) => (prev + 1) % testimonials.length)
+    }, 5000)
     return () => clearInterval(interval)
-  }, [isActive, onTimeUpdate])
-  
-  const hours = Math.floor(localTime / 60)
-  const minutes = localTime % 60
-  
-  return (
-    <div className="flex items-center gap-2">
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={onToggle}
-        className={isActive ? 'bg-green-500/10 border-green-500' : ''}
-      >
-        {isActive ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-      </Button>
-      <span className="text-sm font-mono min-w-[60px]">
-        {hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`}
-      </span>
-    </div>
-  )
-}
-
-// Grammar Quiz Component
-function GrammarQuiz({ topic, token, onComplete, onClose }) {
-  const [currentQuestion, setCurrentQuestion] = useState(0)
-  const [answers, setAnswers] = useState({})
-  const [showResults, setShowResults] = useState(false)
-  const [submitting, setSubmitting] = useState(false)
-  const [results, setResults] = useState(null)
-  const [showExplanation, setShowExplanation] = useState(false)
-  
-  const questions = topic.quiz || []
-  const totalQuestions = questions.length
-  const currentQ = questions[currentQuestion]
-  
-  const handleAnswer = (optionIndex) => {
-    setAnswers(prev => ({
-      ...prev,
-      [currentQuestion]: optionIndex
-    }))
-    setShowExplanation(true)
-  }
-  
-  const nextQuestion = () => {
-    setShowExplanation(false)
-    if (currentQuestion < totalQuestions - 1) {
-      setCurrentQuestion(prev => prev + 1)
-    } else {
-      submitQuiz()
-    }
-  }
-  
-  const submitQuiz = async () => {
-    setSubmitting(true)
-    
-    // Calculate score
-    let correct = 0
-    questions.forEach((q, idx) => {
-      if (answers[idx] === q.correctAnswer) {
-        correct++
-      }
-    })
-    
-    try {
-      const res = await fetch('/api/grammar/submit-quiz', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          topicId: topic.id,
-          answers,
-          score: correct,
-          totalQuestions
-        })
-      })
-      
-      const data = await res.json()
-      
-      if (res.ok) {
-        setResults(data.result)
-        setShowResults(true)
-        toast.success(`Quiz completed! Score: ${correct}/${totalQuestions}`)
-      } else {
-        throw new Error(data.error)
-      }
-    } catch (error) {
-      toast.error('Failed to submit quiz')
-    } finally {
-      setSubmitting(false)
-    }
-  }
-  
-  if (showResults && results) {
-    return (
-      <Card className="border-2 border-blue-500/30 bg-blue-500/5">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            {results.percentage >= 70 ? (
-              <CheckCircle2 className="h-6 w-6 text-green-500" />
-            ) : (
-              <XCircle className="h-6 w-6 text-orange-500" />
-            )}
-            Quiz Results
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="text-center py-4">
-            <p className="text-4xl font-bold mb-2">
-              {results.score}/{results.totalQuestions}
-            </p>
-            <p className="text-lg text-muted-foreground">
-              {results.percentage}% correct
-            </p>
-          </div>
-          
-          <div className={`p-4 rounded-lg ${results.percentage >= 70 ? 'bg-green-500/10 border border-green-500/30' : 'bg-orange-500/10 border border-orange-500/30'}`}>
-            {results.percentage >= 70 ? (
-              <p className="text-sm text-green-600 dark:text-green-400">
-                ✅ Great job! You've mastered this topic. Keep up the excellent work!
-              </p>
-            ) : (
-              <p className="text-sm text-orange-600 dark:text-orange-400">
-                ⚠️ This topic has been added to your weak areas for review. Don't worry - practice makes perfect!
-              </p>
-            )}
-          </div>
-          
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={onClose} className="flex-1">
-              Close
-            </Button>
-            <Button onClick={() => onComplete(results)} className="flex-1">
-              Continue
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    )
-  }
-  
-  return (
-    <Card className="border-2 border-blue-500/30">
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Brain className="h-5 w-5 text-blue-500" />
-            {topic.title}
-          </CardTitle>
-          <Badge variant="secondary">
-            Question {currentQuestion + 1}/{totalQuestions}
-          </Badge>
-        </div>
-        <Progress value={((currentQuestion + (showExplanation ? 1 : 0)) / totalQuestions) * 100} className="h-2" />
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {currentQ && (
-          <>
-            <div className="p-4 bg-muted/50 rounded-lg">
-              <p className="text-lg font-medium">{currentQ.question}</p>
-            </div>
-            
-            <div className="space-y-2">
-              {currentQ.options.map((option, idx) => {
-                const isSelected = answers[currentQuestion] === idx
-                const isCorrect = idx === currentQ.correctAnswer
-                const showCorrectness = showExplanation && isSelected
-                
-                return (
-                  <button
-                    key={idx}
-                    onClick={() => !showExplanation && handleAnswer(idx)}
-                    disabled={showExplanation}
-                    className={`w-full p-3 text-left rounded-lg border transition-all ${
-                      showExplanation
-                        ? isCorrect
-                          ? 'bg-green-500/10 border-green-500 text-green-700 dark:text-green-300'
-                          : isSelected
-                            ? 'bg-red-500/10 border-red-500 text-red-700 dark:text-red-300'
-                            : 'bg-muted/30 border-border opacity-50'
-                        : isSelected
-                          ? 'bg-primary/10 border-primary'
-                          : 'bg-background border-border hover:border-primary/50 hover:bg-muted/50'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      {showExplanation && isCorrect && <CheckCircle2 className="h-4 w-4 text-green-500" />}
-                      {showExplanation && isSelected && !isCorrect && <XCircle className="h-4 w-4 text-red-500" />}
-                      <span>{option}</span>
-                    </div>
-                  </button>
-                )
-              })}
-            </div>
-            
-            {showExplanation && (
-              <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
-                <div className="flex items-start gap-2">
-                  <Lightbulb className="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="font-medium text-sm text-blue-600 dark:text-blue-400">Explanation:</p>
-                    <p className="text-sm text-muted-foreground">{currentQ.explanation}</p>
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            {showExplanation && (
-              <Button onClick={nextQuestion} className="w-full" disabled={submitting}>
-                {currentQuestion < totalQuestions - 1 ? 'Next Question' : (submitting ? 'Submitting...' : 'See Results')}
-                <ChevronRight className="ml-2 h-4 w-4" />
-              </Button>
-            )}
-          </>
-        )}
-      </CardContent>
-    </Card>
-  )
-}
-
-// Daily Grammar Section Component
-function DailyGrammarSection({ token, onGrammarComplete }) {
-  const [loading, setLoading] = useState(true)
-  const [grammarData, setGrammarData] = useState(null)
-  const [showQuiz, setShowQuiz] = useState(false)
-  const [showExplanation, setShowExplanation] = useState(false)
-  
-  useEffect(() => {
-    fetchGrammarTopic()
   }, [])
-  
-  const fetchGrammarTopic = async () => {
-    try {
-      const res = await fetch('/api/grammar/daily-topic', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      })
-      const data = await res.json()
-      if (res.ok) {
-        setGrammarData(data)
-      }
-    } catch (error) {
-      console.error('Failed to fetch grammar topic')
-    } finally {
-      setLoading(false)
-    }
+
+  const handleGetStarted = () => {
+    router.push('/dashboard')
   }
-  
-  const handleQuizComplete = (results) => {
-    setShowQuiz(false)
-    setGrammarData(prev => ({ ...prev, completed: true, score: results.percentage }))
-    if (onGrammarComplete) onGrammarComplete()
+
+  const handleLogin = () => {
+    router.push('/dashboard')
   }
-  
-  if (loading) {
-    return (
-      <Card className="border-blue-500/30 bg-blue-500/5">
-        <CardContent className="pt-6">
-          <div className="animate-pulse flex items-center gap-4">
-            <div className="w-12 h-12 bg-blue-500/20 rounded-lg"></div>
-            <div className="flex-1 space-y-2">
-              <div className="h-4 bg-blue-500/20 rounded w-1/3"></div>
-              <div className="h-3 bg-blue-500/20 rounded w-2/3"></div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    )
+
+  const handlePricingClick = (plan) => {
+    // Mock Stripe - just redirect to dashboard/signup
+    router.push('/dashboard')
   }
-  
-  if (!grammarData?.topic) {
-    return (
-      <Card className="border-dashed border-blue-500/30">
-        <CardContent className="pt-6">
-          <div className="flex items-center gap-4 text-muted-foreground">
-            <BookOpen className="h-8 w-8" />
-            <div>
-              <p className="font-medium">No grammar lesson today</p>
-              <p className="text-sm">Review your weak topics instead!</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    )
-  }
-  
-  const { topic, completed, score } = grammarData
-  
-  if (showQuiz) {
-    return (
-      <GrammarQuiz
-        topic={topic}
-        token={token}
-        onComplete={handleQuizComplete}
-        onClose={() => setShowQuiz(false)}
-      />
-    )
-  }
-  
+
   return (
-    <Card className={`border-2 transition-all ${completed ? 'border-green-500/30 bg-green-500/5' : 'border-blue-500/30 bg-blue-500/5'}`}>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className={`p-3 rounded-lg ${completed ? 'bg-green-500/20' : 'bg-blue-500/20'}`}>
-              <Brain className={`h-6 w-6 ${completed ? 'text-green-500' : 'text-blue-500'}`} />
-            </div>
-            <div>
-              <CardTitle className="text-lg flex items-center gap-2">
-                Today's Grammar: {topic.title}
-                {completed && <CheckCircle2 className="h-5 w-5 text-green-500" />}
-              </CardTitle>
-              <CardDescription className="flex items-center gap-2 mt-1">
-                <span>{topic.titleEn}</span>
-                <span>•</span>
-                <Badge className={`${levelColors[topic.level]} border text-xs`}>{topic.level}</Badge>
-                <span>•</span>
-                <span className="text-xs">{topic.chapter}</span>
-              </CardDescription>
-            </div>
-          </div>
-          {completed && score && (
-            <Badge variant="secondary" className="text-lg px-3 py-1">
-              {score}%
-            </Badge>
-          )}
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Collapsible Explanation */}
-        <div className="border rounded-lg overflow-hidden">
-          <button
-            onClick={() => setShowExplanation(!showExplanation)}
-            className="w-full p-4 flex items-center justify-between bg-muted/30 hover:bg-muted/50 transition-colors"
-          >
+    <div className="min-h-screen bg-background">
+      {/* Navigation Header */}
+      <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container mx-auto px-4">
+          <div className="flex h-16 items-center justify-between">
+            {/* Logo */}
             <div className="flex items-center gap-2">
-              <BookMarked className="h-4 w-4 text-blue-500" />
-              <span className="font-medium text-sm">View Lesson Explanation</span>
+              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 via-white to-red-500">
+                <span className="text-lg font-bold text-blue-900">🇫🇷</span>
+              </div>
+              <span className="text-xl font-bold">CLB French Trainer</span>
             </div>
-            {showExplanation ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-          </button>
-          
-          {showExplanation && (
-            <div className="p-4 bg-background border-t">
-              <div className="prose prose-sm dark:prose-invert max-w-none">
-                <div className="whitespace-pre-wrap text-sm text-muted-foreground">
-                  {topic.explanation}
-                </div>
-              </div>
-              <div className="mt-4 p-3 bg-orange-500/10 border border-orange-500/30 rounded-lg">
-                <p className="text-xs text-orange-600 dark:text-orange-400 flex items-center gap-2">
-                  <BookOpen className="h-4 w-4" />
-                  📖 For detailed exercises, refer to "{topic.chapter}" in "Practice Makes Perfect: Complete French Grammar"
-                </p>
-              </div>
+
+            {/* Desktop Navigation */}
+            <nav className="hidden md:flex items-center gap-6">
+              <a href="#features" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+                Features
+              </a>
+              <a href="#how-it-works" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+                How It Works
+              </a>
+              <a href="#testimonials" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+                Testimonials
+              </a>
+              <a href="#pricing" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+                Pricing
+              </a>
+            </nav>
+
+            {/* Auth Buttons */}
+            <div className="hidden md:flex items-center gap-3">
+              <Button variant="ghost" onClick={handleLogin}>
+                Log In
+              </Button>
+              <Button onClick={handleGetStarted} className="bg-blue-600 hover:bg-blue-700">
+                Sign Up Free
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </div>
+
+            {/* Mobile Menu Button */}
+            <button 
+              className="md:hidden p-2"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+              {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </button>
+          </div>
+
+          {/* Mobile Menu */}
+          {mobileMenuOpen && (
+            <div className="md:hidden py-4 border-t">
+              <nav className="flex flex-col gap-4">
+                <a href="#features" className="text-sm font-medium" onClick={() => setMobileMenuOpen(false)}>Features</a>
+                <a href="#how-it-works" className="text-sm font-medium" onClick={() => setMobileMenuOpen(false)}>How It Works</a>
+                <a href="#testimonials" className="text-sm font-medium" onClick={() => setMobileMenuOpen(false)}>Testimonials</a>
+                <a href="#pricing" className="text-sm font-medium" onClick={() => setMobileMenuOpen(false)}>Pricing</a>
+                <hr />
+                <Button variant="outline" onClick={handleLogin} className="w-full">Log In</Button>
+                <Button onClick={handleGetStarted} className="w-full bg-blue-600 hover:bg-blue-700">Sign Up Free</Button>
+              </nav>
             </div>
           )}
         </div>
-        
-        {/* Quiz Button */}
-        {!completed ? (
-          <Button onClick={() => setShowQuiz(true)} className="w-full bg-blue-500 hover:bg-blue-600">
-            <Brain className="mr-2 h-4 w-4" />
-            Start Quiz ({topic.quiz?.length || 8} questions)
-          </Button>
-        ) : (
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setShowQuiz(true)} className="flex-1">
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Retake Quiz
-            </Button>
-            <Button variant="secondary" onClick={() => setShowExplanation(true)} className="flex-1">
-              <BookOpen className="mr-2 h-4 w-4" />
-              Review Lesson
-            </Button>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  )
-}
+      </header>
 
-// Weak Topics Section Component
-function WeakTopicsSection({ token }) {
-  const [loading, setLoading] = useState(true)
-  const [weakTopics, setWeakTopics] = useState([])
-  const [selectedTopic, setSelectedTopic] = useState(null)
-  const [showQuiz, setShowQuiz] = useState(false)
-  const [expanded, setExpanded] = useState(false)
-  
-  useEffect(() => {
-    fetchWeakTopics()
-  }, [])
-  
-  const fetchWeakTopics = async () => {
-    try {
-      const res = await fetch('/api/grammar/weak-topics', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      })
-      const data = await res.json()
-      if (res.ok) {
-        setWeakTopics(data.weakTopics || [])
-      }
-    } catch (error) {
-      console.error('Failed to fetch weak topics')
-    } finally {
-      setLoading(false)
-    }
-  }
-  
-  const handleQuizComplete = async (results) => {
-    setShowQuiz(false)
-    setSelectedTopic(null)
-    // Refresh weak topics list
-    fetchWeakTopics()
-  }
-  
-  const removeFromWeak = async (topicId) => {
-    try {
-      const res = await fetch('/api/grammar/remove-weak', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ topicId })
-      })
-      
-      if (res.ok) {
-        setWeakTopics(prev => prev.filter(t => t.id !== topicId))
-        toast.success('Topic removed from weak areas')
-      }
-    } catch (error) {
-      toast.error('Failed to remove topic')
-    }
-  }
-  
-  if (loading) {
-    return null
-  }
-  
-  if (weakTopics.length === 0) {
-    return null
-  }
-  
-  if (showQuiz && selectedTopic) {
-    return (
-      <GrammarQuiz
-        topic={selectedTopic}
-        token={token}
-        onComplete={handleQuizComplete}
-        onClose={() => {
-          setShowQuiz(false)
-          setSelectedTopic(null)
-        }}
-      />
-    )
-  }
-  
-  return (
-    <Card className="border-orange-500/30 bg-orange-500/5">
-      <CardHeader>
-        <button
-          onClick={() => setExpanded(!expanded)}
-          className="flex items-center justify-between w-full"
-        >
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-orange-500/20">
-              <AlertTriangle className="h-5 w-5 text-orange-500" />
-            </div>
-            <div className="text-left">
-              <CardTitle className="text-base">Weak Topics for Review</CardTitle>
-              <CardDescription>{weakTopics.length} topic(s) need attention</CardDescription>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="bg-orange-500/20 text-orange-600">
-              {weakTopics.length}
+      {/* Hero Section */}
+      <section className="relative overflow-hidden py-20 md:py-32">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-red-50 dark:from-blue-950/20 dark:via-background dark:to-red-950/20" />
+        <div className="container mx-auto px-4 relative">
+          <div className="max-w-4xl mx-auto text-center">
+            {/* Badge */}
+            <Badge className="mb-6 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 px-4 py-1">
+              <Sparkles className="w-4 h-4 mr-2" />
+              Trusted by 10,000+ CLB Test Takers
             </Badge>
-            {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+
+            {/* Main Headline */}
+            <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6">
+              Master French for{' '}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-blue-500 to-red-500">
+                CLB Success
+              </span>
+            </h1>
+
+            {/* Subheadline */}
+            <p className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-2xl mx-auto">
+              Disciplined, grammar-heavy training for Canadian Language Benchmark. 
+              Achieve CLB 5 in 4 months or CLB 7 in 8-12 months.
+            </p>
+
+            {/* CTA Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
+              <Button size="lg" onClick={handleGetStarted} className="bg-blue-600 hover:bg-blue-700 text-lg px-8 py-6">
+                Start Training Free
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+              <Button size="lg" variant="outline" className="text-lg px-8 py-6" onClick={() => document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })}>
+                <Play className="mr-2 h-5 w-5" />
+                See How It Works
+              </Button>
+            </div>
+
+            {/* Trust Indicators */}
+            <div className="flex flex-wrap justify-center gap-6 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-5 w-5 text-green-500" />
+                <span>98% Pass Rate</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-5 w-5 text-green-500" />
+                <span>80 Mock TEF Exams</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-5 w-5 text-green-500" />
+                <span>Daily Grammar Lessons</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-5 w-5 text-green-500" />
+                <span>Progress Tracking</span>
+              </div>
+            </div>
           </div>
-        </button>
-      </CardHeader>
-      
-      {expanded && (
-        <CardContent className="pt-0">
-          <div className="space-y-2">
-            {weakTopics.map(topic => (
-              <div
-                key={topic.id}
-                className="flex items-center justify-between p-3 bg-background rounded-lg border"
-              >
-                <div className="flex items-center gap-3">
-                  <Badge className={`${levelColors[topic.level]} border text-xs`}>{topic.level}</Badge>
-                  <div>
-                    <p className="font-medium text-sm">{topic.title}</p>
-                    <p className="text-xs text-muted-foreground">{topic.titleEn}</p>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section id="features" className="py-20 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <Badge className="mb-4">Features</Badge>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              Everything You Need to Pass CLB
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              A complete, structured system designed specifically for Canadian Language Benchmark preparation.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {features.map((feature, index) => (
+              <Card key={index} className="border-0 shadow-lg hover:shadow-xl transition-shadow">
+                <CardHeader>
+                  <div className="w-12 h-12 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mb-4">
+                    <feature.icon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
                   </div>
+                  <CardTitle className="text-xl">{feature.title}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CardDescription className="text-base">{feature.description}</CardDescription>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* How It Works Section */}
+      <section id="how-it-works" className="py-20">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <Badge className="mb-4">How It Works</Badge>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              Your Path to CLB Success
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Follow our proven 5-step method to achieve your target CLB score efficiently.
+            </p>
+          </div>
+
+          <div className="max-w-4xl mx-auto">
+            {howItWorks.map((item, index) => (
+              <div key={index} className="flex gap-6 mb-8 last:mb-0">
+                {/* Step Number & Line */}
+                <div className="flex flex-col items-center">
+                  <div className="w-12 h-12 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-lg">
+                    {item.step}
+                  </div>
+                  {index < howItWorks.length - 1 && (
+                    <div className="w-0.5 h-full bg-blue-200 dark:bg-blue-800 mt-2" />
+                  )}
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => removeFromWeak(topic.id)}
-                  >
-                    Mark Mastered
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={() => {
-                      setSelectedTopic(topic)
-                      setShowQuiz(true)
-                    }}
-                  >
-                    Practice
-                  </Button>
-                </div>
+
+                {/* Content */}
+                <Card className="flex-1 border-0 shadow-md">
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                        <item.icon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <CardTitle className="text-lg">{item.title}</CardTitle>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground">{item.description}</p>
+                  </CardContent>
+                </Card>
               </div>
             ))}
           </div>
-          <p className="text-xs text-muted-foreground mt-3">
-            💡 Topics are added here when you score below 70% on quizzes. Practice them anytime to improve!
-          </p>
-        </CardContent>
-      )}
-    </Card>
-  )
-}
 
-// Dashboard Component
-function Dashboard({ user, token, onLogout, onReset }) {
-  const [dailyLog, setDailyLog] = useState(null)
-  const [progress, setProgress] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [activeTimer, setActiveTimer] = useState(null)
-  const { theme, setTheme } = useTheme()
-  
-  const pathwayData = getPathway(user.pathway)
-  const currentMonthData = getCurrentMonthData(user.pathway, user.currentDay)
-  const dailyActivities = getDailyActivities(user.pathway, user.currentDay)
-  const dailyResources = getDailyResources(user.currentDay, user.pathway)
-  const levelProgress = getProgressDescription(user.currentDay, user.pathway)
-  
-  useEffect(() => {
-    fetchData()
-  }, [])
-  
-  const fetchData = async () => {
-    try {
-      const [logRes, progressRes] = await Promise.all([
-        fetch('/api/daily-log/today', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        }),
-        fetch('/api/progress', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        })
-      ])
-      
-      const logData = await logRes.json()
-      const progressData = await progressRes.json()
-      
-      if (logRes.ok) setDailyLog(logData.dailyLog)
-      if (progressRes.ok) setProgress(progressData)
-    } catch (error) {
-      toast.error('Failed to load data')
-    } finally {
-      setLoading(false)
-    }
-  }
-  
-  const updateActivity = async (activityKey, updates) => {
-    if (!dailyLog) return
-    
-    const newActivities = {
-      ...dailyLog.activities,
-      [activityKey]: {
-        ...dailyLog.activities[activityKey],
-        ...updates
-      }
-    }
-    
-    setDailyLog({ ...dailyLog, activities: newActivities })
-    
-    try {
-      await fetch('/api/daily-log', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ activities: newActivities })
-      })
-    } catch (error) {
-      toast.error('Failed to save progress')
-    }
-  }
-  
-  const completeDay = async () => {
-    try {
-      const res = await fetch('/api/daily-log/complete', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
-      })
-      
-      const data = await res.json()
-      
-      if (res.ok) {
-        toast.success('Day completed! Keep up the discipline.')
-        window.location.reload()
-      } else {
-        throw new Error(data.error)
-      }
-    } catch (error) {
-      toast.error(error.message)
-    }
-  }
-  
-  const allActivitiesCompleted = dailyLog && Object.values(dailyLog.activities).every(a => a.completed)
-  
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-pulse text-muted-foreground">Loading...</div>
-      </div>
-    )
-  }
-  
-  return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b sticky top-0 bg-background/95 backdrop-blur z-50">
-        <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-sm font-bold text-primary-foreground">🇫🇷</span>
-            </div>
-            <div>
-              <h1 className="font-semibold text-sm">CLB French Trainer</h1>
-              <p className="text-xs text-muted-foreground">{pathwayData.name} • Day {user.currentDay}</p>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <Link href="/tests">
-              <Button variant="outline" size="sm" className="gap-2">
-                <ClipboardList className="h-4 w-4" />
-                <span className="hidden sm:inline">Practice Tests</span>
-              </Button>
-            </Link>
-            
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            >
-              <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-              <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-            </Button>
-            
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="ghost" size="icon">
-                  <RotateCcw className="h-4 w-4" />
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Reset Pathway?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will delete ALL your progress and daily logs. You'll need to select a new pathway. This action cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={onReset} className="bg-destructive text-destructive-foreground">
-                    Reset Everything
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-            
-            <Button variant="ghost" size="icon" onClick={onLogout}>
-              <LogOut className="h-4 w-4" />
+          {/* CTA after How It Works */}
+          <div className="text-center mt-12">
+            <Button size="lg" onClick={handleGetStarted} className="bg-blue-600 hover:bg-blue-700">
+              Start Your Journey Today
+              <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
           </div>
         </div>
-      </header>
-      
-      <main className="max-w-5xl mx-auto px-4 py-6 space-y-6">
-        {/* Progress Overview */}
-        <div className="grid gap-4 md:grid-cols-4">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 rounded-full bg-orange-500/10">
-                  <Flame className="h-6 w-6 text-orange-500" />
+      </section>
+
+      {/* Testimonials Section */}
+      <section id="testimonials" className="py-20 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <Badge className="mb-4">Testimonials</Badge>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              Success Stories from Real Learners
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Join thousands who have achieved their CLB goals with our platform.
+            </p>
+          </div>
+
+          {/* Testimonials Carousel */}
+          <div className="max-w-4xl mx-auto">
+            <Card className="border-0 shadow-xl">
+              <CardContent className="p-8 md:p-12">
+                {/* Stars */}
+                <div className="flex gap-1 mb-6">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className="h-6 w-6 fill-yellow-400 text-yellow-400" />
+                  ))}
                 </div>
-                <div>
-                  <p className="text-2xl font-bold">{progress?.streak || 0}</p>
-                  <p className="text-sm text-muted-foreground">Day Streak</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 rounded-full bg-green-500/10">
-                  <Trophy className="h-6 w-6 text-green-500" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{progress?.totalDaysCompleted || 0}</p>
-                  <p className="text-sm text-muted-foreground">Days Done</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 rounded-full bg-blue-500/10">
-                  <Clock className="h-6 w-6 text-blue-500" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">
-                    {Math.floor((progress?.totalTimeSpent || 0) / 60)}h
-                  </p>
-                  <p className="text-sm text-muted-foreground">Total Time</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 rounded-full bg-purple-500/10">
-                  <Target className="h-6 w-6 text-purple-500" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{progress?.progressPercent || 0}%</p>
-                  <p className="text-sm text-muted-foreground">Complete</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-        
-        {/* Overall Progress Bar */}
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium">Pathway Progress</span>
-              <span className="text-sm text-muted-foreground">
-                Day {user.currentDay} of {pathwayData.totalDays}
-              </span>
-            </div>
-            <Progress value={progress?.progressPercent || 0} className="h-2" />
-            <div className="flex items-center justify-between mt-2">
-              <span className="text-xs text-muted-foreground">Week {getWeekNumber(user.currentDay)}</span>
-              <span className="text-xs text-muted-foreground">
-                {currentMonthData.name}
-              </span>
-            </div>
-          </CardContent>
-        </Card>
-        
-        {/* Current Phase Info */}
-        <Card className="border-primary/30 bg-primary/5">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-lg">Month {currentMonthData.month}: {currentMonthData.name}</CardTitle>
-                <CardDescription className="mt-1">{currentMonthData.goal}</CardDescription>
-              </div>
-              <div className="flex items-center gap-2">
-                <Badge className={`${levelColors[dailyResources.level]} border`}>
-                  Level {dailyResources.level}
-                </Badge>
-                <Badge variant="outline" className="border-primary text-primary">
-                  Week {getWeekNumber(user.currentDay)}
-                </Badge>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <TrendingUp className="h-4 w-4" />
-              <span>{levelProgress.description}</span>
-              <span className="ml-auto">Target: {levelProgress.targetLevel}</span>
-            </div>
-          </CardContent>
-        </Card>
-        
-        {/* Daily Grammar Section */}
-        <div>
-          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            <Brain className="h-5 w-5 text-blue-500" />
-            Daily Grammar Lesson
-          </h2>
-          <DailyGrammarSection token={token} onGrammarComplete={fetchData} />
-        </div>
-        
-        {/* Weak Topics Review */}
-        <WeakTopicsSection token={token} />
-        
-        {/* Daily Activities */}
-        <div>
-          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            Today's Non-Negotiable Routine
-          </h2>
-          
-          <div className="space-y-4">
-            {Object.entries(dailyActivities).map(([key, activity]) => {
-              const Icon = activityIcons[key]
-              const logActivity = dailyLog?.activities?.[key] || { completed: false, timeSpent: 0, notes: '' }
-              const isTimerActive = activeTimer === key
-              const resource = dailyResources[key]
-              
-              return (
-                <Card key={key} className={`transition-all ${logActivity.completed ? 'bg-green-500/5 border-green-500/30' : ''}`}>
-                  <CardContent className="pt-6">
-                    <div className="flex flex-col md:flex-row md:items-start gap-4">
-                      {/* Activity Header */}
-                      <div className="flex items-start gap-4 flex-1">
-                        <div className={`p-3 rounded-lg border ${activityColors[key]}`}>
-                          <Icon className="h-5 w-5" />
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1 flex-wrap">
-                            <h3 className="font-semibold capitalize">{key}</h3>
-                            <Badge variant="secondary" className="text-xs">
-                              {activity.duration} min
-                            </Badge>
-                            <Badge className={`${levelColors[resource?.level || 'A1']} border text-xs`}>
-                              {resource?.level || 'A1'}
-                            </Badge>
-                            {logActivity.completed && (
-                              <Badge className="bg-green-500 text-white text-xs">
-                                <Check className="h-3 w-3 mr-1" /> Done
-                              </Badge>
-                            )}
-                          </div>
-                          <p className="text-sm text-muted-foreground mb-2">{activity.focus || activity.instructions}</p>
-                          
-                          {/* Book Chapters for Grammar */}
-                          {key === 'grammar' && activity.bookChapters && (
-                            <div className="bg-muted/50 rounded-lg p-3 mt-2">
-                              <p className="text-xs font-medium text-muted-foreground mb-1">📖 Practice Makes Perfect Reference:</p>
-                              <ul className="text-sm space-y-1">
-                                {activity.bookChapters.map((chapter, i) => (
-                                  <li key={i} className="text-muted-foreground">• {chapter}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-                          
-                          {/* Daily Resource - Listening */}
-                          {key === 'listening' && resource && (
-                            <div className="bg-purple-500/5 border border-purple-500/20 rounded-lg p-3 mt-2">
-                              <p className="text-xs font-medium text-purple-600 dark:text-purple-400 mb-2">🎧 Today's Listening Exercise:</p>
-                              <div className="space-y-2">
-                                <div className="flex items-start justify-between gap-2">
-                                  <div>
-                                    <p className="font-medium text-sm">{resource.title}</p>
-                                    <p className="text-xs text-muted-foreground">{resource.description}</p>
-                                  </div>
-                                  <a 
-                                    href={resource.url} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
-                                    className="flex items-center gap-1 text-xs bg-purple-500 text-white px-3 py-1.5 rounded-md hover:bg-purple-600 transition-colors whitespace-nowrap"
-                                  >
-                                    Open <ExternalLink className="h-3 w-3" />
-                                  </a>
-                                </div>
-                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                  <Badge variant="outline" className="text-xs">{resource.type}</Badge>
-                                  {resource.duration && <span>⏱️ {resource.duration}</span>}
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                          
-                          {/* Daily Resource - Reading */}
-                          {key === 'reading' && resource && (
-                            <div className="bg-orange-500/5 border border-orange-500/20 rounded-lg p-3 mt-2">
-                              <p className="text-xs font-medium text-orange-600 dark:text-orange-400 mb-2">📚 Today's Reading Material:</p>
-                              <div className="space-y-2">
-                                <div className="flex items-start justify-between gap-2">
-                                  <div>
-                                    <p className="font-medium text-sm">{resource.title}</p>
-                                    <p className="text-xs text-muted-foreground">{resource.description}</p>
-                                  </div>
-                                  <a 
-                                    href={resource.url} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
-                                    className="flex items-center gap-1 text-xs bg-orange-500 text-white px-3 py-1.5 rounded-md hover:bg-orange-600 transition-colors whitespace-nowrap"
-                                  >
-                                    Open <ExternalLink className="h-3 w-3" />
-                                  </a>
-                                </div>
-                                <Badge variant="outline" className="text-xs">{resource.type}</Badge>
-                              </div>
-                            </div>
-                          )}
-                          
-                          {/* Daily Resource - Writing */}
-                          {key === 'writing' && resource && (
-                            <div className="bg-pink-500/5 border border-pink-500/20 rounded-lg p-3 mt-2">
-                              <p className="text-xs font-medium text-pink-600 dark:text-pink-400 mb-2">✍️ Today's Writing Exercise:</p>
-                              <div className="space-y-2">
-                                <p className="font-medium text-sm">{resource.title}</p>
-                                <p className="text-sm text-muted-foreground">{resource.prompt}</p>
-                                {resource.example && (
-                                  <div className="bg-muted/50 rounded p-2 mt-1">
-                                    <p className="text-xs text-muted-foreground">💡 Example start: <em>{resource.example}</em></p>
-                                  </div>
-                                )}
-                                <Badge variant="outline" className="text-xs">📝 {resource.wordCount}</Badge>
-                              </div>
-                            </div>
-                          )}
-                          
-                          {/* Daily Resource - Speaking */}
-                          {key === 'speaking' && resource && (
-                            <div className="bg-green-500/5 border border-green-500/20 rounded-lg p-3 mt-2">
-                              <p className="text-xs font-medium text-green-600 dark:text-green-400 mb-2">🎤 Today's Speaking Exercise:</p>
-                              <div className="space-y-2">
-                                <p className="font-medium text-sm">{resource.title}</p>
-                                <p className="text-sm text-muted-foreground">{resource.prompt}</p>
-                                {resource.tips && (
-                                  <div className="bg-muted/50 rounded p-2 mt-1">
-                                    <p className="text-xs text-muted-foreground">💡 Tips: {resource.tips}</p>
-                                  </div>
-                                )}
-                                <Badge variant="outline" className="text-xs">⏱️ {resource.duration}</Badge>
-                              </div>
-                            </div>
-                          )}
-                          
-                          {/* Topics/Activities */}
-                          {(activity.topics || activity.activities) && (
-                            <div className="flex flex-wrap gap-1 mt-2">
-                              {(activity.topics || activity.activities || []).slice(0, 4).map((item, i) => (
-                                <Badge key={i} variant="outline" className="text-xs font-normal">
-                                  {item}
-                                </Badge>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      
-                      {/* Controls */}
-                      <div className="flex items-center gap-4 md:flex-col md:items-end">
-                        <ActivityTimer
-                          activity={key}
-                          timeSpent={logActivity.timeSpent}
-                          onTimeUpdate={(time) => updateActivity(key, { timeSpent: time })}
-                          isActive={isTimerActive}
-                          onToggle={() => setActiveTimer(isTimerActive ? null : key)}
-                        />
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-muted-foreground">Complete</span>
-                          <Switch
-                            checked={logActivity.completed}
-                            onCheckedChange={(checked) => updateActivity(key, { completed: checked })}
-                          />
-                        </div>
-                      </div>
+
+                {/* Quote */}
+                <blockquote className="text-xl md:text-2xl mb-8 text-foreground leading-relaxed">
+                  "{testimonials[currentTestimonial].text}"
+                </blockquote>
+
+                {/* Author */}
+                <div className="flex items-center justify-between flex-wrap gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-red-500 flex items-center justify-center text-white font-bold text-lg">
+                      {testimonials[currentTestimonial].avatar}
                     </div>
-                  </CardContent>
-                </Card>
-              )
-            })}
+                    <div>
+                      <p className="font-semibold text-lg">{testimonials[currentTestimonial].name}</p>
+                      <p className="text-muted-foreground">{testimonials[currentTestimonial].role}</p>
+                      <p className="text-sm text-muted-foreground">{testimonials[currentTestimonial].location}</p>
+                    </div>
+                  </div>
+                  <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 text-sm px-4 py-2">
+                    {testimonials[currentTestimonial].improvement}
+                  </Badge>
+                </div>
+
+                {/* Dots Navigation */}
+                <div className="flex justify-center gap-2 mt-8">
+                  {testimonials.map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setCurrentTestimonial(index)}
+                      className={`w-3 h-3 rounded-full transition-all ${
+                        index === currentTestimonial 
+                          ? 'bg-blue-600 w-8' 
+                          : 'bg-gray-300 dark:bg-gray-600 hover:bg-gray-400'
+                      }`}
+                    />
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
-        
-        {/* Complete Day Button */}
-        <Card className={allActivitiesCompleted ? 'border-green-500 bg-green-500/5' : 'border-dashed'}>
-          <CardContent className="pt-6">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-              <div className="text-center md:text-left">
-                <h3 className="font-semibold">
-                  {allActivitiesCompleted ? '🎉 All activities completed!' : 'Complete all activities to finish the day'}
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  {allActivitiesCompleted 
-                    ? 'Click the button to advance to the next day'
-                    : `${Object.values(dailyLog?.activities || {}).filter(a => a.completed).length}/5 activities done`
-                  }
-                </p>
-              </div>
-              <Button
-                size="lg"
-                onClick={completeDay}
-                disabled={!allActivitiesCompleted}
-                className={allActivitiesCompleted ? 'bg-green-500 hover:bg-green-600' : ''}
-              >
-                {allActivitiesCompleted ? (
-                  <><Check className="mr-2 h-5 w-5" /> Complete Day {user.currentDay}</>
-                ) : (
-                  <><Lock className="mr-2 h-5 w-5" /> Locked</>
-                )}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-        
-        {/* Discipline Reminder */}
-        <Card className="bg-muted/30">
-          <CardContent className="pt-6">
-            <blockquote className="text-center italic text-muted-foreground">
-              "{currentMonthData.activities?.grammar?.instructions || 'Discipline beats talent. Show up every day.'}"
-            </blockquote>
-          </CardContent>
-        </Card>
-      </main>
-    </div>
-  )
-}
+      </section>
 
-// Main App Component
-export default function App() {
-  const [user, setUser] = useState(null)
-  const [token, setToken] = useState(null)
-  const [loading, setLoading] = useState(true)
-  
-  useEffect(() => {
-    const savedToken = Cookies.get('token')
-    if (savedToken) {
-      fetchUser(savedToken)
-    } else {
-      setLoading(false)
-    }
-  }, [])
-  
-  const fetchUser = async (authToken) => {
-    try {
-      const res = await fetch('/api/auth/me', {
-        headers: { 'Authorization': `Bearer ${authToken}` }
-      })
-      
-      if (res.ok) {
-        const data = await res.json()
-        setUser(data.user)
-        setToken(authToken)
-      } else {
-        Cookies.remove('token')
-      }
-    } catch (error) {
-      Cookies.remove('token')
-    } finally {
-      setLoading(false)
-    }
-  }
-  
-  const handleAuth = (userData, authToken) => {
-    setUser(userData)
-    setToken(authToken)
-  }
-  
-  const handleLogout = () => {
-    Cookies.remove('token')
-    setUser(null)
-    setToken(null)
-  }
-  
-  const handleReset = async () => {
-    try {
-      const res = await fetch('/api/pathway/reset', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
-      })
-      
-      if (res.ok) {
-        const data = await res.json()
-        setUser(data.user)
-        toast.success('Pathway reset. Select a new pathway to begin.')
-      }
-    } catch (error) {
-      toast.error('Failed to reset pathway')
-    }
-  }
-  
-  const handleOnboardingComplete = (userData) => {
-    setUser(userData)
-  }
-  
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-pulse text-muted-foreground">Loading...</div>
-      </div>
-    )
-  }
-  
-  // Not logged in
-  if (!user) {
-    return <AuthPage onAuth={handleAuth} />
-  }
-  
-  // Logged in but needs onboarding
-  if (!user.onboardingComplete) {
-    return (
-      <OnboardingPage 
-        user={user} 
-        token={token} 
-        onComplete={handleOnboardingComplete}
-      />
-    )
-  }
-  
-  // Full dashboard
-  return (
-    <Dashboard 
-      user={user} 
-      token={token} 
-      onLogout={handleLogout}
-      onReset={handleReset}
-    />
+      {/* Pricing Section */}
+      <section id="pricing" className="py-20">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <Badge className="mb-4">Pricing</Badge>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              Simple, Transparent Pricing
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Choose the plan that fits your CLB preparation needs. Start free, upgrade anytime.
+            </p>
+            <p className="text-sm text-muted-foreground mt-2">
+              🎉 No credit card required to start!
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            {pricingPlans.map((plan, index) => (
+              <Card 
+                key={index} 
+                className={`relative ${plan.popular ? 'border-2 border-blue-500 shadow-xl scale-105' : 'border shadow-lg'}`}
+              >
+                {plan.popular && (
+                  <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+                    <Badge className="bg-blue-600 text-white px-4 py-1">Most Popular</Badge>
+                  </div>
+                )}
+                <CardHeader className="text-center pb-2">
+                  <CardTitle className="text-2xl">{plan.name}</CardTitle>
+                  <CardDescription>{plan.description}</CardDescription>
+                </CardHeader>
+                <CardContent className="text-center">
+                  {/* Price */}
+                  <div className="mb-6">
+                    <span className="text-5xl font-bold">{plan.price}</span>
+                    <span className="text-muted-foreground">{plan.period}</span>
+                    {plan.yearlyPrice && (
+                      <div className="mt-2">
+                        <p className="text-sm text-muted-foreground">{plan.yearlyPrice}</p>
+                        <Badge variant="secondary" className="mt-1">{plan.yearlySavings}</Badge>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* CTA Button */}
+                  <Button 
+                    className={`w-full mb-6 ${plan.popular ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
+                    variant={plan.popular ? 'default' : 'outline'}
+                    onClick={() => handlePricingClick(plan)}
+                  >
+                    {plan.cta}
+                    <ChevronRight className="ml-2 h-4 w-4" />
+                  </Button>
+
+                  {/* Features */}
+                  <div className="text-left space-y-3">
+                    {plan.features.map((feature, i) => (
+                      <div key={i} className="flex items-start gap-2">
+                        <CheckCircle2 className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                        <span className="text-sm">{feature}</span>
+                      </div>
+                    ))}
+                    {plan.notIncluded.map((feature, i) => (
+                      <div key={i} className="flex items-start gap-2 opacity-50">
+                        <X className="h-5 w-5 text-gray-400 flex-shrink-0 mt-0.5" />
+                        <span className="text-sm line-through">{feature}</span>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Pricing Comparison Note */}
+          <div className="text-center mt-12">
+            <p className="text-muted-foreground">
+              All plans include access to our mobile-friendly platform. Cancel anytime.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Final CTA Section */}
+      <section className="py-20 bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 text-white">
+        <div className="container mx-auto px-4 text-center">
+          <h2 className="text-3xl md:text-4xl font-bold mb-6">
+            Ready to Achieve Your CLB Goals?
+          </h2>
+          <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
+            Join thousands of successful learners. Start your disciplined French training today.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button size="lg" onClick={handleGetStarted} className="bg-white text-blue-700 hover:bg-blue-50 text-lg px-8 py-6">
+              Start Free Today
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+          </div>
+          <div className="flex flex-wrap justify-center gap-6 mt-8 text-blue-200 text-sm">
+            <span>✓ No credit card required</span>
+            <span>✓ Instant access</span>
+            <span>✓ Cancel anytime</span>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="bg-gray-900 text-gray-300 py-16">
+        <div className="container mx-auto px-4">
+          <div className="grid md:grid-cols-4 gap-12">
+            {/* Brand */}
+            <div className="md:col-span-2">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 via-white to-red-500">
+                  <span className="text-lg font-bold text-blue-900">🇫🇷</span>
+                </div>
+                <span className="text-xl font-bold text-white">CLB French Trainer</span>
+              </div>
+              <p className="text-gray-400 mb-6 max-w-md">
+                The disciplined, grammar-heavy French training platform designed specifically for Canadian Language Benchmark (CLB) success.
+              </p>
+              <div className="flex gap-4">
+                <Button variant="outline" size="sm" onClick={handleLogin} className="border-gray-600 text-gray-300 hover:bg-gray-800">
+                  Log In
+                </Button>
+                <Button size="sm" onClick={handleGetStarted} className="bg-blue-600 hover:bg-blue-700">
+                  Sign Up Free
+                </Button>
+              </div>
+            </div>
+
+            {/* Quick Links */}
+            <div>
+              <h4 className="font-semibold text-white mb-4">Quick Links</h4>
+              <ul className="space-y-2">
+                <li><a href="#features" className="hover:text-white transition-colors">Features</a></li>
+                <li><a href="#how-it-works" className="hover:text-white transition-colors">How It Works</a></li>
+                <li><a href="#testimonials" className="hover:text-white transition-colors">Testimonials</a></li>
+                <li><a href="#pricing" className="hover:text-white transition-colors">Pricing</a></li>
+              </ul>
+            </div>
+
+            {/* Resources */}
+            <div>
+              <h4 className="font-semibold text-white mb-4">Resources</h4>
+              <ul className="space-y-2">
+                <li><a href="#" className="hover:text-white transition-colors">CLB Guide</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">TEF Preparation Tips</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Grammar Reference</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">FAQ</a></li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Bottom Footer */}
+          <div className="border-t border-gray-800 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+            <p className="text-gray-500 text-sm">
+              © 2025 CLB French Trainer. All rights reserved.
+            </p>
+            <div className="flex gap-6 text-sm">
+              <a href="#" className="text-gray-500 hover:text-gray-300 transition-colors">Privacy Policy</a>
+              <a href="#" className="text-gray-500 hover:text-gray-300 transition-colors">Terms of Service</a>
+              <a href="#" className="text-gray-500 hover:text-gray-300 transition-colors">Contact</a>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
   )
 }
