@@ -59,6 +59,167 @@ const levelColors = {
   'B2': 'bg-orange-500/10 text-orange-600 border-orange-500/30'
 }
 
+// Subscription Banner Component
+function SubscriptionBanner({ user, onUpgrade }) {
+  const tier = user?.subscriptionTier || 'free'
+  const tierLimits = user?.tierLimits || { maxDays: 7 }
+  const currentDay = user?.currentDay || 0
+  const daysRemaining = Math.max(0, tierLimits.maxDays - currentDay)
+  const isLimitReached = currentDay >= tierLimits.maxDays
+  
+  if (tier === 'admin' || tier === 'premium') {
+    return null // Don't show banner for premium/admin
+  }
+  
+  return (
+    <Card className={`mb-6 border-2 ${isLimitReached ? 'border-red-500/50 bg-red-500/5' : 'border-yellow-500/50 bg-yellow-500/5'}`}>
+      <CardContent className="pt-4">
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <div className="flex items-center gap-3">
+            {isLimitReached ? (
+              <Lock className="h-6 w-6 text-red-500" />
+            ) : (
+              <AlertTriangle className="h-6 w-6 text-yellow-500" />
+            )}
+            <div>
+              <p className="font-semibold">
+                {isLimitReached 
+                  ? `You've reached the ${tierLimits.maxDays}-day limit for the ${tier} plan`
+                  : `${tier.charAt(0).toUpperCase() + tier.slice(1)} Plan: ${daysRemaining} days remaining`
+                }
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {tier === 'free' 
+                  ? 'Upgrade to Basic for full CLB 5 pathway, or Premium for both pathways + all 80 mock exams'
+                  : 'Upgrade to Premium for CLB 7 pathway + all 80 mock exams'
+                }
+              </p>
+            </div>
+          </div>
+          <Button onClick={onUpgrade} className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600">
+            <Crown className="mr-2 h-4 w-4" />
+            Upgrade Now
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+// Upgrade Modal Component
+function UpgradeModal({ isOpen, onClose, token, onUpgradeSuccess }) {
+  const [upgrading, setUpgrading] = useState(false)
+  const [selectedTier, setSelectedTier] = useState(null)
+  
+  const handleUpgrade = async (tier) => {
+    setUpgrading(true)
+    setSelectedTier(tier)
+    
+    try {
+      const res = await fetch('/api/subscription/upgrade', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ tier })
+      })
+      
+      const data = await res.json()
+      
+      if (res.ok) {
+        toast.success(`Successfully upgraded to ${tier} plan!`)
+        onUpgradeSuccess(data.user)
+        onClose()
+      } else {
+        throw new Error(data.error)
+      }
+    } catch (error) {
+      toast.error(error.message)
+    } finally {
+      setUpgrading(false)
+      setSelectedTier(null)
+    }
+  }
+  
+  if (!isOpen) return null
+  
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <Card className="w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Crown className="h-6 w-6 text-yellow-500" />
+            Upgrade Your Plan
+          </CardTitle>
+          <CardDescription>
+            Unlock more content and accelerate your French learning journey
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Basic Plan */}
+          <div className="p-4 border rounded-lg hover:border-blue-500 transition-colors">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h3 className="font-bold text-lg">Basic Plan</h3>
+                <p className="text-2xl font-bold">$19<span className="text-sm font-normal text-muted-foreground">/month</span></p>
+              </div>
+              <Badge className="bg-blue-100 text-blue-700">Popular</Badge>
+            </div>
+            <ul className="space-y-2 mb-4 text-sm">
+              <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-green-500" />Full CLB 5 pathway (112 days)</li>
+              <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-green-500" />All grammar lessons</li>
+              <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-green-500" />10 mock exams per skill (40 total)</li>
+              <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-green-500" />Weak topic tracking</li>
+            </ul>
+            <Button 
+              className="w-full" 
+              variant="outline"
+              onClick={() => handleUpgrade('basic')}
+              disabled={upgrading}
+            >
+              {upgrading && selectedTier === 'basic' ? 'Processing...' : 'Upgrade to Basic'}
+            </Button>
+          </div>
+          
+          {/* Premium Plan */}
+          <div className="p-4 border-2 border-purple-500 rounded-lg bg-purple-500/5">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h3 className="font-bold text-lg">Premium Plan</h3>
+                <p className="text-2xl font-bold">$39<span className="text-sm font-normal text-muted-foreground">/month</span></p>
+              </div>
+              <Badge className="bg-purple-100 text-purple-700">Best Value</Badge>
+            </div>
+            <ul className="space-y-2 mb-4 text-sm">
+              <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-green-500" />Both CLB 5 & CLB 7 pathways</li>
+              <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-green-500" />All grammar lessons + bonus content</li>
+              <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-green-500" />All 80 mock exams (20 per skill)</li>
+              <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-green-500" />Priority support</li>
+              <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-green-500" />Certificate of completion</li>
+            </ul>
+            <Button 
+              className="w-full bg-purple-600 hover:bg-purple-700" 
+              onClick={() => handleUpgrade('premium')}
+              disabled={upgrading}
+            >
+              {upgrading && selectedTier === 'premium' ? 'Processing...' : 'Upgrade to Premium'}
+            </Button>
+          </div>
+          
+          <p className="text-xs text-center text-muted-foreground">
+            🔒 This is a demo. In production, this would process payment via Stripe.
+          </p>
+          
+          <Button variant="ghost" className="w-full" onClick={onClose}>
+            Maybe Later
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
 // Auth Component
 function AuthPage({ onAuth }) {
   const [isLogin, setIsLogin] = useState(true)
