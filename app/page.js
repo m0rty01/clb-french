@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { 
-  BookOpen, Target, Clock, Users, CheckCircle2, Star, 
+  BookOpen, Target, Clock, Users, CheckCircle2, 
   ArrowRight, Play, ChevronRight, Menu, X, Zap, 
   Brain, Headphones, Mic, FileText, PenTool, Award,
   Calendar, TrendingUp, Shield, Globe, Sparkles, Mail, Gift
