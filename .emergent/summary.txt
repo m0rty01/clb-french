@@ -1,80 +1,75 @@
 <analysis>
-
-**original_problem_statement**: The user wants to build a production-quality MVP web app called “CLB French Trainer”. This app is a disciplined, grammar-heavy training tool for users preparing for the Canadian Language Benchmark (CLB) French test.
-
-**PRODUCT REQUIREMENTS**:
--   **Learning Pathways**: Strict CLB 5 (4-month) and CLB 7 (8–12 month) plans.
--   **Daily Routine**: Enforce a strict daily routine of grammar, reading, listening, and writing, anchored to the Practice Makes Perfect: Complete French Grammar book (by reference, not by copying content).
--   **Testing Platform**: A separate platform for 20 full, original mock TEF exams simulating the real test environment.
--   **NEW - Grammar Learning System**: A day-by-day incremental grammar system.
-    -   Suggests a specific grammar topic daily based on the user's pathway.
-    -   Provides brief, in-app explanations for each topic, referencing the textbook chapter.
-    -   Presents a multiple-choice quiz (7-8 questions) for the daily topic.
-    -   Tracks the user's weak grammar topics based on quiz performance.
-    -   Allows the user to choose when to review these weak topics.
+**original_problem_statement**: The user initially requested an MVP web app, CLB French Trainer, for French language test preparation. Throughout the session, the user expanded the scope to include:
+1.  A comprehensive Grammar Learning System with daily lessons and quizzes.
+2.  A French flag favicon for the website.
+3.  A bug fix for the daily activity completion state not resetting.
+4.  A new marketing homepage modeled after , with sections for features, how-it-works, testimonials, and pricing.
+5.  Mocked Stripe integration for the pricing plans.
+6.  Mocked Google Login functionality.
+7.  Placeholder Google Analytics integration.
+8.  Four new resource/blog pages (NCLC Guide, TEF Prep, Grammar Reference, FAQ) linked from the homepage footer.
+9.  A full subscription-based tiered access system (Free, Basic, Premium) to limit content, with a designated admin user.
+10. Implementation of real payment processing using Stripe with user-provided test keys.
 
 **User's preferred language**: English
 
 **what currently exists?**
-A full-stack Next.js application with MongoDB.
--   User authentication (registration/login).
--   Onboarding to select a CLB pathway (5 or 7).
--   A main dashboard showing a daily routine.
--   A fully functional TEF-style testing platform under  populated with 20 original, complete mock exams for each of the four skills (Listening, Reading, Writing, Speaking). The UI for selecting and taking these exams is complete and verified.
--   A new data file  has been created, which contains the structured data for the new grammar learning feature.
+A full-stack Next.js application with a MongoDB database. Key features include:
+-   A new marketing homepage at the root URL () with multiple sections (Features, How It Works, Pricing, etc.) and a footer linking to new resource pages.
+-   Four detailed resource pages under .
+-   The main application is now at , which requires authentication.
+-   User authentication (register, login) with both email/password and a mocked Login with Google option.
+-   A tiered subscription system (Free, Basic, Premium, Admin) that controls access to content like the CLB 7 pathway and the number of mock TEF exams. The admin user () has full access.
+-   A complete Grammar Learning System integrated into the user dashboard.
+-   A bug fix ensuring daily activities reset when a user progresses to a new day.
+-   Backend setup for real Stripe payments is in progress, with API keys added to  and API endpoints for creating checkout sessions and handling webhooks created.
 
 **Last working item**:
--   Last item agent was working: The agent started implementing the new Grammar Learning System feature. It created the curriculum data file () and was about to add the necessary API endpoints to the main backend handler ().
+-   Last item agent was working: Implementing the real Stripe payment flow. The agent has set up the backend endpoints (, ) and was in the process of modifying the frontend  component within  to call the checkout endpoint and redirect the user to Stripe.
 -   Status: IN PROGRESS
 -   Agent Testing Done: N
--   Which testing method agent to use? backend testing agent. Once the API endpoints are created, they should be tested to ensure they can fetch grammar topics and process quiz results correctly.
+-   Which testing method agent to use? Manual testing by user. The flow involves redirection to an external site (Stripe), which is best tested manually. The agent should first complete the code, then register a new 'free' user, click the Upgrade button, and verify redirection to the Stripe checkout page. After a test payment, verify the user is redirected back and their tier is updated.
 -   User Testing Done: N
 
 **All Pending/In progress Issue list**:
-There are no outstanding bugs. The work is focused on new feature development.
+-   Issue 1: Complete Real Stripe Integration (P0)
+
+  Issues Detail:
+  - Issue 1:
+     - Attempted fixes: The backend API endpoints and Stripe key setup have been completed. The frontend modification is partially done.
+     - Next debug checklist:
+        1.  **Modify  in **: Update the  function to make a  request to .
+        2.  **Handle Redirect**: On a successful response, use the  from the API and the  library to redirect the user to the Stripe Checkout page.
+        3.  **Implement Success/Cancel Handling**: Create new pages (e.g., , ) or add logic to the main dashboard to handle the user's return from Stripe. This should involve showing a success/error message and refetching the user's data to update their subscription tier in the UI.
+        4.  **Test Webhook**: The  endpoint needs to be tested. This typically requires a tool like  to expose the local server to the internet so Stripe can send events, or it must be tested in a deployed environment.
+     - Why fix this issue and what will be achieved with the fix?: This will enable the application to accept real payments, making the subscription model fully functional.
+     - Status: IN PROGRESS
+     - Is recurring issue? N
+     - Should Test frontend/backend/both after fix?: Both. The frontend redirect flow and the backend webhook handler must be tested.
+     - Blocked on other issue: No.
 
 **In progress Task List**:
--   Task 1: Implement the Grammar Learning System (P0)
-    -   Where to resume: The next step is to add API endpoints to  to handle grammar-related requests.
-    -   What will be achieved with this?: This will complete the new user-requested feature for a structured, daily grammar training regimen with progress tracking.
-    -   Status: IN PROGRESS
-    -   Should Test frontend/backend/both after fix?: Both. The backend API needs to be tested first, followed by frontend UI verification.
-    -   Blocked on something: No.
+There are no other in-progress tasks. The Stripe integration is the only active one.
 
 **Upcoming and Future Tasks**
 -   **Upcoming Tasks**:
-    1.  **Backend for Grammar System (P0)**:
-        -   Modify the user DB schema to track grammar progress and weak topics.
-        -   In , create endpoints like  (to get the current day's lesson) and  (to record results and update weak topics).
-    2.  **Frontend for Grammar System (P1)**:
-        -   In , create a new component to display the daily grammar topic, its explanation, and the associated quiz.
-        -   Add a section to the user's dashboard to view and review their identified weak topics.
--   **Future Tasks**:
-    1.  **Test Score History (P2)**: Implement a feature to track and display user scores over time for the TEF mock exams.
-    2.  **Answer Review (P2)**: Add the ability for users to review their answers (and the correct ones) after completing a mock exam.
+    1.  **Implement Real Google Login (P0)**: The user requested to replace the mocked Google login. This requires obtaining Google OAuth 2.0 credentials (Client ID and Secret) from the user and integrating a library like  to handle the real authentication flow.
+    2.  **Implement Real Google Analytics (P1)**: The user requested to enable traffic tracking. This requires obtaining a Google Analytics Measurement ID from the user and replacing the  placeholder in the  file and .
 
 **Completed work in this session**
--   **TEF Mock Exam Platform (DONE)**:
-    -   Generated original content for 20 complete mock exams for Listening, Reading, Writing, and Speaking.
-    -   Structured the content into new, maintainable files: , , , , , and .
-    -   Updated  to aggregate and serve all the new exam content.
-    -   Updated the  UI to correctly load and display all 80 exams (20 per skill).
-    -   Verified functionality via screenshots, confirming that exams can be selected and questions are loaded correctly with the timer and navigation.
+-   **Grammar Learning System (DONE)**: Fully implemented backend APIs and frontend UI for daily grammar lessons and quizzes.
+-   **Daily Log Reset Bug (DONE)**: Fixed the issue where daily activity progress did not reset upon advancing to a new day.
+-   **New Homepage and App Restructure (DONE)**: Created a new marketing homepage and moved the core application to the  route.
+-   **Resource Pages (DONE)**: Created and populated four new blog-style resource pages () and linked them in the footer.
+-   **Subscription & Tiered Access (DONE)**: Implemented a full-featured, tier-based access control system (Free, Basic, Premium, Admin) on both the backend and frontend.
+-   **Mocked Google Login (DONE)**: Added a functional Continue with Google button and a mock backend endpoint.
+-   **Favicon (DONE)**: Created and configured a French flag favicon for the website.
 
 **Earlier issues found/mentioned but not fixed**
--   **Issue 1: Redundant/Obsolete Exam Files**
-    -   The agent created a new set of exam content files but did not delete the old, fragmented files ( through ). These files are no longer used and should be removed to avoid confusion.
-    -   **Debug checklist**: Run  and verify the app still works.
-    -   **Why fix this?**: To maintain a clean and understandable codebase.
-    -   **Is recurring issue?**: N
--   **Issue 2: Missing  File**
-    -   The agent attempted to view  but it did not exist. The agent ignored this error. The initial handover summary stated this file existed, indicating a discrepancy. The logic for CLB pathways might be hardcoded elsewhere or was in a file that has since been deleted.
-    -   **Debug checklist**: Investigate  and  to find where the CLB pathway data and logic are actually defined.
-    -   **Why fix this?**: To understand the true source of the pathway data before attempting to integrate the new grammar curriculum, which is dependent on the user's pathway.
-    -   **Is recurring issue?**: N
+-   None. The issues from the initial summary (obsolete files, missing ) were investigated and found to be non-existent or irrelevant in the current codebase.
 
 **Known issue recurrence from previous fork**
-N/A
+-   N/A
 
 **Code Architecture**
 
@@ -84,77 +79,81 @@ N/A
 -   **Backend**: Next.js API Routes
 -   **Database**: MongoDB
 -   **Authentication**: JSON Web Tokens (JWT)
+-   **Payments**: Stripe (Integration in progress)
 
 **key DB schema**
 -   **users**: 
-    -   **Proposed additions for grammar feature**: , 
--   **daily_logs**: 
 
 **changes in tech stack**
-None in this session.
+-   **Stripe**: Added for payment processing. (, )
 
 **All files of reference**
--   : The main API file to be modified for the grammar feature.
--   : The main dashboard UI file where the new grammar component will be added.
--   : The newly created data source for the grammar lessons.
--   : The updated file that aggregates all 20 mock exams for each skill.
--   : The completed TEF testing platform UI.
+-   : Heavily modified to add grammar APIs, subscription logic, and Stripe endpoints.
+-   : The new home of the main application. Contains logic for the dashboard, auth, onboarding, and the in-progress Stripe checkout modal.
+-   : The new marketing homepage.
+-   : Updated to restrict access to mock exams based on the user's subscription tier.
+-   : Updated with placeholder for Google Analytics and real **test** keys for Stripe.
+-   : The four new static content pages.
 
 **Areas that need refactoring**:
--   : Still a very large God Component. It urgently needs to be broken down into smaller components, especially before adding the new grammar UI.
--   : A monolithic API file that is becoming increasingly difficult to manage. It should be split into function-specific routes (e.g., , ).
--   : The old, unused  files should be deleted.
+-   : This file has become extremely large and complex. It should be broken down into smaller, feature-specific route files (e.g., , , ).
+-   : This is a massive client component that handles authentication, onboarding, the entire dashboard display, and now the subscription upgrade modal. It should be refactored into smaller, more focused components (e.g., , , , , etc.).
 
 **key api endpoints**
+-   , , 
 -   
--   
--   
--   
--   **Upcoming**: , 
+-   , 
+-   , , 
+-    (new, tier-aware)
+-   **Stripe Endpoints (New)**:
+    -   
+    -   
 
 **Critical Info for New Agent**
--   **New Grammar Feature Logic**: The user has specified the requirements: include brief in-app explanations, reference the textbook, use multiple-choice quizzes, and let the user decide when to review weak topics. Adhere to these choices.
--   **Codebase Discrepancy**: Be aware that the file  does not exist, contrary to earlier logs. You must identify where the pathway logic resides before integrating the grammar curriculum, as the daily grammar topic depends on the user's selected pathway.
+-   The immediate priority is to complete the Stripe integration. The backend is mostly ready, but the frontend in  needs to be finished to handle the redirect to Stripe and the subsequent success/cancellation.
+-   The app has been restructured: the marketing homepage is at , and the main user-facing application is now at .
+-   The user has provided **TEST** keys for Stripe, which are already in the  file.
+-   Google Login and Google Analytics are still using mock/placeholder values. The user wants to implement the real versions of these after Stripe is working.
+-   The user  is the designated admin and will get the 'admin' tier upon registration, granting full access. All other new users get the 'free' tier.
 
 **documents created in this job**
 -   
 -   
 -   
 -   
--   
--   
--   
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User (Msg 53):** Answered agent's clarifying questions for the grammar feature: wants in-app explanations, user-controlled review frequency, and multiple-choice quizzes. (Status: Acknowledged, implementation started).
-2.  **Agent (Msg 52):** Asked user for clarification on the new grammar feature.
-3.  **User (Msg 50):** Requested a new, comprehensive grammar learning system with daily topics, quizzes, and weak-point tracking. (Status: In Progress).
-4.  **Agent (Msg 49):** Confirmed the TEF platform was complete and functional, and proposed future enhancements like score history.
-5.  **Agent (Msg 48):** Verified with a screenshot that the reading exams work correctly.
-6.  **Agent (Msg 47):** Took a screenshot to test a reading exam.
-7.  **Agent (Msg 46):** Verified with a screenshot that the listening exams load and function correctly.
-8.  **Agent (Msg 45):** Took a screenshot to test clicking on a listening exam.
-9.  **Agent (Msg 44):** Confirmed via screenshot analysis that all 20 exams for all 4 skills were visible on the tests page.
-10. **Agent (Msg 43):** Took a screenshot to view the bottom half of the tests page.
+1.  **User**: Requested implementation of real Stripe, Google OAuth, and Google Analytics keys, one by one. (Status: In Progress, starting with Stripe).
+2.  **Agent**: Acknowledged the request and asked for Stripe keys.
+3.  **User**: Provided Stripe test keys. (Status: Acknowledged and implemented).
+4.  **Agent**: Confirmed receipt of keys and started Stripe implementation.
+5.  **User**: Requested to limit user access based on subscription tiers (Free, Basic, Premium) and set an admin email. (Status: Completed).
+6.  **Agent**: Acknowledged and began implementing the subscription system.
+7.  **User**: Requested the creation of 4 resource pages (NCLC Guide, TEF Prep, etc.) with detailed content and linked them from the homepage footer. (Status: Completed).
+8.  **Agent**: Acknowledged and began creating the resource pages.
+9.  **User**: Requested a new homepage, pricing plan, mocked Stripe, mocked Google Login, and GA placeholder. (Status: Completed).
+10. **Agent**: Acknowledged and began creating the homepage and related features.
 
 **Project Health Check:**
--   **Broken**: None.
--   **Mocked**: All TEF exam content is mock content by design.
+-   **Broken**: The payment upgrade flow is incomplete. Clicking Upgrade Now will not work until the frontend part of the Stripe integration is finished.
+-   **Mocked**: Google Login, Pricing/Checkout (partially, as real integration is in progress).
 
 **3rd Party Integrations**
-None.
+-   **Stripe (Payments)**: Requires User API Key (test keys have been provided). Integration is IN PROGRESS.
+-   **Google OAuth (Login)**: Mocked. Awaiting real user credentials for full implementation.
+-   **Google Analytics**: Placeholder. Awaiting a real Measurement ID from the user.
 
 **Testing status**
--   **Testing agent used after significant changes**: NO. Manual testing via  was performed by the agent to verify the TEF platform.
--   **Troubleshoot agent used after agent stuck in loop**: NO
--   **Test files created**: None.
--   **Known regressions**: None.
+-   Testing agent used after significant changes: YES (for the Grammar API).
+-   Troubleshoot agent used after agent stuck in loop: NO.
+-   Test files created: None.
+-   Known regressions: None.
 
 **Credentials to test flow:**
-No credentials are required. A new user can be registered to test the application flow.
+-   **Admin User**: Register with email . This user has full access to all features, including CLB 7 pathway and all 20 mock exams per skill.
+-   **Free User**: Register with any other email address. This user will have a 7-day access limit, can only select the CLB 5 pathway, and can only access a limited number of mock exams. They will see an Upgrade banner.
 
 **What agent forgot to execute**
--   The agent did not delete the old, fragmented, and now obsolete exam files ( to ) after creating the new, complete ones.
--   The agent encountered an error when trying to view  (file not found) but did not investigate or resolve the discrepancy.
+-   The agent did not finish the task it was working on. The frontend implementation for the Stripe checkout redirect in  is incomplete. The logic to handle the user returning after a successful or canceled payment is also missing.
 
 </analysis>
