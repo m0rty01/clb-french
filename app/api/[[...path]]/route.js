@@ -538,6 +538,20 @@ async function handleRoute(request, { params }) {
         ))
       }
       
+      // Check subscription tier limits
+      const tierLimits = getTierLimits(user)
+      if (user.currentDay >= tierLimits.maxDays) {
+        return handleCORS(NextResponse.json(
+          { 
+            error: `You've reached the limit of ${tierLimits.maxDays} days for your ${user.subscriptionTier || 'free'} subscription. Please upgrade to continue.`,
+            limitReached: true,
+            currentTier: user.subscriptionTier || 'free',
+            maxDays: tierLimits.maxDays
+          },
+          { status: 403 }
+        ))
+      }
+      
       // Find log by dayNumber instead of date
       const dailyLog = await db.collection('daily_logs').findOne({
         userId: decoded.userId,
@@ -565,6 +579,9 @@ async function handleRoute(request, { params }) {
       
       const updatedUser = await db.collection('users').findOne({ id: decoded.userId })
       const { password: _, ...userWithoutPassword } = updatedUser
+      
+      // Add tier info
+      userWithoutPassword.tierLimits = getTierLimits(updatedUser)
       
       return handleCORS(NextResponse.json({
         message: 'Day completed! Moving to next day.',
