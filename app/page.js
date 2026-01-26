@@ -483,7 +483,6 @@ export default function HomePage() {
               <nav className="flex flex-col gap-4">
                 <a href="#features" className="text-sm font-medium" onClick={() => setMobileMenuOpen(false)}>Features</a>
                 <a href="#how-it-works" className="text-sm font-medium" onClick={() => setMobileMenuOpen(false)}>How It Works</a>
-                <a href="#testimonials" className="text-sm font-medium" onClick={() => setMobileMenuOpen(false)}>Testimonials</a>
                 <a href="#pricing" className="text-sm font-medium" onClick={() => setMobileMenuOpen(false)}>Pricing</a>
                 <hr />
                 <Button variant="outline" onClick={handleLogin} className="w-full">Log In</Button>
