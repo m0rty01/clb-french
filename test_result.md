@@ -300,6 +300,30 @@ backend:
         agent: "testing"
         comment: "✅ TESTED: Grammar Remove Weak Topic API working correctly. Successfully removes topic from weak list and returns updated weak topics array."
 
+  - task: "Stripe Checkout Session API"
+    implemented: true
+    working: true
+    file: "app/api/[[...path]]/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "POST /api/stripe/create-checkout - Creates Stripe checkout session for subscription upgrade. Supports basic_monthly, basic_yearly, premium_monthly, premium_yearly price keys. Returns checkout URL for redirect."
+
+  - task: "Stripe Webhook API"
+    implemented: true
+    working: "NA"
+    file: "app/api/[[...path]]/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "POST /api/stripe/webhook - Handles Stripe webhook events (checkout.session.completed, customer.subscription.deleted). Updates user subscription tier. Note: Cannot be fully tested without exposing local server to internet via ngrok."
+
 frontend:
   - task: "Authentication UI"
     implemented: true
