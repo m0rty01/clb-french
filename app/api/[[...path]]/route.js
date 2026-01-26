@@ -1039,12 +1039,173 @@ async function handleRoute(request, { params }) {
         currentDay: user.currentDay,
         daysRemaining: Math.max(0, tierLimits.maxDays - user.currentDay),
         grammarLessonsThisWeek: user.grammarLessonsThisWeek || 0,
-        grammarLessonsLimit: tierLimits.grammarLessonsPerWeek
+        grammarLessonsLimit: tierLimits.grammarLessonsPerWeek,
+        stripeCustomerId: user.stripeCustomerId || null
       }))
     }
     
-    // MOCKED Upgrade subscription - POST /api/subscription/upgrade
-    // NOTE: In production, this would integrate with Stripe
+    // Create Stripe Checkout Session - POST /api/stripe/create-checkout
+    if (route === '/stripe/create-checkout' && method === 'POST') {
+      const decoded = verifyToken(request)
+      if (!decoded) {
+        return handleCORS(NextResponse.json(
+          { error: 'Unauthorized' },
+          { status: 401 }
+        ))
+      }
+      
+      const user = await db.collection('users').findOne({ id: decoded.userId })
+      if (!user) {
+        return handleCORS(NextResponse.json(
+          { error: 'User not found' },
+          { status: 404 }
+        ))
+      }
+      
+      const body = await request.json()
+      const { priceKey } = body // e.g., 'basic_monthly', 'premium_yearly'
+      
+      if (!priceKey || !STRIPE_PRICES[priceKey]) {
+        return handleCORS(NextResponse.json(
+          { error: 'Invalid price key' },
+          { status: 400 }
+        ))
+      }
+      
+      const priceConfig = STRIPE_PRICES[priceKey]
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
+      
+      try {
+        // Create or retrieve Stripe customer
+        let customerId = user.stripeCustomerId
+        
+        if (!customerId) {
+          const customer = await stripe.customers.create({
+            email: user.email,
+            name: user.name,
+            metadata: {
+              userId: user.id
+            }
+          })
+          customerId = customer.id
+          
+          // Save customer ID to user
+          await db.collection('users').updateOne(
+            { id: user.id },
+            { $set: { stripeCustomerId: customerId } }
+          )
+        }
+        
+        // Create checkout session
+        const session = await stripe.checkout.sessions.create({
+          customer: customerId,
+          payment_method_types: ['card'],
+          line_items: [
+            {
+              price_data: {
+                currency: 'usd',
+                product_data: {
+                  name: `CLB French Trainer - ${priceConfig.name}`,
+                  description: `${priceConfig.tier === 'basic' ? 'Full CLB 5 pathway access' : 'Full access to both CLB 5 & CLB 7 pathways'}`,
+                },
+                unit_amount: priceConfig.amount,
+                recurring: {
+                  interval: priceConfig.interval
+                }
+              },
+              quantity: 1,
+            },
+          ],
+          mode: 'subscription',
+          success_url: `${baseUrl}/dashboard?payment=success&tier=${priceConfig.tier}`,
+          cancel_url: `${baseUrl}/dashboard?payment=cancelled`,
+          metadata: {
+            userId: user.id,
+            tier: priceConfig.tier,
+            priceKey: priceKey
+          }
+        })
+        
+        return handleCORS(NextResponse.json({
+          sessionId: session.id,
+          url: session.url
+        }))
+      } catch (error) {
+        console.error('Stripe error:', error)
+        return handleCORS(NextResponse.json(
+          { error: 'Failed to create checkout session' },
+          { status: 500 }
+        ))
+      }
+    }
+    
+    // Stripe Webhook - POST /api/stripe/webhook
+    if (route === '/stripe/webhook' && method === 'POST') {
+      try {
+        const body = await request.text()
+        const signature = request.headers.get('stripe-signature')
+        
+        // For now, we'll process without signature verification in test mode
+        // In production, add STRIPE_WEBHOOK_SECRET and verify signature
+        const event = JSON.parse(body)
+        
+        console.log('Stripe webhook event:', event.type)
+        
+        if (event.type === 'checkout.session.completed') {
+          const session = event.data.object
+          const userId = session.metadata?.userId
+          const tier = session.metadata?.tier
+          
+          if (userId && tier) {
+            const subscriptionDays = session.metadata?.priceKey?.includes('yearly') ? 365 : 30
+            
+            await db.collection('users').updateOne(
+              { id: userId },
+              {
+                $set: {
+                  subscriptionTier: tier,
+                  subscriptionStartDate: new Date(),
+                  subscriptionEndDate: new Date(Date.now() + subscriptionDays * 24 * 60 * 60 * 1000),
+                  stripeSubscriptionId: session.subscription,
+                  stripeCustomerId: session.customer
+                }
+              }
+            )
+            
+            console.log(`User ${userId} upgraded to ${tier}`)
+          }
+        }
+        
+        if (event.type === 'customer.subscription.deleted') {
+          const subscription = event.data.object
+          const customerId = subscription.customer
+          
+          // Find user by Stripe customer ID and downgrade to free
+          await db.collection('users').updateOne(
+            { stripeCustomerId: customerId },
+            {
+              $set: {
+                subscriptionTier: 'free',
+                subscriptionEndDate: new Date(),
+                stripeSubscriptionId: null
+              }
+            }
+          )
+          
+          console.log(`Subscription cancelled for customer ${customerId}`)
+        }
+        
+        return handleCORS(NextResponse.json({ received: true }))
+      } catch (error) {
+        console.error('Webhook error:', error)
+        return handleCORS(NextResponse.json(
+          { error: 'Webhook processing failed' },
+          { status: 400 }
+        ))
+      }
+    }
+    
+    // Manual upgrade (for testing/admin) - POST /api/subscription/upgrade
     if (route === '/subscription/upgrade' && method === 'POST') {
       const decoded = verifyToken(request)
       if (!decoded) {
@@ -1064,14 +1225,15 @@ async function handleRoute(request, { params }) {
         ))
       }
       
-      // MOCKED: In production, verify Stripe payment before upgrading
+      // This endpoint is now mainly for demo/testing purposes
+      // Real upgrades go through Stripe checkout
       await db.collection('users').updateOne(
         { id: decoded.userId },
         {
           $set: {
             subscriptionTier: tier,
             subscriptionStartDate: new Date(),
-            subscriptionEndDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days from now
+            subscriptionEndDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
           }
         }
       )
