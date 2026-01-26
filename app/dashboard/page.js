@@ -496,6 +496,7 @@ function OnboardingPage({ user, token, onComplete }) {
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4 md:grid-cols-2">
+            {/* CLB 5 - Available to all */}
             <button
               type="button"
               onClick={() => setPathway('clb5')}
@@ -519,15 +520,32 @@ function OnboardingPage({ user, token, onComplete }) {
               </div>
             </button>
             
+            {/* CLB 7 - Premium only for non-admin */}
             <button
               type="button"
-              onClick={() => setPathway('clb7')}
-              className={`p-6 rounded-lg border-2 text-left transition-all ${
+              onClick={() => {
+                const tier = user?.subscriptionTier || 'free'
+                const isAdminUser = user?.email?.toLowerCase() === 'ravijha97.01@gmail.com'
+                if (tier === 'premium' || isAdminUser) {
+                  setPathway('clb7')
+                } else {
+                  toast.error('CLB 7 pathway requires Premium subscription')
+                }
+              }}
+              className={`p-6 rounded-lg border-2 text-left transition-all relative ${
                 pathway === 'clb7'
                   ? 'border-primary bg-primary/5'
                   : 'border-border hover:border-primary/50'
-              }`}
+              } ${user?.subscriptionTier !== 'premium' && user?.email?.toLowerCase() !== 'ravijha97.01@gmail.com' ? 'opacity-75' : ''}`}
             >
+              {user?.subscriptionTier !== 'premium' && user?.email?.toLowerCase() !== 'ravijha97.01@gmail.com' && (
+                <div className="absolute top-2 right-2">
+                  <Badge className="bg-purple-100 text-purple-700">
+                    <Lock className="h-3 w-3 mr-1" />
+                    Premium
+                  </Badge>
+                </div>
+              )}
               <div className="flex items-center justify-between mb-2">
                 <Badge variant="secondary">CLB 7</Badge>
                 <span className="text-sm text-muted-foreground">8-12 months</span>
