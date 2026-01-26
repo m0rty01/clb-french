@@ -188,6 +188,9 @@ async function handleRoute(request, { params }) {
       
       const { password: _, ...userWithoutPassword } = user
       
+      // Add tier info to response
+      userWithoutPassword.tierLimits = getTierLimits(user)
+      
       return handleCORS(NextResponse.json({
         user: userWithoutPassword,
         token
