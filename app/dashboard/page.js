@@ -324,33 +324,11 @@ function AuthPage({ onAuth }) {
     }
   }
 
-  const handleGoogleLogin = async () => {
+  const handleGoogleLogin = () => {
     setGoogleLoading(true)
-    try {
-      // MOCKED Google Login - In production, this would redirect to Google OAuth
-      const res = await fetch('/api/auth/google-mock', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          mockEmail: `google_user_${Date.now()}@gmail.com`,
-          mockName: 'Google User'
-        })
-      })
-      
-      const data = await res.json()
-      
-      if (!res.ok) {
-        throw new Error(data.error || 'Google authentication failed')
-      }
-      
-      Cookies.set('token', data.token, { expires: 30 })
-      onAuth(data.user, data.token)
-      toast.success('Signed in with Google!')
-    } catch (error) {
-      toast.error(error.message)
-    } finally {
-      setGoogleLoading(false)
-    }
+    // Redirect to Google OAuth - this will redirect the user to Google's login page
+    // After authentication, Google will redirect back to /api/auth/google/callback
+    window.location.href = '/api/auth/google'
   }
 
   return (
