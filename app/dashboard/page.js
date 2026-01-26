@@ -1374,6 +1374,35 @@ function Dashboard({ user, token, onLogout, onReset }) {
       </header>
       
       <main className="max-w-5xl mx-auto px-4 py-6 space-y-6">
+        {/* Subscription Banner - Shows for free/basic users */}
+        {!isAdmin && tier !== 'premium' && (
+          <SubscriptionBanner 
+            user={currentUser} 
+            onUpgrade={() => setShowUpgradeModal(true)} 
+          />
+        )}
+        
+        {/* Limit Reached Block */}
+        {hasReachedLimit && (
+          <Card className="border-2 border-red-500 bg-red-500/5">
+            <CardContent className="pt-6 text-center">
+              <Lock className="h-12 w-12 text-red-500 mx-auto mb-4" />
+              <h3 className="text-xl font-bold mb-2">Day Limit Reached</h3>
+              <p className="text-muted-foreground mb-4">
+                You've completed {tierLimits.maxDays} days on the {tier} plan. 
+                Upgrade to continue your French learning journey!
+              </p>
+              <Button 
+                onClick={() => setShowUpgradeModal(true)} 
+                className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+              >
+                <Crown className="mr-2 h-4 w-4" />
+                Upgrade to Continue
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+        
         {/* Progress Overview */}
         <div className="grid gap-4 md:grid-cols-4">
           <Card>
