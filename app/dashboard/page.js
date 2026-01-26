@@ -1791,11 +1791,41 @@ export default function App() {
   const searchParams = useSearchParams()
   const router = useRouter()
   
-  // Handle payment callback
+  // Handle payment callback and Google OAuth callback
   useEffect(() => {
     const paymentStatus = searchParams.get('payment')
     const tier = searchParams.get('tier')
+    const googleAuth = searchParams.get('google_auth')
+    const googleToken = searchParams.get('token')
+    const authError = searchParams.get('auth_error')
     
+    // Handle Google OAuth success
+    if (googleAuth === 'success' && googleToken) {
+      Cookies.set('token', googleToken, { expires: 30 })
+      toast.success('🎉 Signed in with Google successfully!', {
+        duration: 4000
+      })
+      router.replace('/dashboard', { scroll: false })
+      fetchUser(googleToken)
+      return
+    }
+    
+    // Handle Google OAuth error
+    if (authError) {
+      const errorMessages = {
+        'access_denied': 'Google sign-in was cancelled',
+        'no_code': 'Authentication failed - no authorization code received',
+        'no_email': 'Could not retrieve email from Google account',
+        'callback_failed': 'Authentication callback failed. Please try again.',
+      }
+      toast.error(errorMessages[authError] || `Google sign-in failed: ${authError}`, {
+        duration: 5000
+      })
+      router.replace('/dashboard', { scroll: false })
+      return
+    }
+    
+    // Handle payment success
     if (paymentStatus === 'success' && tier) {
       toast.success(`🎉 Payment successful! You've been upgraded to ${tier.charAt(0).toUpperCase() + tier.slice(1)}!`, {
         duration: 5000,
