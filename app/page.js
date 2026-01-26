@@ -1,16 +1,177 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
 import { 
   BookOpen, Target, Clock, Users, CheckCircle2, Star, 
   ArrowRight, Play, ChevronRight, Menu, X, Zap, 
   Brain, Headphones, Mic, FileText, PenTool, Award,
-  Calendar, TrendingUp, Shield, Globe, Sparkles
+  Calendar, TrendingUp, Shield, Globe, Sparkles, Mail, Gift
 } from 'lucide-react'
+
+// Exit Intent Popup Component
+function ExitIntentPopup({ isOpen, onClose, onSubmit }) {
+  const [email, setEmail] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
+  const [error, setError] = useState('')
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setError('')
+    
+    if (!email) {
+      setError('Please enter your email')
+      return
+    }
+    
+    setIsSubmitting(true)
+    
+    try {
+      const res = await fetch('/api/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          email, 
+          source: 'exit_intent_popup' 
+        })
+      })
+      
+      const data = await res.json()
+      
+      if (res.ok) {
+        setSubmitted(true)
+        onSubmit && onSubmit(email)
+      } else {
+        setError(data.error || 'Something went wrong. Please try again.')
+      }
+    } catch (err) {
+      setError('Failed to subscribe. Please try again.')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  if (!isOpen) return null
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <div 
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      
+      {/* Popup */}
+      <div className="relative bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 rounded-2xl shadow-2xl max-w-md w-full border border-gray-700 overflow-hidden animate-in zoom-in-95 duration-300">
+        {/* Close button */}
+        <button 
+          onClick={onClose}
+          className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors z-10"
+        >
+          <X className="w-5 h-5" />
+        </button>
+        
+        {/* Decorative elements */}
+        <div className="absolute top-0 left-0 w-32 h-32 bg-blue-500/20 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 right-0 w-32 h-32 bg-purple-500/20 rounded-full blur-3xl" />
+        
+        {!submitted ? (
+          <div className="relative p-8">
+            {/* Icon */}
+            <div className="flex justify-center mb-4">
+              <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                <Gift className="w-8 h-8 text-white" />
+              </div>
+            </div>
+            
+            {/* Heading */}
+            <h2 className="text-2xl font-bold text-white text-center mb-2">
+              Wait! Dont Miss Out! 🇫🇷
+            </h2>
+            <p className="text-gray-300 text-center mb-6">
+              Get <span className="text-blue-400 font-semibold">exclusive tips</span> for your TEF/TCF exam and 
+              <span className="text-purple-400 font-semibold"> free study resources</span> delivered to your inbox.
+            </p>
+            
+            {/* Benefits */}
+            <div className="space-y-2 mb-6">
+              <div className="flex items-center gap-2 text-gray-300 text-sm">
+                <CheckCircle2 className="w-4 h-4 text-green-400 flex-shrink-0" />
+                <span>Weekly French learning tips & tricks</span>
+              </div>
+              <div className="flex items-center gap-2 text-gray-300 text-sm">
+                <CheckCircle2 className="w-4 h-4 text-green-400 flex-shrink-0" />
+                <span>Free grammar cheat sheets</span>
+              </div>
+              <div className="flex items-center gap-2 text-gray-300 text-sm">
+                <CheckCircle2 className="w-4 h-4 text-green-400 flex-shrink-0" />
+                <span>Early access to new features & discounts</span>
+              </div>
+            </div>
+            
+            {/* Form */}
+            <form onSubmit={handleSubmit} className="space-y-3">
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Input
+                  type="email"
+                  placeholder="Enter your email address"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="pl-10 bg-gray-800/50 border-gray-600 text-white placeholder:text-gray-500 focus:border-blue-500 h-12"
+                />
+              </div>
+              
+              {error && (
+                <p className="text-red-400 text-sm text-center">{error}</p>
+              )}
+              
+              <Button 
+                type="submit" 
+                disabled={isSubmitting}
+                className="w-full h-12 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold"
+              >
+                {isSubmitting ? 'Subscribing...' : 'Get Free Resources →'}
+              </Button>
+            </form>
+            
+            <p className="text-gray-500 text-xs text-center mt-4">
+              No spam, ever. Unsubscribe anytime.
+            </p>
+          </div>
+        ) : (
+          <div className="relative p-8 text-center">
+            {/* Success Icon */}
+            <div className="flex justify-center mb-4">
+              <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center">
+                <CheckCircle2 className="w-8 h-8 text-white" />
+              </div>
+            </div>
+            
+            <h2 className="text-2xl font-bold text-white mb-2">
+              Youre In! 🎉
+            </h2>
+            <p className="text-gray-300 mb-6">
+              Check your inbox for a welcome email with your first free resource.
+            </p>
+            
+            <Button 
+              onClick={onClose}
+              className="bg-gray-700 hover:bg-gray-600 text-white"
+            >
+              Continue Browsing
+            </Button>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
 
 // Testimonials data
 const testimonials = [
