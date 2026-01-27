@@ -1227,6 +1227,18 @@ async function handleRoute(request, { params }) {
         // Create or retrieve Stripe customer
         let customerId = user.stripeCustomerId
         
+        // Verify customer exists in current Stripe mode (test vs live)
+        // If customer was created in test mode but we're now in live mode, create a new customer
+        if (customerId) {
+          try {
+            await stripeInstance.customers.retrieve(customerId)
+          } catch (err) {
+            // Customer doesn't exist in current mode, clear it
+            console.log('Stripe customer not found in current mode, creating new customer')
+            customerId = null
+          }
+        }
+        
         if (!customerId) {
           const customer = await stripeInstance.customers.create({
             email: user.email,
