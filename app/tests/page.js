@@ -81,53 +81,162 @@ function TestTimer({ duration, onTimeUp, isActive }) {
 // Audio Player Component for Listening Tests
 function AudioPlayer({ text, description }) {
   const [isPlaying, setIsPlaying] = useState(false)
-  const [isPaused, setIsPaused] = useState(false)
   const [playbackRate, setPlaybackRate] = useState(1)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
-  const [isSupported, setIsSupported] = useState(true)
-  const [voicesLoaded, setVoicesLoaded] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const [voiceError, setVoiceError] = useState(null)
-  const utteranceRef = useRef(null)
+  const [audioUrl, setAudioUrl] = useState(null)
+  const [error, setError] = useState(null)
+  const audioRef = useRef(null)
   const intervalRef = useRef(null)
-  const voicesLoadedRef = useRef(false)
   
-  // Load voices on component mount
+  // Clean up audio URL when component unmounts or text changes
   useEffect(() => {
-    if (typeof window === 'undefined' || !window.speechSynthesis) {
-      setIsSupported(false)
-      return
-    }
-    
-    let mounted = true
-    let retryCount = 0
-    const maxRetries = 30 // Allow more time for voices to load (7.5 seconds)
-    let pollInterval = null
-    
-    const loadVoices = () => {
-      const voices = window.speechSynthesis.getVoices()
-      console.log('Loading voices, found:', voices.length)
-      
-      if (voices.length > 0) {
-        if (mounted) {
-          setVoicesLoaded(true)
-          voicesLoadedRef.current = true
-          setVoiceError(null)
-          console.log('Voices successfully loaded:', voices.length)
-        }
-        return true
+    return () => {
+      if (audioUrl) {
+        URL.revokeObjectURL(audioUrl)
       }
-      return false
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current)
+      }
     }
-    
-    // Try to load voices immediately
-    if (loadVoices()) {
-      console.log('Voices loaded on first try')
+  }, [audioUrl])
+  
+  // Update playback rate when audio is loaded
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.playbackRate = playbackRate
+    }
+  }, [playbackRate])
+  
+  const handlePlay = async () => {
+    // If we already have audio loaded, just play it
+    if (audioUrl && audioRef.current) {
+      audioRef.current.play()
+      setIsPlaying(true)
+      startTimeTracking()
       return
     }
     
-    // Trigger voice loading by speaking an empty utterance (helps Chrome)
+    // Generate audio from Google Cloud TTS
+    setIsLoading(true)
+    setError(null)
+    
+    try {
+      const response = await fetch('/api/tts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          text,
+          languageCode: 'fr-FR',
+          speakingRate: playbackRate
+        })
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to generate audio')
+      }
+      
+      const data = await response.json()
+      
+      // Convert base64 audio to blob URL
+      const audioBytes = Uint8Array.from(atob(data.audio), c => c.charCodeAt(0))
+      const audioBlob = new Blob([audioBytes], { type: 'audio/mpeg' })
+      const url = URL.createObjectURL(audioBlob)
+      
+      setAudioUrl(url)
+      
+      // Wait for audio element to be ready, then play
+      setTimeout(() => {
+        if (audioRef.current) {
+          audioRef.current.playbackRate = playbackRate
+          audioRef.current.play()
+          setIsPlaying(true)
+          startTimeTracking()
+        }
+      }, 100)
+      
+    } catch (err) {
+      console.error('TTS Error:', err)
+      setError(err.message || 'Failed to generate audio')
+      toast.error(err.message || 'Failed to generate audio')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+  
+  const handlePause = () => {
+    if (audioRef.current) {
+      audioRef.current.pause()
+      setIsPlaying(false)
+      stopTimeTracking()
+    }
+  }
+  
+  const handleStop = () => {
+    if (audioRef.current) {
+      audioRef.current.pause()
+      audioRef.current.currentTime = 0
+      setIsPlaying(false)
+      setCurrentTime(0)
+      stopTimeTracking()
+    }
+  }
+  
+  const handleRestart = () => {
+    if (audioRef.current) {
+      audioRef.current.currentTime = 0
+      audioRef.current.play()
+      setIsPlaying(true)
+      setCurrentTime(0)
+      startTimeTracking()
+    }
+  }
+  
+  const startTimeTracking = () => {
+    if (intervalRef.current) clearInterval(intervalRef.current)
+    intervalRef.current = setInterval(() => {
+      if (audioRef.current) {
+        setCurrentTime(Math.floor(audioRef.current.currentTime))
+      }
+    }, 500)
+  }
+  
+  const stopTimeTracking = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current)
+      intervalRef.current = null
+    }
+  }
+  
+  const handleAudioEnded = () => {
+    setIsPlaying(false)
+    stopTimeTracking()
+  }
+  
+  const handleAudioLoaded = () => {
+    if (audioRef.current) {
+      setDuration(Math.floor(audioRef.current.duration))
+    }
+  }
+  
+  const handleRateChange = (newRate) => {
+    setPlaybackRate(newRate)
+    if (audioRef.current) {
+      audioRef.current.playbackRate = newRate
+    }
+    // If audio was already generated, we need to regenerate it with the new rate
+    // For simplicity, we'll just change the playback rate of the existing audio
+  }
+  
+  const formatPlayerTime = (seconds) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins}:${secs.toString().padStart(2, '0')}`
+  }
     try {
       const triggerUtterance = new SpeechSynthesisUtterance('')
       window.speechSynthesis.speak(triggerUtterance)
