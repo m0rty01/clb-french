@@ -302,6 +302,118 @@ export default function TEFPreparationPage() {
                       </div>
                     </div>
                   </div>
+
+                  {/* Feature 6 - AI Writing Evaluation */}
+                  <div className="p-5 bg-gradient-to-r from-blue-50 to-indigo-100 dark:from-blue-900/20 dark:to-indigo-800/10 rounded-lg">
+                    <div className="flex items-start gap-4">
+                      <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold">6</div>
+                      <div>
+                        <h5 className="font-bold text-lg flex items-center gap-2">
+                          <Zap className="h-5 w-5 text-blue-600" />
+                          🤖 AI-Powered Writing Evaluation (NEW!)
+                        </h5>
+                        <p className="text-muted-foreground mt-2">
+                          Get instant, professional-quality feedback on your French writing using our AI evaluation system:
+                        </p>
+                        <ul className="mt-3 space-y-2 text-sm">
+                          <li className="flex items-center gap-2">
+                            <CheckCircle2 className="h-4 w-4 text-blue-600" />
+                            <strong>TEF-equivalent scoring</strong> - Get scores on 5 official TEF criteria
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <CheckCircle2 className="h-4 w-4 text-blue-600" />
+                            <strong>CLB level estimation</strong> - Know your approximate CLB level instantly
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <CheckCircle2 className="h-4 w-4 text-blue-600" />
+                            <strong>Grammar corrections</strong> - See exactly what you got wrong with explanations
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <CheckCircle2 className="h-4 w-4 text-blue-600" />
+                            <strong>Improvement suggestions</strong> - Actionable advice to boost your score
+                          </li>
+                        </ul>
+                        <div className="mt-3 p-3 bg-white dark:bg-background rounded-lg">
+                          <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">
+                            ✓ Available on Premium plan - Unlimited AI evaluations for all writing exercises
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Feature 7 - Audio Listening Practice */}
+                  <div className="p-5 bg-gradient-to-r from-violet-50 to-purple-100 dark:from-violet-900/20 dark:to-purple-800/10 rounded-lg">
+                    <div className="flex items-start gap-4">
+                      <div className="w-10 h-10 rounded-full bg-violet-600 text-white flex items-center justify-center font-bold">7</div>
+                      <div>
+                        <h5 className="font-bold text-lg flex items-center gap-2">
+                          <Headphones className="h-5 w-5 text-violet-600" />
+                          🎧 Interactive Audio Player for Listening Tests (NEW!)
+                        </h5>
+                        <p className="text-muted-foreground mt-2">
+                          Practice listening comprehension with our built-in French audio player:
+                        </p>
+                        <ul className="mt-3 space-y-2 text-sm">
+                          <li className="flex items-center gap-2">
+                            <CheckCircle2 className="h-4 w-4 text-violet-600" />
+                            <strong>Native French pronunciation</strong> - Text-to-Speech with French voices
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <CheckCircle2 className="h-4 w-4 text-violet-600" />
+                            <strong>Speed control</strong> - Slow down (0.75x) or speed up (1.5x) as needed
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <CheckCircle2 className="h-4 w-4 text-violet-600" />
+                            <strong>Replay & pause</strong> - Full control to practice difficult sections
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <CheckCircle2 className="h-4 w-4 text-violet-600" />
+                            <strong>Collapsible transcript</strong> - Check your understanding when needed
+                          </li>
+                        </ul>
+                        <div className="mt-3 p-3 bg-white dark:bg-background rounded-lg">
+                          <p className="text-sm text-violet-600 dark:text-violet-400 font-medium">
+                            ✓ Available on Basic & Premium plans - Train your ear for the real TEF listening test
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Feature 8 - Sample Answers */}
+                  <div className="p-5 bg-gradient-to-r from-emerald-50 to-green-100 dark:from-emerald-900/20 dark:to-green-800/10 rounded-lg">
+                    <div className="flex items-start gap-4">
+                      <div className="w-10 h-10 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold">8</div>
+                      <div>
+                        <h5 className="font-bold text-lg flex items-center gap-2">
+                          <FileText className="h-5 w-5 text-emerald-600" />
+                          📝 Sample Answers for All Writing Tasks
+                        </h5>
+                        <p className="text-muted-foreground mt-2">
+                          Learn from model answers crafted by French experts:
+                        </p>
+                        <ul className="mt-3 space-y-2 text-sm">
+                          <li className="flex items-center gap-2">
+                            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                            <strong>20+ sample answers</strong> - One for every writing exercise
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                            <strong>All CEFR levels</strong> - From A1 basic to B2 advanced
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                            <strong>Study structure & vocabulary</strong> - Learn what makes a great response
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                            <strong>One-click access</strong> - View sample answers anytime
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
