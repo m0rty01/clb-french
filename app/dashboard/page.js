@@ -107,6 +107,64 @@ function SubscriptionBanner({ user, onUpgrade }) {
   )
 }
 
+// Sample Answer Button Component
+function SampleAnswerButton({ sampleAnswer, title }) {
+  const [isOpen, setIsOpen] = useState(false)
+  
+  return (
+    <>
+      <Button 
+        variant="outline" 
+        size="sm" 
+        onClick={() => setIsOpen(true)}
+        className="text-xs h-6 bg-green-500/10 border-green-500/30 text-green-700 dark:text-green-400 hover:bg-green-500/20"
+      >
+        <Eye className="h-3 w-3 mr-1" />
+        Sample Answer
+      </Button>
+      
+      {isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => setIsOpen(false)}>
+          <div className="bg-background rounded-xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            <div className="p-4 border-b bg-gradient-to-r from-green-500/10 to-emerald-500/10">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
+                    <CheckCircle2 className="h-4 w-4 text-green-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold">Sample Answer</h3>
+                    <p className="text-xs text-muted-foreground">{title}</p>
+                  </div>
+                </div>
+                <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)}>
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+            <div className="p-4 overflow-y-auto max-h-[60vh]">
+              <div className="bg-green-500/5 border border-green-500/20 rounded-lg p-4">
+                <p className="whitespace-pre-wrap text-sm leading-relaxed">{sampleAnswer}</p>
+              </div>
+              <div className="mt-4 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+                <p className="text-xs text-amber-700 dark:text-amber-400 flex items-start gap-2">
+                  <Lightbulb className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                  <span>This is a model answer. Study the structure, vocabulary, and grammar used. Then try writing your own version!</span>
+                </p>
+              </div>
+            </div>
+            <div className="p-4 border-t bg-muted/30">
+              <Button onClick={() => setIsOpen(false)} className="w-full">
+                Got it, let me try!
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
+
 // Upgrade Modal Component
 function UpgradeModal({ isOpen, onClose, token, onUpgradeSuccess }) {
   const [upgrading, setUpgrading] = useState(false)
