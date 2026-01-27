@@ -1682,8 +1682,14 @@ Be strict but fair. TEF is a standardized test - evaluate accordingly. Return ON
               ],
               generationConfig: {
                 temperature: 0.3,
-                maxOutputTokens: 2000,
-              }
+                maxOutputTokens: 4000,
+              },
+              safetySettings: [
+                { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+                { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+                { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+                { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
+              ]
             })
           }
         )
