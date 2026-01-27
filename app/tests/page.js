@@ -187,32 +187,47 @@ function AudioPlayer({ text, description }) {
   const handlePlay = () => {
     if (!window.speechSynthesis || !text) {
       console.error('Speech synthesis not available or no text')
+      toast.error('Speech synthesis not available')
       return
     }
     
     // Check if voices are available
     const voices = window.speechSynthesis.getVoices()
+    console.log('handlePlay - voices available:', voices.length)
+    
     if (voices.length === 0) {
-      console.warn('No voices available yet, waiting...')
-      // Try to trigger voice loading - but limit retries to avoid infinite loop
-      if (!window._voiceRetryCount) window._voiceRetryCount = 0
-      window._voiceRetryCount++
+      // Show loading state and wait for voices
+      setIsLoading(true)
       
-      if (window._voiceRetryCount > 5) {
-        // After 5 retries, show an error message
-        setIsLoading(false)
-        toast.error('Text-to-speech voices not available. Please try using a browser like Chrome, Firefox, or Safari.')
-        window._voiceRetryCount = 0
-        return
+      // Try to trigger voice loading with a longer wait
+      const waitForVoices = (attempt = 0) => {
+        const currentVoices = window.speechSynthesis.getVoices()
+        console.log(`Waiting for voices, attempt ${attempt}, found: ${currentVoices.length}`)
+        
+        if (currentVoices.length > 0) {
+          setIsLoading(false)
+          // Voices loaded, proceed with playback
+          startPlayback()
+          return
+        }
+        
+        if (attempt >= 15) {
+          // After 3 seconds (15 * 200ms), show helpful message but still try to play
+          setIsLoading(false)
+          toast.error('Voice loading is slow. If audio doesn\'t play, please refresh the page.', {
+            duration: 5000
+          })
+          // Still try to play - some browsers may work anyway
+          startPlayback()
+          return
+        }
+        
+        setTimeout(() => waitForVoices(attempt + 1), 200)
       }
       
-      window.speechSynthesis.getVoices()
-      setTimeout(() => handlePlay(), 300)
+      waitForVoices()
       return
     }
-    
-    // Reset retry count on success
-    window._voiceRetryCount = 0
     
     // Resume if paused
     if (isPaused) {
@@ -223,6 +238,10 @@ function AudioPlayer({ text, description }) {
       return
     }
     
+    startPlayback()
+  }
+  
+  const startPlayback = () => {
     setIsLoading(true)
     
     // Cancel any ongoing speech
@@ -241,6 +260,8 @@ function AudioPlayer({ text, description }) {
       if (voice) {
         utterance.voice = voice
         console.log('Using voice:', voice.name, voice.lang)
+      } else {
+        console.log('No French voice found, using default')
       }
       
       utterance.onstart = () => {
@@ -266,9 +287,9 @@ function AudioPlayer({ text, description }) {
         setIsPaused(false)
         stopTimeTracking()
         
-        // Show error toast for user
-        if (event.error !== 'interrupted') {
-          toast.error('Audio playback failed. Please try again.')
+        // Show error toast for user (but not for 'interrupted' which is normal)
+        if (event.error !== 'interrupted' && event.error !== 'canceled') {
+          toast.error('Audio playback failed. Please refresh the page and try again.')
         }
       }
       
