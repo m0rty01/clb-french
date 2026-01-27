@@ -217,24 +217,6 @@ function AudioPlayer({ text, description }) {
       
     }, 100)
   }
-    
-    utterance.onend = () => {
-      setIsPlaying(false)
-      setIsPaused(false)
-      setCurrentTime(duration)
-      stopTimeTracking()
-    }
-    
-    utterance.onerror = (event) => {
-      console.error('Speech synthesis error:', event)
-      setIsPlaying(false)
-      setIsPaused(false)
-      stopTimeTracking()
-    }
-    
-    utteranceRef.current = utterance
-    window.speechSynthesis.speak(utterance)
-  }
   
   const handlePause = () => {
     if (window.speechSynthesis && isPlaying) {
