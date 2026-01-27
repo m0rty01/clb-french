@@ -165,11 +165,25 @@ function AudioPlayer({ text, description }) {
     const voices = window.speechSynthesis.getVoices()
     if (voices.length === 0) {
       console.warn('No voices available yet, waiting...')
-      // Try to trigger voice loading
+      // Try to trigger voice loading - but limit retries to avoid infinite loop
+      if (!window._voiceRetryCount) window._voiceRetryCount = 0
+      window._voiceRetryCount++
+      
+      if (window._voiceRetryCount > 5) {
+        // After 5 retries, show an error message
+        setIsLoading(false)
+        toast.error('Text-to-speech voices not available. Please try using a browser like Chrome, Firefox, or Safari.')
+        window._voiceRetryCount = 0
+        return
+      }
+      
       window.speechSynthesis.getVoices()
-      setTimeout(() => handlePlay(), 200)
+      setTimeout(() => handlePlay(), 300)
       return
     }
+    
+    // Reset retry count on success
+    window._voiceRetryCount = 0
     
     // Resume if paused
     if (isPaused) {
@@ -222,6 +236,11 @@ function AudioPlayer({ text, description }) {
         setIsPlaying(false)
         setIsPaused(false)
         stopTimeTracking()
+        
+        // Show error toast for user
+        if (event.error !== 'interrupted') {
+          toast.error('Audio playback failed. Please try again.')
+        }
       }
       
       utteranceRef.current = utterance
