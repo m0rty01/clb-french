@@ -530,6 +530,8 @@ function WritingTest({ test, onComplete, onBack }) {
   const [responses, setResponses] = useState({})
   const [isActive, setIsActive] = useState(true)
   const [showResults, setShowResults] = useState(false)
+  const [evaluations, setEvaluations] = useState({})
+  const [evaluatingTask, setEvaluatingTask] = useState(null)
   
   const structure = TEF_TEST_STRUCTURE.expressionEcrite
   const allTasks = test.sections.flatMap(s => s.tasks)
