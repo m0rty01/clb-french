@@ -469,6 +469,7 @@ All progress is saved to your account and visible in your dashboard.`
 • 3 grammar lessons per week
 • 2 TEF mock exams (1 listening, 1 reading)
 • Basic progress tracking
+• Sample writing answers
 • Community support
 
 This lets you experience the platform before committing to a paid plan.`
@@ -479,6 +480,8 @@ This lets you experience the platform before committing to a paid plan.`
 • Full CLB 5 pathway (4 months of content)
 • All 20 grammar lessons
 • 10 TEF mock exams per skill (40 total)
+• 🎧 Audio player for listening practice
+• 📝 Sample answers for all writing tasks
 • Grammar weak topic tracking
 • Progress analytics
 • Email support
@@ -487,12 +490,15 @@ This lets you experience the platform before committing to a paid plan.`
 • Both CLB 5 AND CLB 7 pathways
 • All 20+ grammar lessons + bonus content
 • All 80 TEF mock exams (20 per skill)
+• 🤖 AI Writing Evaluation with TEF scores
+• 🎧 Audio player for listening practice
+• 📝 Sample answers for all writing tasks
 • Advanced weak topic tracking
 • Detailed performance analytics
 • Priority email support
 • Certificate of completion
 
-Premium is recommended for PR applicants targeting NCLC 7.`
+Premium is recommended for PR applicants targeting NCLC 7 who want AI-powered writing feedback.`
       },
       {
         question: "Is there a money-back guarantee?",
