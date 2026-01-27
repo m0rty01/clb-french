@@ -1664,7 +1664,7 @@ Provide your response in this EXACT JSON format:
 
 Be strict but fair. TEF is a standardized test - evaluate accordingly.`
 
-        const llmResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+        const llmResponse = await fetch('https://api.emergent.sh/v1/chat/completions', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
