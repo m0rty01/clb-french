@@ -161,6 +161,16 @@ function AudioPlayer({ text, description }) {
       return
     }
     
+    // Check if voices are available
+    const voices = window.speechSynthesis.getVoices()
+    if (voices.length === 0) {
+      console.warn('No voices available yet, waiting...')
+      // Try to trigger voice loading
+      window.speechSynthesis.getVoices()
+      setTimeout(() => handlePlay(), 200)
+      return
+    }
+    
     // Resume if paused
     if (isPaused) {
       window.speechSynthesis.resume()
