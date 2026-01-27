@@ -292,8 +292,13 @@ const features = [
   },
   {
     icon: Brain,
-    title: "Daily Grammar Mastery",
-    description: "Progressive grammar lessons with quizzes, explanations, and automatic weak topic tracking."
+    title: "AI Writing Evaluation",
+    description: "Get instant AI-powered feedback on your French writing with TEF-equivalent scores and grammar corrections."
+  },
+  {
+    icon: Headphones,
+    title: "Audio Listening Practice",
+    description: "Interactive audio player with French Text-to-Speech, speed controls, and transcripts for listening tests."
   },
   {
     icon: FileText,
@@ -309,11 +314,6 @@ const features = [
     icon: TrendingUp,
     title: "Progress Analytics",
     description: "Detailed tracking of your daily progress, streaks, and performance trends."
-  },
-  {
-    icon: Award,
-    title: "Proven Methodology",
-    description: "Based on 'Practice Makes Perfect: Complete French Grammar' textbook structure."
   }
 ]
 
