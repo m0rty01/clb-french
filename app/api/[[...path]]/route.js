@@ -5,6 +5,7 @@ import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import Stripe from 'stripe'
 import { getGrammarForDay, getGrammarTopicById, getAllGrammarTopics } from '@/lib/grammar-curriculum'
+import { TextToSpeechClient } from '@google-cloud/text-to-speech'
 
 // JWT Secret - MUST be set in environment for production
 const JWT_SECRET = process.env.JWT_SECRET
