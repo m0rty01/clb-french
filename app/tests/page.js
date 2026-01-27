@@ -191,6 +191,15 @@ function AudioPlayer({ text, description }) {
       return
     }
     
+    // Resume if paused
+    if (isPaused) {
+      window.speechSynthesis.resume()
+      setIsPaused(false)
+      setIsPlaying(true)
+      startTimeTracking()
+      return
+    }
+    
     // Check if voices are available
     const voices = window.speechSynthesis.getVoices()
     console.log('handlePlay - voices available:', voices.length)
@@ -198,6 +207,12 @@ function AudioPlayer({ text, description }) {
     if (voices.length === 0) {
       // Show loading state and wait for voices
       setIsLoading(true)
+      toast.info('Loading audio voices...', { duration: 2000 })
+      
+      // Trigger voice loading by speaking an empty utterance
+      const triggerLoad = new SpeechSynthesisUtterance('')
+      window.speechSynthesis.speak(triggerLoad)
+      window.speechSynthesis.cancel()
       
       // Try to trigger voice loading with a longer wait
       const waitForVoices = (attempt = 0) => {
@@ -211,14 +226,12 @@ function AudioPlayer({ text, description }) {
           return
         }
         
-        if (attempt >= 15) {
-          // After 3 seconds (15 * 200ms), show helpful message but still try to play
+        if (attempt >= 20) {
+          // After 4 seconds (20 * 200ms), show helpful message
           setIsLoading(false)
-          toast.error('Voice loading is slow. If audio doesn\'t play, please refresh the page.', {
-            duration: 5000
+          toast.error('Could not load audio voices. Please try refreshing the page or using Chrome/Firefox/Safari.', {
+            duration: 6000
           })
-          // Still try to play - some browsers may work anyway
-          startPlayback()
           return
         }
         
@@ -226,15 +239,6 @@ function AudioPlayer({ text, description }) {
       }
       
       waitForVoices()
-      return
-    }
-    
-    // Resume if paused
-    if (isPaused) {
-      window.speechSynthesis.resume()
-      setIsPaused(false)
-      setIsPlaying(true)
-      startTimeTracking()
       return
     }
     
