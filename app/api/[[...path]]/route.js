@@ -1615,8 +1615,8 @@ async function handleRoute(request, { params }) {
         ))
       }
       
-      const emergentKey = process.env.EMERGENT_LLM_KEY
-      if (!emergentKey) {
+      const geminiKey = process.env.GEMINI_API_KEY
+      if (!geminiKey) {
         return handleCORS(NextResponse.json(
           { error: 'AI evaluation service not configured' },
           { status: 500 }
@@ -1642,7 +1642,7 @@ Evaluate the response on these TEF criteria (score each 0-5):
 4. Grammatical Accuracy (Correction grammaticale) - Are grammar and spelling correct?
 5. Register & Tone (Registre et ton) - Is the style appropriate for the task type?
 
-Provide your response in this EXACT JSON format:
+Provide your response in this EXACT JSON format (no markdown, just pure JSON):
 {
   "scores": {
     "taskAchievement": <0-5>,
@@ -1662,42 +1662,58 @@ Provide your response in this EXACT JSON format:
   "overallFeedback": "<2-3 sentence overall assessment in English>"
 }
 
-Be strict but fair. TEF is a standardized test - evaluate accordingly.`
+Be strict but fair. TEF is a standardized test - evaluate accordingly. Return ONLY the JSON object, no other text.`
 
-        const llmResponse = await fetch('https://api.emergent.sh/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${emergentKey}`
-          },
-          body: JSON.stringify({
-            model: 'gpt-4o-mini',
-            messages: [
-              { role: 'system', content: 'You are an expert TEF examiner. Always respond with valid JSON only.' },
-              { role: 'user', content: evaluationPrompt }
-            ],
-            temperature: 0.3,
-            max_tokens: 1500
-          })
-        })
+        // Use Google Gemini API
+        const geminiResponse = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              contents: [
+                {
+                  parts: [
+                    { text: evaluationPrompt }
+                  ]
+                }
+              ],
+              generationConfig: {
+                temperature: 0.3,
+                maxOutputTokens: 2000,
+              }
+            })
+          }
+        )
         
-        if (!llmResponse.ok) {
-          const errorData = await llmResponse.text()
-          console.error('LLM API Error:', errorData)
+        if (!geminiResponse.ok) {
+          const errorData = await geminiResponse.text()
+          console.error('Gemini API Error:', errorData)
           return handleCORS(NextResponse.json(
             { error: 'AI evaluation service error' },
             { status: 500 }
           ))
         }
         
-        const llmData = await llmResponse.json()
-        const aiResponse = llmData.choices[0]?.message?.content
+        const geminiData = await geminiResponse.json()
+        const aiResponse = geminiData.candidates?.[0]?.content?.parts?.[0]?.text
+        
+        if (!aiResponse) {
+          console.error('No response from Gemini:', geminiData)
+          return handleCORS(NextResponse.json(
+            { error: 'No response from AI service' },
+            { status: 500 }
+          ))
+        }
         
         // Parse the JSON response
         let evaluation
         try {
-          // Extract JSON from response (in case there's extra text)
-          const jsonMatch = aiResponse.match(/\{[\s\S]*\}/)
+          // Extract JSON from response (in case there's extra text or markdown)
+          const cleanedResponse = aiResponse.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
+          const jsonMatch = cleanedResponse.match(/\{[\s\S]*\}/)
           if (jsonMatch) {
             evaluation = JSON.parse(jsonMatch[0])
           } else {
