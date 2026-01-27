@@ -371,6 +371,93 @@ All progress is saved to your account and visible in your dashboard.`
     ]
   },
   {
+    title: "AI Features & Audio",
+    icon: Zap,
+    faqs: [
+      {
+        question: "What is the AI Writing Evaluation feature?",
+        answer: `Our AI Writing Evaluation uses advanced AI to provide instant, professional-quality feedback on your French writing:
+
+**What it evaluates:**
+• Task Achievement (Did you address all parts of the prompt?)
+• Coherence & Cohesion (Is your text well-organized?)
+• Lexical Range (Is your vocabulary varied and appropriate?)
+• Grammatical Accuracy (Are grammar and spelling correct?)
+• Register & Tone (Is the style appropriate?)
+
+**What you get:**
+• Score out of 25 (5 points per category)
+• Estimated CLB level (CLB 4-12)
+• TEF score equivalent (/450)
+• List of strengths in your writing
+• Specific improvement suggestions
+• Grammar corrections with explanations
+
+**Availability:** Premium plan only - unlimited AI evaluations`
+      },
+      {
+        question: "How accurate is the AI evaluation?",
+        answer: `Our AI evaluation is designed to closely mirror official TEF scoring:
+
+**How it works:**
+• Uses the same 5 criteria as official TEF Expression Écrite
+• Powered by Google's advanced AI models
+• Trained to evaluate French specifically
+
+**What to expect:**
+• Scores typically within ±1 level of actual TEF results
+• Best for practice and identifying areas to improve
+• More useful for feedback than precise score prediction
+
+**Important:** AI evaluation is for practice. Only official TEF/TCF tests from authorized centers are accepted by IRCC for immigration applications.`
+      },
+      {
+        question: "How does the audio player work?",
+        answer: `Our listening tests include an interactive audio player that converts French text to speech:
+
+**Features:**
+• **Play/Pause/Stop** - Full control over playback
+• **Speed control** - Choose from 0.75x, 1x, 1.25x, or 1.5x speed
+• **Restart** - Replay audio from the beginning
+• **Progress bar** - See how much audio remains
+• **Collapsible transcript** - View the text when needed
+
+**How to use it:**
+1. Click Play to hear the French dialogue
+2. Slow down to 0.75x if it's too fast
+3. Replay sections you didn't catch
+4. Only check transcript after attempting to understand
+
+**Availability:** Basic and Premium plans
+
+**Note:** Uses your browser's built-in French text-to-speech. For best results, use Chrome or Edge browsers.`
+      },
+      {
+        question: "What are Sample Answers?",
+        answer: `Sample Answers are model responses for all 20+ writing exercises in our daily curriculum:
+
+**What they include:**
+• Complete, well-written French response
+• Appropriate length for each exercise type
+• Correct grammar and vocabulary for the task
+• Natural French expressions and structures
+
+**How to use them:**
+1. Attempt the writing exercise yourself first
+2. Click "Sample Answer" to see the model response
+3. Compare your version with the sample
+4. Note vocabulary and structures you can learn
+5. Try again incorporating what you learned
+
+**Benefits:**
+• Learn from native-level examples
+• Understand what a good response looks like
+• Build your vocabulary in context
+• Improve your writing structure`
+      }
+    ]
+  },
+  {
     title: "Pricing & Plans",
     icon: CreditCard,
     faqs: [
