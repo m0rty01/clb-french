@@ -669,20 +669,24 @@ function MultipleChoiceTest({ testType, test, onComplete, onBack }) {
         {/* Question Card */}
         <Card className="mb-6">
           <CardContent className="pt-6">
-            {/* Audio Description for Listening */}
-            {testType === 'comprehensionOrale' && currentQuestionData.audioDescription && (
+            {/* Audio Player for Listening */}
+            {testType === 'comprehensionOrale' && currentQuestionData.audioText && (
+              <div className="mb-4">
+                <AudioPlayer 
+                  text={currentQuestionData.audioText} 
+                  description={currentQuestionData.audioDescription}
+                />
+              </div>
+            )}
+            
+            {/* Audio Description without audioText (fallback) */}
+            {testType === 'comprehensionOrale' && currentQuestionData.audioDescription && !currentQuestionData.audioText && (
               <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-4 mb-4">
                 <div className="flex items-center gap-2 mb-2">
                   <Volume2 className="h-5 w-5 text-purple-600" />
                   <span className="font-medium text-purple-600">Audio</span>
                 </div>
                 <p className="text-sm italic text-muted-foreground">{currentQuestionData.audioDescription}</p>
-                {currentQuestionData.audioText && (
-                  <div className="mt-2 p-3 bg-muted/50 rounded text-sm">
-                    <p className="font-medium mb-1">Transcript (for practice):</p>
-                    <p className="text-muted-foreground">{currentQuestionData.audioText}</p>
-                  </div>
-                )}
               </div>
             )}
             
