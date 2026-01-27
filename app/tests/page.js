@@ -102,7 +102,8 @@ function AudioPlayer({ text, description }) {
     
     let mounted = true
     let retryCount = 0
-    const maxRetries = 20 // Allow more time for voices to load
+    const maxRetries = 30 // Allow more time for voices to load (7.5 seconds)
+    let pollInterval = null
     
     const loadVoices = () => {
       const voices = window.speechSynthesis.getVoices()
@@ -113,6 +114,7 @@ function AudioPlayer({ text, description }) {
           setVoicesLoaded(true)
           voicesLoadedRef.current = true
           setVoiceError(null)
+          console.log('Voices successfully loaded:', voices.length)
         }
         return true
       }
@@ -120,27 +122,43 @@ function AudioPlayer({ text, description }) {
     }
     
     // Try to load voices immediately
-    if (loadVoices()) return
+    if (loadVoices()) {
+      console.log('Voices loaded on first try')
+      return
+    }
+    
+    // Trigger voice loading by speaking an empty utterance (helps Chrome)
+    try {
+      const triggerUtterance = new SpeechSynthesisUtterance('')
+      window.speechSynthesis.speak(triggerUtterance)
+      window.speechSynthesis.cancel()
+    } catch (e) {
+      console.log('Trigger utterance failed:', e)
+    }
     
     // Listen for voiceschanged event (Chrome fires this when voices are ready)
     const handleVoicesChanged = () => {
       console.log('Voices changed event fired')
-      loadVoices()
+      if (loadVoices() && pollInterval) {
+        clearInterval(pollInterval)
+        pollInterval = null
+      }
     }
     window.speechSynthesis.onvoiceschanged = handleVoicesChanged
     
     // Polling fallback for browsers that don't fire voiceschanged reliably
-    const pollVoices = setInterval(() => {
+    pollInterval = setInterval(() => {
       retryCount++
-      console.log(`Polling for voices, attempt ${retryCount}/${maxRetries}`)
       
       if (loadVoices()) {
-        clearInterval(pollVoices)
+        clearInterval(pollInterval)
+        pollInterval = null
         return
       }
       
       if (retryCount >= maxRetries) {
-        clearInterval(pollVoices)
+        clearInterval(pollInterval)
+        pollInterval = null
         // After all retries, allow user to try anyway
         if (mounted && !voicesLoadedRef.current) {
           console.log('Max retries reached, enabling play button anyway')
@@ -148,11 +166,11 @@ function AudioPlayer({ text, description }) {
           voicesLoadedRef.current = true
         }
       }
-    }, 250) // Poll every 250ms for up to 5 seconds total
+    }, 250) // Poll every 250ms
     
     return () => {
       mounted = false
-      clearInterval(pollVoices)
+      if (pollInterval) clearInterval(pollInterval)
       window.speechSynthesis.onvoiceschanged = null
       window.speechSynthesis.cancel()
       if (intervalRef.current) {
