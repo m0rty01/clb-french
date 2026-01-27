@@ -1595,6 +1595,146 @@ async function handleRoute(request, { params }) {
       }))
     }
 
+    // AI Writing Evaluation - POST /api/writing/evaluate
+    if (route === '/writing/evaluate' && method === 'POST') {
+      const decoded = verifyToken(request)
+      if (!decoded) {
+        return handleCORS(NextResponse.json(
+          { error: 'Unauthorized' },
+          { status: 401 }
+        ))
+      }
+      
+      const body = await request.json()
+      const { prompt, response, taskType, wordLimit } = body
+      
+      if (!prompt || !response) {
+        return handleCORS(NextResponse.json(
+          { error: 'Prompt and response are required' },
+          { status: 400 }
+        ))
+      }
+      
+      const emergentKey = process.env.EMERGENT_LLM_KEY
+      if (!emergentKey) {
+        return handleCORS(NextResponse.json(
+          { error: 'AI evaluation service not configured' },
+          { status: 500 }
+        ))
+      }
+      
+      try {
+        const evaluationPrompt = `You are an expert TEF (Test d'Évaluation de Français) examiner. Evaluate the following French writing response according to official TEF Expression Écrite criteria.
+
+TASK TYPE: ${taskType || 'Section A - Formal Letter / Section B - Opinion Essay'}
+WORD LIMIT: ${wordLimit || '80-200 words'}
+
+ORIGINAL PROMPT:
+${prompt}
+
+STUDENT'S RESPONSE:
+${response}
+
+Evaluate the response on these TEF criteria (score each 0-5):
+1. Task Achievement (Réalisation de la tâche) - Did the student address all parts of the prompt?
+2. Coherence & Cohesion (Cohérence et cohésion) - Is the text well-organized with proper transitions?
+3. Lexical Range (Étendue du vocabulaire) - Is vocabulary varied and appropriate?
+4. Grammatical Accuracy (Correction grammaticale) - Are grammar and spelling correct?
+5. Register & Tone (Registre et ton) - Is the style appropriate for the task type?
+
+Provide your response in this EXACT JSON format:
+{
+  "scores": {
+    "taskAchievement": <0-5>,
+    "coherenceCohesion": <0-5>,
+    "lexicalRange": <0-5>,
+    "grammaticalAccuracy": <0-5>,
+    "registerTone": <0-5>
+  },
+  "totalScore": <0-25>,
+  "clbLevel": "<CLB 4-12 equivalent>",
+  "tefScore": "<TEF score equivalent out of 450>",
+  "strengths": ["<strength 1>", "<strength 2>"],
+  "improvements": ["<improvement 1>", "<improvement 2>", "<improvement 3>"],
+  "correctedExcerpts": [
+    {"original": "<incorrect phrase>", "corrected": "<corrected phrase>", "explanation": "<brief explanation in English>"}
+  ],
+  "overallFeedback": "<2-3 sentence overall assessment in English>"
+}
+
+Be strict but fair. TEF is a standardized test - evaluate accordingly.`
+
+        const llmResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${emergentKey}`
+          },
+          body: JSON.stringify({
+            model: 'gpt-4o-mini',
+            messages: [
+              { role: 'system', content: 'You are an expert TEF examiner. Always respond with valid JSON only.' },
+              { role: 'user', content: evaluationPrompt }
+            ],
+            temperature: 0.3,
+            max_tokens: 1500
+          })
+        })
+        
+        if (!llmResponse.ok) {
+          const errorData = await llmResponse.text()
+          console.error('LLM API Error:', errorData)
+          return handleCORS(NextResponse.json(
+            { error: 'AI evaluation service error' },
+            { status: 500 }
+          ))
+        }
+        
+        const llmData = await llmResponse.json()
+        const aiResponse = llmData.choices[0]?.message?.content
+        
+        // Parse the JSON response
+        let evaluation
+        try {
+          // Extract JSON from response (in case there's extra text)
+          const jsonMatch = aiResponse.match(/\{[\s\S]*\}/)
+          if (jsonMatch) {
+            evaluation = JSON.parse(jsonMatch[0])
+          } else {
+            throw new Error('No JSON found in response')
+          }
+        } catch (parseError) {
+          console.error('Failed to parse AI response:', aiResponse)
+          return handleCORS(NextResponse.json(
+            { error: 'Failed to parse AI evaluation' },
+            { status: 500 }
+          ))
+        }
+        
+        // Save evaluation to database for tracking
+        await db.collection('writing_evaluations').insertOne({
+          id: uuidv4(),
+          userId: decoded.userId,
+          prompt,
+          response,
+          evaluation,
+          createdAt: new Date()
+        })
+        
+        return handleCORS(NextResponse.json({
+          success: true,
+          evaluation
+        }))
+        
+      } catch (error) {
+        console.error('Writing evaluation error:', error)
+        return handleCORS(NextResponse.json(
+          { error: 'Failed to evaluate writing' },
+          { status: 500 }
+        ))
+      }
+    }
+
     // Root endpoint
     if (route === '/' && method === 'GET') {
       return handleCORS(NextResponse.json({ message: 'CLB French Trainer API', version: '1.0.0' }))
