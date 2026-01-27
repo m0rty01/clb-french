@@ -100,6 +100,7 @@ function AudioPlayer({ text, description }) {
     
     const loadVoices = () => {
       const voices = window.speechSynthesis.getVoices()
+      console.log('Loaded voices:', voices.length)
       if (voices.length > 0) {
         setVoicesLoaded(true)
       }
@@ -111,8 +112,20 @@ function AudioPlayer({ text, description }) {
     // Also listen for voices changed event (Chrome needs this)
     window.speechSynthesis.onvoiceschanged = loadVoices
     
+    // Fallback: Try loading voices after a short delay (some browsers need this)
+    const fallbackTimer = setTimeout(() => {
+      if (!voicesLoaded) {
+        loadVoices()
+        // If still no voices after delay, set loaded anyway to allow attempt
+        setTimeout(() => {
+          setVoicesLoaded(true)
+        }, 500)
+      }
+    }, 1000)
+    
     return () => {
       window.speechSynthesis.cancel()
+      clearTimeout(fallbackTimer)
       if (intervalRef.current) {
         clearInterval(intervalRef.current)
       }
