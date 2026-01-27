@@ -1666,7 +1666,7 @@ Be strict but fair. TEF is a standardized test - evaluate accordingly. Return ON
 
         // Use Google Gemini API
         const geminiResponse = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`,
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent?key=${geminiKey}`,
           {
             method: 'POST',
             headers: {
