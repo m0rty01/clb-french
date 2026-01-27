@@ -645,11 +645,27 @@ function WritingTest({ test, onComplete, onBack }) {
             </CardContent>
           </Card>
           
-          {allTasks.map((task, idx) => (
+          {allTasks.map((task, idx) => {
+            const evaluation = evaluations[task.id]
+            const isEvaluating = evaluatingTask === task.id
+            
+            return (
             <Card key={task.id} className="mb-6">
               <CardHeader>
-                <CardTitle className="text-lg">Task {idx + 1}</CardTitle>
-                <CardDescription>{test.sections[idx].name}</CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-lg">Task {idx + 1}</CardTitle>
+                    <CardDescription>{test.sections[idx].name}</CardDescription>
+                  </div>
+                  {evaluation && (
+                    <div className="text-right">
+                      <Badge className="bg-gradient-to-r from-blue-600 to-purple-600 text-white text-lg px-3 py-1">
+                        {evaluation.clbLevel}
+                      </Badge>
+                      <p className="text-xs text-muted-foreground mt-1">TEF: {evaluation.tefScore}/450</p>
+                    </div>
+                  )}
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="bg-muted/50 rounded-lg p-4 mb-4">
@@ -661,13 +677,142 @@ function WritingTest({ test, onComplete, onBack }) {
                   <p className="whitespace-pre-wrap">{responses[task.id] || '(No response)'}</p>
                 </div>
                 
+                {/* AI Evaluation Button */}
+                {!evaluation && responses[task.id] && (
+                  <Button 
+                    onClick={() => handleEvaluate(task.id, task.prompt, idx)}
+                    disabled={isEvaluating}
+                    className="w-full mb-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                  >
+                    {isEvaluating ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Analyzing your writing...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="h-4 w-4 mr-2" />
+                        Get AI Score & Feedback
+                      </>
+                    )}
+                  </Button>
+                )}
+                
+                {/* AI Evaluation Results */}
+                {evaluation && (
+                  <div className="space-y-4 mb-4">
+                    <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-lg p-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Brain className="h-5 w-5 text-blue-600" />
+                        <h4 className="font-semibold text-blue-600">AI Evaluation Results</h4>
+                      </div>
+                      
+                      {/* Score Breakdown */}
+                      <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-4">
+                        <div className="bg-background rounded-lg p-2 text-center">
+                          <p className="text-xs text-muted-foreground">Task</p>
+                          <p className="text-lg font-bold">{evaluation.scores.taskAchievement}/5</p>
+                        </div>
+                        <div className="bg-background rounded-lg p-2 text-center">
+                          <p className="text-xs text-muted-foreground">Coherence</p>
+                          <p className="text-lg font-bold">{evaluation.scores.coherenceCohesion}/5</p>
+                        </div>
+                        <div className="bg-background rounded-lg p-2 text-center">
+                          <p className="text-xs text-muted-foreground">Vocabulary</p>
+                          <p className="text-lg font-bold">{evaluation.scores.lexicalRange}/5</p>
+                        </div>
+                        <div className="bg-background rounded-lg p-2 text-center">
+                          <p className="text-xs text-muted-foreground">Grammar</p>
+                          <p className="text-lg font-bold">{evaluation.scores.grammaticalAccuracy}/5</p>
+                        </div>
+                        <div className="bg-background rounded-lg p-2 text-center">
+                          <p className="text-xs text-muted-foreground">Register</p>
+                          <p className="text-lg font-bold">{evaluation.scores.registerTone}/5</p>
+                        </div>
+                      </div>
+                      
+                      {/* Total Score */}
+                      <div className="flex items-center justify-center gap-4 mb-4 p-3 bg-background rounded-lg">
+                        <div className="text-center">
+                          <p className="text-sm text-muted-foreground">Total Score</p>
+                          <p className="text-2xl font-bold">{evaluation.totalScore}/25</p>
+                        </div>
+                        <Separator orientation="vertical" className="h-12" />
+                        <div className="text-center">
+                          <p className="text-sm text-muted-foreground">CLB Level</p>
+                          <p className="text-2xl font-bold text-blue-600">{evaluation.clbLevel}</p>
+                        </div>
+                        <Separator orientation="vertical" className="h-12" />
+                        <div className="text-center">
+                          <p className="text-sm text-muted-foreground">TEF Score</p>
+                          <p className="text-2xl font-bold text-purple-600">{evaluation.tefScore}</p>
+                        </div>
+                      </div>
+                      
+                      {/* Overall Feedback */}
+                      <div className="mb-4 p-3 bg-background rounded-lg">
+                        <p className="text-sm">{evaluation.overallFeedback}</p>
+                      </div>
+                      
+                      {/* Strengths */}
+                      {evaluation.strengths && evaluation.strengths.length > 0 && (
+                        <div className="mb-3">
+                          <h5 className="text-sm font-semibold text-green-600 mb-2 flex items-center gap-1">
+                            <CheckCircle2 className="h-4 w-4" /> Strengths
+                          </h5>
+                          <ul className="text-sm space-y-1">
+                            {evaluation.strengths.map((s, i) => (
+                              <li key={i} className="flex items-start gap-2">
+                                <span className="text-green-600">✓</span> {s}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      
+                      {/* Improvements */}
+                      {evaluation.improvements && evaluation.improvements.length > 0 && (
+                        <div className="mb-3">
+                          <h5 className="text-sm font-semibold text-amber-600 mb-2 flex items-center gap-1">
+                            <AlertTriangle className="h-4 w-4" /> Areas to Improve
+                          </h5>
+                          <ul className="text-sm space-y-1">
+                            {evaluation.improvements.map((imp, i) => (
+                              <li key={i} className="flex items-start gap-2">
+                                <span className="text-amber-600">•</span> {imp}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      
+                      {/* Corrections */}
+                      {evaluation.correctedExcerpts && evaluation.correctedExcerpts.length > 0 && (
+                        <div>
+                          <h5 className="text-sm font-semibold text-red-600 mb-2 flex items-center gap-1">
+                            <XCircle className="h-4 w-4" /> Corrections
+                          </h5>
+                          <div className="space-y-2">
+                            {evaluation.correctedExcerpts.map((corr, i) => (
+                              <div key={i} className="text-sm bg-background rounded p-2">
+                                <p><span className="line-through text-red-500">{corr.original}</span> → <span className="text-green-600 font-medium">{corr.corrected}</span></p>
+                                <p className="text-xs text-muted-foreground mt-1">{corr.explanation}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+                
                 <h4 className="font-medium mb-2">Sample Answer:</h4>
                 <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
                   <p className="whitespace-pre-wrap text-sm">{task.sampleAnswer}</p>
                 </div>
               </CardContent>
             </Card>
-          ))}
+          )})}
         </main>
       </div>
     )
