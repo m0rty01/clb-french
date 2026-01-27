@@ -1679,7 +1679,12 @@ function Dashboard({ user, token, onLogout, onReset }) {
                                     <p className="text-xs text-muted-foreground">💡 Example start: <em>{resource.example}</em></p>
                                   </div>
                                 )}
-                                <Badge variant="outline" className="text-xs">📝 {resource.wordCount}</Badge>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <Badge variant="outline" className="text-xs">📝 {resource.wordCount}</Badge>
+                                  {resource.sampleAnswer && (
+                                    <SampleAnswerButton sampleAnswer={resource.sampleAnswer} title={resource.title} />
+                                  )}
+                                </div>
                               </div>
                             </div>
                           )}
