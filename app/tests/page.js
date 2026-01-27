@@ -346,6 +346,14 @@ function AudioPlayer({ text, description }) {
       
       {/* Player Controls */}
       <div className="bg-background/80 rounded-lg p-4">
+        {/* Voice Loading Status */}
+        {!voicesLoaded && (
+          <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mb-3">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span>Loading audio voices...</span>
+          </div>
+        )}
+        
         {/* Progress Bar */}
         <div className="flex items-center gap-3 mb-3">
           <span className="text-xs font-mono text-muted-foreground w-10">{formatPlayerTime(currentTime)}</span>
