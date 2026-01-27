@@ -185,12 +185,14 @@ const pricingPlans = [
       "3 grammar lessons per week",
       "2 TEF mock exams",
       "Basic progress tracking",
+      "Sample writing answers",
       "Community support"
     ],
     notIncluded: [
       "Full pathway access",
+      "AI Writing Evaluation",
+      "Audio listening practice",
       "All 20 mock exams per skill",
-      "Weak topic tracking",
       "Priority support"
     ],
     cta: "Start Free",
@@ -207,12 +209,15 @@ const pricingPlans = [
       "Full CLB 5 pathway (4 months)",
       "All 20 grammar lessons",
       "10 TEF mock exams per skill",
+      "🎧 Audio player for listening practice",
+      "📝 Sample answers for all writing tasks",
       "Grammar weak topic tracking",
       "Progress analytics",
       "Email support"
     ],
     notIncluded: [
       "CLB 7 pathway",
+      "AI Writing Evaluation",
       "All 20 mock exams",
       "Priority support"
     ],
@@ -230,6 +235,9 @@ const pricingPlans = [
       "Both CLB 5 & CLB 7 pathways",
       "All 20 grammar lessons + bonus content",
       "All 80 TEF mock exams (20 per skill)",
+      "🤖 AI Writing Evaluation with TEF scores",
+      "🎧 Audio player for listening practice",
+      "📝 Sample answers for all writing tasks",
       "Advanced weak topic tracking",
       "Detailed performance analytics",
       "Priority email support",
