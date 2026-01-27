@@ -88,8 +88,10 @@ function AudioPlayer({ text, description }) {
   const [isSupported, setIsSupported] = useState(true)
   const [voicesLoaded, setVoicesLoaded] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [voiceError, setVoiceError] = useState(null)
   const utteranceRef = useRef(null)
   const intervalRef = useRef(null)
+  const voicesLoadedRef = useRef(false)
   
   // Load voices on component mount
   useEffect(() => {
@@ -98,34 +100,61 @@ function AudioPlayer({ text, description }) {
       return
     }
     
+    let mounted = true
+    let retryCount = 0
+    const maxRetries = 20 // Allow more time for voices to load
+    
     const loadVoices = () => {
       const voices = window.speechSynthesis.getVoices()
-      console.log('Loaded voices:', voices.length)
+      console.log('Loading voices, found:', voices.length)
+      
       if (voices.length > 0) {
-        setVoicesLoaded(true)
+        if (mounted) {
+          setVoicesLoaded(true)
+          voicesLoadedRef.current = true
+          setVoiceError(null)
+        }
+        return true
       }
+      return false
     }
     
-    // Load voices immediately if available
-    loadVoices()
+    // Try to load voices immediately
+    if (loadVoices()) return
     
-    // Also listen for voices changed event (Chrome needs this)
-    window.speechSynthesis.onvoiceschanged = loadVoices
+    // Listen for voiceschanged event (Chrome fires this when voices are ready)
+    const handleVoicesChanged = () => {
+      console.log('Voices changed event fired')
+      loadVoices()
+    }
+    window.speechSynthesis.onvoiceschanged = handleVoicesChanged
     
-    // Fallback: Try loading voices after a short delay (some browsers need this)
-    const fallbackTimer = setTimeout(() => {
-      if (!voicesLoaded) {
-        loadVoices()
-        // If still no voices after delay, set loaded anyway to allow attempt
-        setTimeout(() => {
-          setVoicesLoaded(true)
-        }, 500)
+    // Polling fallback for browsers that don't fire voiceschanged reliably
+    const pollVoices = setInterval(() => {
+      retryCount++
+      console.log(`Polling for voices, attempt ${retryCount}/${maxRetries}`)
+      
+      if (loadVoices()) {
+        clearInterval(pollVoices)
+        return
       }
-    }, 1000)
+      
+      if (retryCount >= maxRetries) {
+        clearInterval(pollVoices)
+        // After all retries, allow user to try anyway
+        if (mounted && !voicesLoadedRef.current) {
+          console.log('Max retries reached, enabling play button anyway')
+          setVoicesLoaded(true)
+          voicesLoadedRef.current = true
+        }
+      }
+    }, 250) // Poll every 250ms for up to 5 seconds total
     
     return () => {
+      mounted = false
+      clearInterval(pollVoices)
+      window.speechSynthesis.onvoiceschanged = null
       window.speechSynthesis.cancel()
-      clearTimeout(fallbackTimer)
       if (intervalRef.current) {
         clearInterval(intervalRef.current)
       }
