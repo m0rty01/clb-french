@@ -563,6 +563,56 @@ function WritingTest({ test, onComplete, onBack }) {
     })
   }
   
+  const handleEvaluate = async (taskId, prompt, taskIndex) => {
+    const response = responses[taskId]
+    if (!response || response.trim().length < 10) {
+      toast.error('Please write a longer response to evaluate')
+      return
+    }
+    
+    const token = Cookies.get('token')
+    if (!token) {
+      toast.error('Please log in to use AI evaluation')
+      return
+    }
+    
+    setEvaluatingTask(taskId)
+    
+    try {
+      const res = await fetch('/api/writing/evaluate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          prompt,
+          response,
+          taskType: taskIndex === 0 ? 'Section A - Formal Letter' : 'Section B - Opinion Essay',
+          wordLimit: taskIndex === 0 ? '80-120 words' : '200-250 words'
+        })
+      })
+      
+      const data = await res.json()
+      
+      if (!res.ok) {
+        throw new Error(data.error || 'Evaluation failed')
+      }
+      
+      setEvaluations(prev => ({
+        ...prev,
+        [taskId]: data.evaluation
+      }))
+      
+      toast.success('AI evaluation complete!')
+    } catch (error) {
+      console.error('Evaluation error:', error)
+      toast.error(error.message || 'Failed to evaluate. Please try again.')
+    } finally {
+      setEvaluatingTask(null)
+    }
+  }
+  
   if (showResults) {
     return (
       <div className="min-h-screen bg-background">
