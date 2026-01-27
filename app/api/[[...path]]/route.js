@@ -1279,9 +1279,9 @@ async function handleRoute(request, { params }) {
           url: session.url
         }))
       } catch (error) {
-        console.error('Stripe error:', error)
+        console.error('Stripe error:', error.message, error.type, error.code)
         return handleCORS(NextResponse.json(
-          { error: 'Failed to create checkout session' },
+          { error: 'Failed to create checkout session', details: error.message },
           { status: 500 }
         ))
       }
