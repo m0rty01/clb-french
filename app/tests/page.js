@@ -78,6 +78,290 @@ function TestTimer({ duration, onTimeUp, isActive }) {
   )
 }
 
+// Audio Player Component for Listening Tests
+function AudioPlayer({ text, description }) {
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [isPaused, setIsPaused] = useState(false)
+  const [playbackRate, setPlaybackRate] = useState(1)
+  const [currentTime, setCurrentTime] = useState(0)
+  const [duration, setDuration] = useState(0)
+  const [isSupported, setIsSupported] = useState(true)
+  const utteranceRef = useRef(null)
+  const startTimeRef = useRef(null)
+  const intervalRef = useRef(null)
+  
+  useEffect(() => {
+    // Check if speech synthesis is supported
+    if (typeof window !== 'undefined' && !window.speechSynthesis) {
+      setIsSupported(false)
+    }
+    
+    return () => {
+      if (utteranceRef.current) {
+        window.speechSynthesis.cancel()
+      }
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current)
+      }
+    }
+  }, [])
+  
+  // Estimate duration based on text length (average 150 words per minute in French)
+  useEffect(() => {
+    if (text) {
+      const wordCount = text.split(/\s+/).length
+      const estimatedDuration = Math.ceil((wordCount / 150) * 60) // in seconds
+      setDuration(estimatedDuration)
+    }
+  }, [text])
+  
+  const getFrenchVoice = () => {
+    const voices = window.speechSynthesis.getVoices()
+    // Try to find a French voice
+    const frenchVoice = voices.find(voice => 
+      voice.lang.startsWith('fr') || 
+      voice.name.toLowerCase().includes('french') ||
+      voice.name.toLowerCase().includes('français')
+    )
+    return frenchVoice || voices[0]
+  }
+  
+  const handlePlay = () => {
+    if (!window.speechSynthesis || !text) return
+    
+    if (isPaused) {
+      window.speechSynthesis.resume()
+      setIsPaused(false)
+      setIsPlaying(true)
+      startTimeTracking()
+      return
+    }
+    
+    // Cancel any ongoing speech
+    window.speechSynthesis.cancel()
+    
+    const utterance = new SpeechSynthesisUtterance(text)
+    utterance.lang = 'fr-FR'
+    utterance.rate = playbackRate
+    utterance.pitch = 1
+    
+    // Try to get French voice
+    const voice = getFrenchVoice()
+    if (voice) {
+      utterance.voice = voice
+    }
+    
+    utterance.onstart = () => {
+      setIsPlaying(true)
+      setIsPaused(false)
+      startTimeRef.current = Date.now()
+      startTimeTracking()
+    }
+    
+    utterance.onend = () => {
+      setIsPlaying(false)
+      setIsPaused(false)
+      setCurrentTime(duration)
+      stopTimeTracking()
+    }
+    
+    utterance.onerror = (event) => {
+      console.error('Speech synthesis error:', event)
+      setIsPlaying(false)
+      setIsPaused(false)
+      stopTimeTracking()
+    }
+    
+    utteranceRef.current = utterance
+    window.speechSynthesis.speak(utterance)
+  }
+  
+  const handlePause = () => {
+    if (window.speechSynthesis && isPlaying) {
+      window.speechSynthesis.pause()
+      setIsPaused(true)
+      setIsPlaying(false)
+      stopTimeTracking()
+    }
+  }
+  
+  const handleStop = () => {
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel()
+      setIsPlaying(false)
+      setIsPaused(false)
+      setCurrentTime(0)
+      stopTimeTracking()
+    }
+  }
+  
+  const handleRestart = () => {
+    handleStop()
+    setTimeout(() => handlePlay(), 100)
+  }
+  
+  const startTimeTracking = () => {
+    intervalRef.current = setInterval(() => {
+      setCurrentTime(prev => {
+        const newTime = prev + 1
+        return newTime >= duration ? duration : newTime
+      })
+    }, 1000)
+  }
+  
+  const stopTimeTracking = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current)
+      intervalRef.current = null
+    }
+  }
+  
+  const handleRateChange = (newRate) => {
+    setPlaybackRate(newRate)
+    // If currently playing, restart with new rate
+    if (isPlaying || isPaused) {
+      handleStop()
+      setTimeout(() => {
+        const utterance = new SpeechSynthesisUtterance(text)
+        utterance.lang = 'fr-FR'
+        utterance.rate = newRate
+        const voice = getFrenchVoice()
+        if (voice) utterance.voice = voice
+        
+        utterance.onend = () => {
+          setIsPlaying(false)
+          setCurrentTime(duration)
+          stopTimeTracking()
+        }
+        
+        utteranceRef.current = utterance
+        window.speechSynthesis.speak(utterance)
+        setIsPlaying(true)
+        startTimeTracking()
+      }, 100)
+    }
+  }
+  
+  const formatPlayerTime = (seconds) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins}:${secs.toString().padStart(2, '0')}`
+  }
+  
+  if (!isSupported) {
+    return (
+      <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4">
+        <p className="text-sm text-amber-700 dark:text-amber-400">
+          Audio playback is not supported in your browser. Please read the transcript below.
+        </p>
+        {text && (
+          <div className="mt-3 p-3 bg-muted/50 rounded text-sm">
+            <p className="text-muted-foreground">{text}</p>
+          </div>
+        )}
+      </div>
+    )
+  }
+  
+  return (
+    <div className="bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/20 rounded-lg p-4">
+      <div className="flex items-center gap-2 mb-3">
+        <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center">
+          <Volume2 className="h-4 w-4 text-purple-600" />
+        </div>
+        <div>
+          <span className="font-medium text-purple-600 dark:text-purple-400">Audio Player</span>
+          <p className="text-xs text-muted-foreground">Listen to the French dialogue</p>
+        </div>
+      </div>
+      
+      {description && (
+        <p className="text-sm italic text-muted-foreground mb-3">{description}</p>
+      )}
+      
+      {/* Player Controls */}
+      <div className="bg-background/80 rounded-lg p-4">
+        {/* Progress Bar */}
+        <div className="flex items-center gap-3 mb-3">
+          <span className="text-xs font-mono text-muted-foreground w-10">{formatPlayerTime(currentTime)}</span>
+          <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-gradient-to-r from-purple-500 to-blue-500 transition-all duration-300"
+              style={{ width: `${duration > 0 ? (currentTime / duration) * 100 : 0}%` }}
+            />
+          </div>
+          <span className="text-xs font-mono text-muted-foreground w-10">{formatPlayerTime(duration)}</span>
+        </div>
+        
+        {/* Control Buttons */}
+        <div className="flex items-center justify-center gap-2">
+          <Button 
+            variant="outline" 
+            size="icon"
+            onClick={handleRestart}
+            disabled={!isPlaying && !isPaused && currentTime === 0}
+            className="h-9 w-9"
+          >
+            <RotateCw className="h-4 w-4" />
+          </Button>
+          
+          {isPlaying ? (
+            <Button 
+              onClick={handlePause}
+              className="h-12 w-12 rounded-full bg-purple-600 hover:bg-purple-700"
+            >
+              <Pause className="h-5 w-5" />
+            </Button>
+          ) : (
+            <Button 
+              onClick={handlePlay}
+              className="h-12 w-12 rounded-full bg-purple-600 hover:bg-purple-700"
+            >
+              <Play className="h-5 w-5 ml-0.5" />
+            </Button>
+          )}
+          
+          <Button 
+            variant="outline" 
+            size="icon"
+            onClick={handleStop}
+            disabled={!isPlaying && !isPaused}
+            className="h-9 w-9"
+          >
+            <Square className="h-4 w-4" />
+          </Button>
+        </div>
+        
+        {/* Speed Control */}
+        <div className="flex items-center justify-center gap-2 mt-3">
+          <span className="text-xs text-muted-foreground">Speed:</span>
+          {[0.75, 1, 1.25, 1.5].map((rate) => (
+            <Button
+              key={rate}
+              variant={playbackRate === rate ? "default" : "outline"}
+              size="sm"
+              onClick={() => handleRateChange(rate)}
+              className={`h-7 text-xs ${playbackRate === rate ? 'bg-purple-600 hover:bg-purple-700' : ''}`}
+            >
+              {rate}x
+            </Button>
+          ))}
+        </div>
+      </div>
+      
+      {/* Show Transcript Toggle */}
+      <details className="mt-3">
+        <summary className="text-xs text-muted-foreground cursor-pointer hover:text-foreground transition-colors">
+          📄 Show transcript (for practice only)
+        </summary>
+        <div className="mt-2 p-3 bg-muted/50 rounded text-sm">
+          <p className="text-muted-foreground whitespace-pre-wrap">{text}</p>
+        </div>
+      </details>
+    </div>
+  )
+}
+
 // Test Selection Page
 function TestSelection({ onSelectTest, accessibleExams, subscriptionTier, isAdmin }) {
   const { theme, setTheme } = useTheme()
