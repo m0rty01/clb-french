@@ -448,8 +448,13 @@ export default function GrammarReferencePage() {
               <h3 className="text-2xl font-bold mb-4">Ready to Master French Grammar?</h3>
               <p className="text-muted-foreground mb-6 max-w-xl mx-auto">
                 Combine our structured platform with these resources for the most effective 
-                TEF Canada preparation possible.
+                TEF Canada preparation possible. Get AI-powered writing feedback and interactive audio practice!
               </p>
+              <div className="flex flex-wrap justify-center gap-2 mb-6">
+                <Badge className="bg-blue-100 text-blue-700">🤖 AI Writing Evaluation</Badge>
+                <Badge className="bg-violet-100 text-violet-700">🎧 Audio Listening Practice</Badge>
+                <Badge className="bg-green-100 text-green-700">📝 Sample Answers</Badge>
+              </div>
               <Link href="/dashboard">
                 <Button size="lg" className="bg-blue-600 hover:bg-blue-700">
                   Start Your Grammar Journey
