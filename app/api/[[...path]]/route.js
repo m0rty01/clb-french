@@ -27,11 +27,10 @@ function getStripe() {
 // Initialize Google Cloud TTS client lazily
 let ttsClient = null
 function getTTSClient() {
-  if (!ttsClient && process.env.GOOGLE_TTS_CREDENTIALS) {
+  if (!ttsClient) {
     try {
-      const credentialsJson = Buffer.from(process.env.GOOGLE_TTS_CREDENTIALS, 'base64').toString()
-      const credentials = JSON.parse(credentialsJson)
-      ttsClient = new TextToSpeechClient({ credentials })
+      // Google Cloud SDK automatically uses GOOGLE_APPLICATION_CREDENTIALS env var
+      ttsClient = new TextToSpeechClient()
       console.log('Google Cloud TTS client initialized')
     } catch (error) {
       console.error('Failed to initialize Google Cloud TTS client:', error)
