@@ -19,7 +19,7 @@ import {
   ChevronLeft, ChevronRight, Check, X, Play, Pause,
   Home, Trophy, Target, Moon, Sun, Volume2, AlertTriangle,
   BookOpen, ArrowLeft, RotateCcw, Eye, CheckCircle2, XCircle,
-  Lock, Crown
+  Lock, Crown, Sparkles, Brain, Loader2
 } from 'lucide-react'
 import { 
   TEF_TEST_STRUCTURE, 
