@@ -79,6 +79,7 @@ function TestTimer({ duration, onTimeUp, isActive }) {
 }
 
 // Audio Player Component for Listening Tests
+// Audio Player Component for Listening Tests - Uses Google Cloud TTS
 function AudioPlayer({ text, description }) {
   const [isPlaying, setIsPlaying] = useState(false)
   const [playbackRate, setPlaybackRate] = useState(1)
@@ -90,7 +91,7 @@ function AudioPlayer({ text, description }) {
   const audioRef = useRef(null)
   const intervalRef = useRef(null)
   
-  // Clean up audio URL when component unmounts or text changes
+  // Clean up audio URL when component unmounts
   useEffect(() => {
     return () => {
       if (audioUrl) {
@@ -100,7 +101,7 @@ function AudioPlayer({ text, description }) {
         clearInterval(intervalRef.current)
       }
     }
-  }, [audioUrl])
+  }, [])
   
   // Update playback rate when audio is loaded
   useEffect(() => {
@@ -187,12 +188,14 @@ function AudioPlayer({ text, description }) {
   }
   
   const handleRestart = () => {
-    if (audioRef.current) {
+    if (audioRef.current && audioUrl) {
       audioRef.current.currentTime = 0
       audioRef.current.play()
       setIsPlaying(true)
       setCurrentTime(0)
       startTimeTracking()
+    } else {
+      handlePlay()
     }
   }
   
@@ -228,304 +231,12 @@ function AudioPlayer({ text, description }) {
     if (audioRef.current) {
       audioRef.current.playbackRate = newRate
     }
-    // If audio was already generated, we need to regenerate it with the new rate
-    // For simplicity, we'll just change the playback rate of the existing audio
   }
   
   const formatPlayerTime = (seconds) => {
     const mins = Math.floor(seconds / 60)
     const secs = seconds % 60
     return `${mins}:${secs.toString().padStart(2, '0')}`
-  }
-    try {
-      const triggerUtterance = new SpeechSynthesisUtterance('')
-      window.speechSynthesis.speak(triggerUtterance)
-      window.speechSynthesis.cancel()
-    } catch (e) {
-      console.log('Trigger utterance failed:', e)
-    }
-    
-    // Listen for voiceschanged event (Chrome fires this when voices are ready)
-    const handleVoicesChanged = () => {
-      console.log('Voices changed event fired')
-      if (loadVoices() && pollInterval) {
-        clearInterval(pollInterval)
-        pollInterval = null
-      }
-    }
-    window.speechSynthesis.onvoiceschanged = handleVoicesChanged
-    
-    // Polling fallback for browsers that don't fire voiceschanged reliably
-    pollInterval = setInterval(() => {
-      retryCount++
-      
-      if (loadVoices()) {
-        clearInterval(pollInterval)
-        pollInterval = null
-        return
-      }
-      
-      if (retryCount >= maxRetries) {
-        clearInterval(pollInterval)
-        pollInterval = null
-        // After all retries, allow user to try anyway
-        if (mounted && !voicesLoadedRef.current) {
-          console.log('Max retries reached, enabling play button anyway')
-          setVoicesLoaded(true)
-          voicesLoadedRef.current = true
-        }
-      }
-    }, 250) // Poll every 250ms
-    
-    return () => {
-      mounted = false
-      if (pollInterval) clearInterval(pollInterval)
-      window.speechSynthesis.onvoiceschanged = null
-      window.speechSynthesis.cancel()
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current)
-      }
-    }
-  }, [])
-  
-  // Estimate duration based on text length (average 150 words per minute in French)
-  useEffect(() => {
-    if (text) {
-      const wordCount = text.split(/\s+/).length
-      const estimatedDuration = Math.max(5, Math.ceil((wordCount / 150) * 60)) // minimum 5 seconds
-      setDuration(estimatedDuration)
-    }
-  }, [text])
-  
-  const getFrenchVoice = () => {
-    const voices = window.speechSynthesis.getVoices()
-    // Try to find a French voice - prioritize Google French voice
-    const frenchVoice = voices.find(voice => 
-      voice.lang === 'fr-FR' || 
-      voice.lang === 'fr-CA' ||
-      voice.lang.startsWith('fr')
-    ) || voices.find(voice =>
-      voice.name.toLowerCase().includes('french') ||
-      voice.name.toLowerCase().includes('français')
-    )
-    return frenchVoice || voices[0]
-  }
-  
-  const handlePlay = () => {
-    if (!window.speechSynthesis || !text) {
-      console.error('Speech synthesis not available or no text')
-      toast.error('Speech synthesis not available')
-      return
-    }
-    
-    // Resume if paused
-    if (isPaused) {
-      window.speechSynthesis.resume()
-      setIsPaused(false)
-      setIsPlaying(true)
-      startTimeTracking()
-      return
-    }
-    
-    // Check if voices are available
-    const voices = window.speechSynthesis.getVoices()
-    console.log('handlePlay - voices available:', voices.length)
-    
-    if (voices.length === 0) {
-      // Show loading state and wait for voices
-      setIsLoading(true)
-      toast.info('Loading audio voices...', { duration: 2000 })
-      
-      // Trigger voice loading by speaking an empty utterance
-      const triggerLoad = new SpeechSynthesisUtterance('')
-      window.speechSynthesis.speak(triggerLoad)
-      window.speechSynthesis.cancel()
-      
-      // Try to trigger voice loading with a longer wait
-      const waitForVoices = (attempt = 0) => {
-        const currentVoices = window.speechSynthesis.getVoices()
-        console.log(`Waiting for voices, attempt ${attempt}, found: ${currentVoices.length}`)
-        
-        if (currentVoices.length > 0) {
-          setIsLoading(false)
-          // Voices loaded, proceed with playback
-          startPlayback()
-          return
-        }
-        
-        if (attempt >= 20) {
-          // After 4 seconds (20 * 200ms), show helpful message
-          setIsLoading(false)
-          toast.error('Could not load audio voices. Please try refreshing the page or using Chrome/Firefox/Safari.', {
-            duration: 6000
-          })
-          return
-        }
-        
-        setTimeout(() => waitForVoices(attempt + 1), 200)
-      }
-      
-      waitForVoices()
-      return
-    }
-    
-    startPlayback()
-  }
-  
-  const startPlayback = () => {
-    setIsLoading(true)
-    
-    // Cancel any ongoing speech
-    window.speechSynthesis.cancel()
-    
-    // Small delay to ensure cancellation is complete
-    setTimeout(() => {
-      const utterance = new SpeechSynthesisUtterance(text)
-      utterance.lang = 'fr-FR'
-      utterance.rate = playbackRate
-      utterance.pitch = 1
-      utterance.volume = 1
-      
-      // Try to get French voice
-      const voice = getFrenchVoice()
-      if (voice) {
-        utterance.voice = voice
-        console.log('Using voice:', voice.name, voice.lang)
-      } else {
-        console.log('No French voice found, using default')
-      }
-      
-      utterance.onstart = () => {
-        console.log('Speech started')
-        setIsLoading(false)
-        setIsPlaying(true)
-        setIsPaused(false)
-        startTimeTracking()
-      }
-      
-      utterance.onend = () => {
-        console.log('Speech ended')
-        setIsPlaying(false)
-        setIsPaused(false)
-        setCurrentTime(duration)
-        stopTimeTracking()
-      }
-      
-      utterance.onerror = (event) => {
-        console.error('Speech synthesis error:', event.error)
-        setIsLoading(false)
-        setIsPlaying(false)
-        setIsPaused(false)
-        stopTimeTracking()
-        
-        // Show error toast for user (but not for 'interrupted' which is normal)
-        if (event.error !== 'interrupted' && event.error !== 'canceled') {
-          toast.error('Audio playback failed. Please refresh the page and try again.')
-        }
-      }
-      
-      utteranceRef.current = utterance
-      window.speechSynthesis.speak(utterance)
-      
-      // Workaround for Chrome bug where speech stops after ~15 seconds
-      // Keep speech synthesis active
-      const keepAlive = setInterval(() => {
-        if (window.speechSynthesis.speaking) {
-          window.speechSynthesis.pause()
-          window.speechSynthesis.resume()
-        } else {
-          clearInterval(keepAlive)
-        }
-      }, 10000)
-      
-    }, 100)
-  }
-  
-  const handlePause = () => {
-    if (window.speechSynthesis && isPlaying) {
-      window.speechSynthesis.pause()
-      setIsPaused(true)
-      setIsPlaying(false)
-      stopTimeTracking()
-    }
-  }
-  
-  const handleStop = () => {
-    if (window.speechSynthesis) {
-      window.speechSynthesis.cancel()
-      setIsPlaying(false)
-      setIsPaused(false)
-      setCurrentTime(0)
-      stopTimeTracking()
-    }
-  }
-  
-  const handleRestart = () => {
-    handleStop()
-    setTimeout(() => handlePlay(), 100)
-  }
-  
-  const startTimeTracking = () => {
-    intervalRef.current = setInterval(() => {
-      setCurrentTime(prev => {
-        const newTime = prev + 1
-        return newTime >= duration ? duration : newTime
-      })
-    }, 1000)
-  }
-  
-  const stopTimeTracking = () => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current)
-      intervalRef.current = null
-    }
-  }
-  
-  const handleRateChange = (newRate) => {
-    setPlaybackRate(newRate)
-    // If currently playing, restart with new rate
-    if (isPlaying || isPaused) {
-      handleStop()
-      setTimeout(() => {
-        const utterance = new SpeechSynthesisUtterance(text)
-        utterance.lang = 'fr-FR'
-        utterance.rate = newRate
-        const voice = getFrenchVoice()
-        if (voice) utterance.voice = voice
-        
-        utterance.onend = () => {
-          setIsPlaying(false)
-          setCurrentTime(duration)
-          stopTimeTracking()
-        }
-        
-        utteranceRef.current = utterance
-        window.speechSynthesis.speak(utterance)
-        setIsPlaying(true)
-        startTimeTracking()
-      }, 100)
-    }
-  }
-  
-  const formatPlayerTime = (seconds) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = seconds % 60
-    return `${mins}:${secs.toString().padStart(2, '0')}`
-  }
-  
-  if (!isSupported) {
-    return (
-      <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4">
-        <p className="text-sm text-amber-700 dark:text-amber-400">
-          Audio playback is not supported in your browser. Please read the transcript below.
-        </p>
-        {text && (
-          <div className="mt-3 p-3 bg-muted/50 rounded text-sm">
-            <p className="text-muted-foreground">{text}</p>
-          </div>
-        )}
-      </div>
-    )
   }
   
   return (
@@ -542,6 +253,24 @@ function AudioPlayer({ text, description }) {
       
       {description && (
         <p className="text-sm italic text-muted-foreground mb-3">{description}</p>
+      )}
+      
+      {/* Hidden audio element */}
+      {audioUrl && (
+        <audio
+          ref={audioRef}
+          src={audioUrl}
+          onEnded={handleAudioEnded}
+          onLoadedMetadata={handleAudioLoaded}
+          preload="auto"
+        />
+      )}
+      
+      {/* Error message */}
+      {error && (
+        <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 mb-3">
+          <p className="text-sm text-red-600">{error}</p>
+        </div>
       )}
       
       {/* Player Controls */}
@@ -564,7 +293,7 @@ function AudioPlayer({ text, description }) {
             variant="outline" 
             size="icon"
             onClick={handleRestart}
-            disabled={!isPlaying && !isPaused && currentTime === 0}
+            disabled={!audioUrl && !isLoading}
             className="h-9 w-9"
           >
             <RotateCw className="h-4 w-4" />
@@ -595,7 +324,7 @@ function AudioPlayer({ text, description }) {
             variant="outline" 
             size="icon"
             onClick={handleStop}
-            disabled={!isPlaying && !isPaused}
+            disabled={!isPlaying && currentTime === 0}
             className="h-9 w-9"
           >
             <Square className="h-4 w-4" />
