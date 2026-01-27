@@ -86,20 +86,33 @@ function AudioPlayer({ text, description }) {
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
   const [isSupported, setIsSupported] = useState(true)
+  const [voicesLoaded, setVoicesLoaded] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
   const utteranceRef = useRef(null)
-  const startTimeRef = useRef(null)
   const intervalRef = useRef(null)
   
+  // Load voices on component mount
   useEffect(() => {
-    // Check if speech synthesis is supported
-    if (typeof window !== 'undefined' && !window.speechSynthesis) {
+    if (typeof window === 'undefined' || !window.speechSynthesis) {
       setIsSupported(false)
+      return
     }
     
-    return () => {
-      if (utteranceRef.current) {
-        window.speechSynthesis.cancel()
+    const loadVoices = () => {
+      const voices = window.speechSynthesis.getVoices()
+      if (voices.length > 0) {
+        setVoicesLoaded(true)
       }
+    }
+    
+    // Load voices immediately if available
+    loadVoices()
+    
+    // Also listen for voices changed event (Chrome needs this)
+    window.speechSynthesis.onvoiceschanged = loadVoices
+    
+    return () => {
+      window.speechSynthesis.cancel()
       if (intervalRef.current) {
         clearInterval(intervalRef.current)
       }
@@ -110,16 +123,19 @@ function AudioPlayer({ text, description }) {
   useEffect(() => {
     if (text) {
       const wordCount = text.split(/\s+/).length
-      const estimatedDuration = Math.ceil((wordCount / 150) * 60) // in seconds
+      const estimatedDuration = Math.max(5, Math.ceil((wordCount / 150) * 60)) // minimum 5 seconds
       setDuration(estimatedDuration)
     }
   }, [text])
   
   const getFrenchVoice = () => {
     const voices = window.speechSynthesis.getVoices()
-    // Try to find a French voice
+    // Try to find a French voice - prioritize Google French voice
     const frenchVoice = voices.find(voice => 
-      voice.lang.startsWith('fr') || 
+      voice.lang === 'fr-FR' || 
+      voice.lang === 'fr-CA' ||
+      voice.lang.startsWith('fr')
+    ) || voices.find(voice =>
       voice.name.toLowerCase().includes('french') ||
       voice.name.toLowerCase().includes('français')
     )
@@ -127,8 +143,12 @@ function AudioPlayer({ text, description }) {
   }
   
   const handlePlay = () => {
-    if (!window.speechSynthesis || !text) return
+    if (!window.speechSynthesis || !text) {
+      console.error('Speech synthesis not available or no text')
+      return
+    }
     
+    // Resume if paused
     if (isPaused) {
       window.speechSynthesis.resume()
       setIsPaused(false)
@@ -137,26 +157,66 @@ function AudioPlayer({ text, description }) {
       return
     }
     
+    setIsLoading(true)
+    
     // Cancel any ongoing speech
     window.speechSynthesis.cancel()
     
-    const utterance = new SpeechSynthesisUtterance(text)
-    utterance.lang = 'fr-FR'
-    utterance.rate = playbackRate
-    utterance.pitch = 1
-    
-    // Try to get French voice
-    const voice = getFrenchVoice()
-    if (voice) {
-      utterance.voice = voice
-    }
-    
-    utterance.onstart = () => {
-      setIsPlaying(true)
-      setIsPaused(false)
-      startTimeRef.current = Date.now()
-      startTimeTracking()
-    }
+    // Small delay to ensure cancellation is complete
+    setTimeout(() => {
+      const utterance = new SpeechSynthesisUtterance(text)
+      utterance.lang = 'fr-FR'
+      utterance.rate = playbackRate
+      utterance.pitch = 1
+      utterance.volume = 1
+      
+      // Try to get French voice
+      const voice = getFrenchVoice()
+      if (voice) {
+        utterance.voice = voice
+        console.log('Using voice:', voice.name, voice.lang)
+      }
+      
+      utterance.onstart = () => {
+        console.log('Speech started')
+        setIsLoading(false)
+        setIsPlaying(true)
+        setIsPaused(false)
+        startTimeTracking()
+      }
+      
+      utterance.onend = () => {
+        console.log('Speech ended')
+        setIsPlaying(false)
+        setIsPaused(false)
+        setCurrentTime(duration)
+        stopTimeTracking()
+      }
+      
+      utterance.onerror = (event) => {
+        console.error('Speech synthesis error:', event.error)
+        setIsLoading(false)
+        setIsPlaying(false)
+        setIsPaused(false)
+        stopTimeTracking()
+      }
+      
+      utteranceRef.current = utterance
+      window.speechSynthesis.speak(utterance)
+      
+      // Workaround for Chrome bug where speech stops after ~15 seconds
+      // Keep speech synthesis active
+      const keepAlive = setInterval(() => {
+        if (window.speechSynthesis.speaking) {
+          window.speechSynthesis.pause()
+          window.speechSynthesis.resume()
+        } else {
+          clearInterval(keepAlive)
+        }
+      }, 10000)
+      
+    }, 100)
+  }
     
     utterance.onend = () => {
       setIsPlaying(false)
