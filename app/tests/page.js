@@ -357,9 +357,16 @@ function AudioPlayer({ text, description }) {
           ) : (
             <Button 
               onClick={handlePlay}
-              className="h-12 w-12 rounded-full bg-purple-600 hover:bg-purple-700"
+              disabled={!voicesLoaded || isLoading}
+              className="h-12 w-12 rounded-full bg-purple-600 hover:bg-purple-700 disabled:opacity-50"
             >
-              <Play className="h-5 w-5 ml-0.5" />
+              {isLoading ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : !voicesLoaded ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <Play className="h-5 w-5 ml-0.5" />
+              )}
             </Button>
           )}
           
