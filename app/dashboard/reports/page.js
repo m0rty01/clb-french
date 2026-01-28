@@ -216,7 +216,7 @@ export default function ReportsPage() {
   const [upgradeRequired, setUpgradeRequired] = useState(false)
   
   useEffect(() => {
-    const token = localStorage.getItem('token')
+    const token = Cookies.get('token')
     if (!token) {
       router.push('/dashboard')
       return
