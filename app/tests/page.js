@@ -460,7 +460,7 @@ function AudioPlayer({ text, description }) {
 }
 
 // Test Selection Page
-function TestSelection({ onSelectTest, accessibleExams, subscriptionTier, isAdmin }) {
+function TestSelection({ onSelectTest, subscriptionInfo, subscriptionTier, isAdmin }) {
   const { theme, setTheme } = useTheme()
   
   const testTypes = [
@@ -470,8 +470,12 @@ function TestSelection({ onSelectTest, accessibleExams, subscriptionTier, isAdmi
     { key: 'expressionOrale', tests: SPEAKING_TESTS, color: 'green' }
   ]
   
-  // Determine how many exams are accessible
-  const maxExamsPerSkill = isAdmin ? 20 : accessibleExams
+  // New freemium model - check tests remaining this month
+  const isPremiumOrAdmin = isAdmin || subscriptionTier === 'premium'
+  const testsRemaining = subscriptionInfo?.testsRemaining ?? 3
+  const maxTestsPerMonth = subscriptionInfo?.maxTestsPerMonth ?? 3
+  const testsThisMonth = subscriptionInfo?.testsThisMonth ?? 0
+  const canTakeTest = isPremiumOrAdmin || testsRemaining > 0
   
   return (
     <div className="min-h-screen bg-background">
