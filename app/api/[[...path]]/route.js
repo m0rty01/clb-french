@@ -1723,6 +1723,39 @@ async function handleRoute(request, { params }) {
         ))
       }
       
+      const db = await connectToMongo()
+      
+      // Get user to check subscription tier and AI evaluation limits
+      const user = await db.collection('users').findOne({ email: decoded.email })
+      if (!user) {
+        return handleCORS(NextResponse.json({ error: 'User not found' }, { status: 404 }))
+      }
+      
+      const tierLimits = getTierLimits(user)
+      const isPremiumOrAdmin = getUserTier(user) === 'premium' || isAdmin(user.email)
+      
+      // Check weekly AI evaluation limit for free users
+      if (!isPremiumOrAdmin) {
+        const startOfWeek = new Date()
+        startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay())
+        startOfWeek.setHours(0, 0, 0, 0)
+        
+        const aiEvaluationsThisWeek = await db.collection('ai_evaluations').countDocuments({
+          email: decoded.email,
+          createdAt: { $gte: startOfWeek }
+        })
+        
+        if (aiEvaluationsThisWeek >= tierLimits.aiWritingEvaluationsPerWeek) {
+          return handleCORS(NextResponse.json({
+            error: 'Weekly AI evaluation limit reached',
+            message: `You've used all ${tierLimits.aiWritingEvaluationsPerWeek} AI writing evaluations this week. Upgrade to Premium for unlimited evaluations.`,
+            aiEvaluationsThisWeek,
+            maxPerWeek: tierLimits.aiWritingEvaluationsPerWeek,
+            upgradeRequired: true
+          }, { status: 403 }))
+        }
+      }
+      
       const body = await request.json()
       const { prompt, response, taskType, wordLimit } = body
       
