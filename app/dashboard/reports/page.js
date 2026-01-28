@@ -297,7 +297,7 @@ export default function ReportsPage() {
   const isAdmin = user?.email === 'ravijha97.01@gmail.com'
   const tier = isAdmin ? 'admin' : user?.subscriptionTier || 'free'
   
-  if (loading) {
+  if (loading || !user) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
