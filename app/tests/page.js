@@ -88,8 +88,32 @@ function AudioPlayer({ text, description }) {
   const [isLoading, setIsLoading] = useState(false)
   const [audioUrl, setAudioUrl] = useState(null)
   const [error, setError] = useState(null)
+  const [currentText, setCurrentText] = useState(text) // Track current text
   const audioRef = useRef(null)
   const intervalRef = useRef(null)
+  
+  // Reset audio when text changes (new question)
+  useEffect(() => {
+    if (text !== currentText) {
+      // Text has changed - reset everything
+      if (audioUrl) {
+        URL.revokeObjectURL(audioUrl)
+      }
+      if (audioRef.current) {
+        audioRef.current.pause()
+        audioRef.current.currentTime = 0
+      }
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current)
+      }
+      setAudioUrl(null)
+      setIsPlaying(false)
+      setCurrentTime(0)
+      setDuration(0)
+      setError(null)
+      setCurrentText(text)
+    }
+  }, [text, currentText, audioUrl])
   
   // Clean up audio URL when component unmounts
   useEffect(() => {
@@ -101,7 +125,7 @@ function AudioPlayer({ text, description }) {
         clearInterval(intervalRef.current)
       }
     }
-  }, [])
+  }, [audioUrl])
   
   // Update playback rate when audio is loaded
   useEffect(() => {
