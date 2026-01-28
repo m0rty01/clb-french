@@ -183,7 +183,7 @@ const pricingPlans = [
     features: [
       "3 practice tests per month (all sections)",
       "Access to TEF & TCF test types",
-      "3 AI writing evaluations per week",
+      "6 AI writing evaluations per month",
       "View last 3 test results",
       "Daily grammar lessons & vocabulary",
       "Basic progress tracking"

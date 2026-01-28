@@ -173,7 +173,7 @@ export default function PricingPage() {
                   </li>
                   <li className="flex items-start gap-3 text-sm">
                     <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                    <span>3 AI writing evaluations per week</span>
+                    <span>6 AI writing evaluations per month</span>
                   </li>
                   <li className="flex items-start gap-3 text-sm">
                     <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
