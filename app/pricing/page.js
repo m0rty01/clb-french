@@ -293,7 +293,12 @@ export default function PricingPage() {
                   CLB French Trainer for organizations with 50+ users. Custom pricing available.
                 </p>
               </div>
-              <Button variant="outline" size="lg" className="whitespace-nowrap">
+              <Button 
+                variant="outline" 
+                size="lg" 
+                className="whitespace-nowrap"
+                onClick={() => window.open('https://m.me/ravijha01', '_blank')}
+              >
                 <MessageCircle className="mr-2 h-4 w-4" />
                 Contact Us
               </Button>
