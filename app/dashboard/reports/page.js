@@ -239,7 +239,7 @@ export default function ReportsPage() {
       }
       
       const userData = await userRes.json()
-      setUser(userData)
+      setUser(userData.user) // API returns { user: {...} }
       
       // Fetch analytics
       const analyticsRes = await fetch('/api/tests/analytics', {
