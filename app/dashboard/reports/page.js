@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Cookies from 'js-cookie'
 import { 
   ArrowLeft, 
   BarChart3, 
