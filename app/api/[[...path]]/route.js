@@ -2060,21 +2060,16 @@ Be strict but fair. TEF is a standardized test - evaluate accordingly. Return ON
       
       // Check subscription tier
       const tier = getUserTier(user)
-      if (tier === 'free') {
-        return handleCORS(NextResponse.json({
-          error: 'Reports not available for free tier',
-          upgradeRequired: true
-        }, { status: 403 }))
-      }
+      const tierLimits = getTierLimits(user)
+      const isPremiumOrAdmin = tier === 'premium' || tier === 'admin'
       
       const url = new URL(request.url)
       const testType = url.searchParams.get('testType')
       const limitParam = url.searchParams.get('limit')
       
-      // Basic users get 10 results, Premium gets all
-      const limit = tier === 'premium' || tier === 'admin' 
-        ? (limitParam ? parseInt(limitParam) : 100) 
-        : Math.min(parseInt(limitParam) || 10, 10)
+      // Free users get testsHistoryLimit (3), Premium gets unlimited
+      const maxLimit = isPremiumOrAdmin ? 100 : tierLimits.testsHistoryLimit
+      const limit = limitParam ? Math.min(parseInt(limitParam), maxLimit) : maxLimit
       
       const query = { email: decoded.email }
       if (testType && testType !== 'all') {
@@ -2087,10 +2082,20 @@ Be strict but fair. TEF is a standardized test - evaluate accordingly. Return ON
         .limit(limit)
         .toArray()
       
+      // Count total tests for free users to show how many they can't see
+      const totalTests = await db.collection('test_results').countDocuments({ email: decoded.email })
+      const hiddenTests = !isPremiumOrAdmin && totalTests > tierLimits.testsHistoryLimit 
+        ? totalTests - tierLimits.testsHistoryLimit 
+        : 0
+      
       return handleCORS(NextResponse.json({
         results,
         total: results.length,
-        tier
+        totalTestsTaken: totalTests,
+        hiddenTests,
+        historyLimit: isPremiumOrAdmin ? null : tierLimits.testsHistoryLimit,
+        tier,
+        upgradeRequired: !isPremiumOrAdmin && hiddenTests > 0
       }))
     }
 
