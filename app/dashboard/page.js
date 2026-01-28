@@ -165,15 +165,14 @@ function SampleAnswerButton({ sampleAnswer, title }) {
   )
 }
 
-// Upgrade Modal Component
+// Upgrade Modal Component - Freemium Model
 function UpgradeModal({ isOpen, onClose, token, onUpgradeSuccess }) {
   const [upgrading, setUpgrading] = useState(false)
-  const [selectedPlan, setSelectedPlan] = useState(null)
   const [billingCycle, setBillingCycle] = useState('monthly') // 'monthly' or 'yearly'
+  const router = useRouter()
   
   const handleStripeCheckout = async (priceKey) => {
     setUpgrading(true)
-    setSelectedPlan(priceKey)
     
     try {
       const res = await fetch('/api/stripe/create-checkout', {
@@ -196,133 +195,127 @@ function UpgradeModal({ isOpen, onClose, token, onUpgradeSuccess }) {
     } catch (error) {
       toast.error(error.message)
       setUpgrading(false)
-      setSelectedPlan(null)
     }
   }
+
+  const monthlyPrice = 9
+  const yearlyPrice = 70
+  const savingsPercent = Math.round((1 - (yearlyPrice / (monthlyPrice * 12))) * 100)
   
   if (!isOpen) return null
   
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <Card className="w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Crown className="h-6 w-6 text-yellow-500" />
-            Upgrade Your Plan
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <Card className="w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+        <CardHeader className="text-center pb-2">
+          <CardTitle className="flex items-center justify-center gap-2 text-2xl">
+            <Crown className="h-7 w-7 text-orange-500" />
+            Upgrade to Premium
           </CardTitle>
           <CardDescription>
-            Unlock more content and accelerate your French learning journey
+            Unlock unlimited practice and detailed analytics
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-5">
           {/* Billing Cycle Toggle */}
-          <div className="flex items-center justify-center gap-4 p-4 bg-muted/50 rounded-lg">
-            <button
-              onClick={() => setBillingCycle('monthly')}
-              className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                billingCycle === 'monthly' 
-                  ? 'bg-primary text-primary-foreground' 
-                  : 'hover:bg-muted'
-              }`}
-            >
-              Monthly
-            </button>
-            <button
-              onClick={() => setBillingCycle('yearly')}
-              className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                billingCycle === 'yearly' 
-                  ? 'bg-primary text-primary-foreground' 
-                  : 'hover:bg-muted'
-              }`}
-            >
-              Yearly
-              <Badge className="ml-2 bg-green-100 text-green-700">Save 17%</Badge>
-            </button>
+          <div className="flex items-center justify-center">
+            <div className="inline-flex items-center bg-muted p-1 rounded-full">
+              <button
+                onClick={() => setBillingCycle('monthly')}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                  billingCycle === 'monthly' 
+                    ? 'bg-background text-foreground shadow-sm' 
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                Monthly
+              </button>
+              <button
+                onClick={() => setBillingCycle('yearly')}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-1 ${
+                  billingCycle === 'yearly' 
+                    ? 'bg-background text-foreground shadow-sm' 
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                Yearly
+                <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-xs">
+                  Save {savingsPercent}%
+                </Badge>
+              </button>
+            </div>
           </div>
 
-          {/* Basic Plan */}
-          <div className="p-4 border rounded-lg hover:border-blue-500 transition-colors">
-            <div className="flex items-center justify-between mb-3">
+          {/* Price Display */}
+          <div className="text-center py-4">
+            {billingCycle === 'monthly' ? (
               <div>
-                <h3 className="font-bold text-lg">Basic Plan</h3>
-                {billingCycle === 'monthly' ? (
-                  <p className="text-2xl font-bold">$19<span className="text-sm font-normal text-muted-foreground">/month</span></p>
-                ) : (
-                  <div>
-                    <p className="text-2xl font-bold">$190<span className="text-sm font-normal text-muted-foreground">/year</span></p>
-                    <p className="text-sm text-green-600">Save $38/year</p>
-                  </div>
-                )}
+                <span className="text-5xl font-bold">${monthlyPrice}</span>
+                <span className="text-muted-foreground text-lg">/month</span>
               </div>
-              <Badge className="bg-blue-100 text-blue-700">Popular</Badge>
-            </div>
-            <ul className="space-y-2 mb-4 text-sm">
-              <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-green-500" />Full CLB 5 pathway (112 days)</li>
-              <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-green-500" />All grammar lessons</li>
-              <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-green-500" />10 mock exams per skill (40 total)</li>
-              <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-green-500" />Weak topic tracking</li>
-            </ul>
-            <Button 
-              className="w-full" 
-              variant="outline"
-              onClick={() => handleStripeCheckout(billingCycle === 'monthly' ? 'basic_monthly' : 'basic_yearly')}
-              disabled={upgrading}
-            >
-              {upgrading && selectedPlan?.includes('basic') ? (
-                <>
-                  <span className="animate-spin mr-2">⏳</span>
-                  Redirecting to checkout...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="mr-2 h-4 w-4" />
-                  Upgrade to Basic
-                </>
-              )}
-            </Button>
+            ) : (
+              <div>
+                <span className="text-5xl font-bold">${yearlyPrice}</span>
+                <span className="text-muted-foreground text-lg">/year</span>
+                <p className="text-sm text-green-600 dark:text-green-400 mt-1">
+                  Just ${(yearlyPrice / 12).toFixed(2)}/month
+                </p>
+              </div>
+            )}
           </div>
           
-          {/* Premium Plan */}
-          <div className="p-4 border-2 border-purple-500 rounded-lg bg-purple-500/5">
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <h3 className="font-bold text-lg">Premium Plan</h3>
-                {billingCycle === 'monthly' ? (
-                  <p className="text-2xl font-bold">$39<span className="text-sm font-normal text-muted-foreground">/month</span></p>
-                ) : (
-                  <div>
-                    <p className="text-2xl font-bold">$390<span className="text-sm font-normal text-muted-foreground">/year</span></p>
-                    <p className="text-sm text-green-600">Save $78/year</p>
-                  </div>
-                )}
-              </div>
-              <Badge className="bg-purple-100 text-purple-700">Best Value</Badge>
-            </div>
-            <ul className="space-y-2 mb-4 text-sm">
-              <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-green-500" />Both CLB 5 & CLB 7 pathways</li>
-              <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-green-500" />All grammar lessons + bonus content</li>
-              <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-green-500" />All 80 mock exams (20 per skill)</li>
-              <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-green-500" />Priority support</li>
-              <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-green-500" />Certificate of completion</li>
+          {/* Premium Features */}
+          <div className="bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20 rounded-lg p-4 border border-orange-200 dark:border-orange-800">
+            <p className="font-medium text-sm mb-3">Everything in Free, plus:</p>
+            <ul className="space-y-2.5 text-sm">
+              <li className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
+                <span><strong>Unlimited</strong> practice tests</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
+                <span><strong>Unlimited</strong> AI writing evaluations</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
+                <span>Full analytics & detailed reports</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
+                <span>Performance trends over time</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
+                <span>Weak areas analysis</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
+                <span>Download/export results</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
+                <span>Priority support & ad-free</span>
+              </li>
             </ul>
-            <Button 
-              className="w-full bg-purple-600 hover:bg-purple-700" 
-              onClick={() => handleStripeCheckout(billingCycle === 'monthly' ? 'premium_monthly' : 'premium_yearly')}
-              disabled={upgrading}
-            >
-              {upgrading && selectedPlan?.includes('premium') ? (
-                <>
-                  <span className="animate-spin mr-2">⏳</span>
-                  Redirecting to checkout...
-                </>
-              ) : (
-                <>
-                  <Crown className="mr-2 h-4 w-4" />
-                  Upgrade to Premium
-                </>
-              )}
-            </Button>
           </div>
+          
+          <Button 
+            className="w-full h-12 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-medium"
+            onClick={() => handleStripeCheckout(billingCycle === 'monthly' ? 'premium_monthly' : 'premium_yearly')}
+            disabled={upgrading}
+          >
+            {upgrading ? (
+              <>
+                <span className="animate-spin mr-2">⏳</span>
+                Redirecting to checkout...
+              </>
+            ) : (
+              <>
+                <Crown className="mr-2 h-5 w-5" />
+                Upgrade to Premium
+              </>
+            )}
+          </Button>
           
           <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
             <span className="flex items-center gap-1">
@@ -333,9 +326,14 @@ function UpgradeModal({ isOpen, onClose, token, onUpgradeSuccess }) {
             <span>Cancel anytime</span>
           </div>
           
-          <Button variant="ghost" className="w-full" onClick={onClose}>
-            Maybe Later
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" className="flex-1" onClick={() => router.push('/pricing')}>
+              View Full Comparison
+            </Button>
+            <Button variant="ghost" className="flex-1" onClick={onClose}>
+              Maybe Later
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>
