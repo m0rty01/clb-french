@@ -1546,7 +1546,7 @@ function ResultsView({ testType, test, answers, onBack, examId, examTitle }) {
   // Save results to database
   useEffect(() => {
     const saveResults = async () => {
-      const token = localStorage.getItem('token')
+      const token = Cookies.get('token')
       if (!token || saved) return
       
       setSaving(true)
@@ -1574,6 +1574,21 @@ function ResultsView({ testType, test, answers, onBack, examId, examTitle }) {
           setResultId(data.resultId)
           setSaved(true)
           toast.success('Results saved!')
+        } else if (response.status === 403) {
+          // Monthly limit reached
+          const data = await response.json()
+          toast.error(data.message || 'Monthly test limit reached. This result was not saved.')
+          if (data.upgradeRequired) {
+            // Show upgrade prompt
+            setTimeout(() => {
+              toast.info('Upgrade to Premium for unlimited tests!', {
+                action: {
+                  label: 'Upgrade',
+                  onClick: () => router.push('/pricing')
+                }
+              })
+            }, 2000)
+          }
         }
       } catch (error) {
         console.error('Failed to save results:', error)
