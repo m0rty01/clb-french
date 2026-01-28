@@ -1366,7 +1366,11 @@ function Dashboard({ user, token, onLogout, onReset }) {
   
   // Get tier info
   const tier = currentUser?.subscriptionTier || 'free'
-  const tierLimits = currentUser?.tierLimits || { maxDays: 7, mockExamsPerSkill: 2 }
+  const tierLimits = currentUser?.tierLimits || { 
+    maxTestsPerMonth: 3, 
+    testsHistoryLimit: 3,
+    aiWritingEvaluationsPerWeek: 3 
+  }
   const isAdmin = currentUser?.email?.toLowerCase() === 'ravijha97.01@gmail.com'
   
   useEffect(() => {
