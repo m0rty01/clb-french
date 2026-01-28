@@ -60,14 +60,15 @@ const levelColors = {
 }
 
 // Subscription Banner Component - Freemium Model
-function SubscriptionBanner({ user, onUpgrade }) {
+function SubscriptionBanner({ user, onUpgrade, subscriptionInfo }) {
   const tier = user?.subscriptionTier || 'free'
-  const tierLimits = user?.tierLimits || {}
-  const testsThisMonth = user?.testsThisMonth || 0
-  const maxTests = tierLimits.maxTestsPerMonth || 3
-  const testsRemaining = Math.max(0, maxTests - testsThisMonth)
+  const isAdmin = user?.email?.toLowerCase() === 'ravijha97.01@gmail.com'
   
-  if (tier === 'admin' || tier === 'premium') {
+  // Use subscription info from API if available, otherwise fall back to defaults
+  const testsRemaining = subscriptionInfo?.testsRemaining ?? 3
+  const maxTests = subscriptionInfo?.maxTestsPerMonth ?? 3
+  
+  if (tier === 'admin' || tier === 'premium' || isAdmin) {
     return null // Don't show banner for premium/admin
   }
   
@@ -81,7 +82,7 @@ function SubscriptionBanner({ user, onUpgrade }) {
             </div>
             <div>
               <p className="font-semibold">
-                Free Plan: {testsRemaining} tests remaining this month
+                Free Plan: {testsRemaining} of {maxTests} tests remaining this month
               </p>
               <p className="text-sm text-muted-foreground">
                 Upgrade to Premium for unlimited tests, AI evaluations & detailed analytics
