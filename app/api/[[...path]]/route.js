@@ -29,9 +29,18 @@ let ttsClient = null
 function getTTSClient() {
   if (!ttsClient) {
     try {
-      // Google Cloud SDK automatically uses GOOGLE_APPLICATION_CREDENTIALS env var
-      ttsClient = new TextToSpeechClient()
-      console.log('Google Cloud TTS client initialized')
+      // For production: Read credentials from GOOGLE_TTS_CREDENTIALS env var (base64 encoded)
+      // For development: Use GOOGLE_APPLICATION_CREDENTIALS file path
+      if (process.env.GOOGLE_TTS_CREDENTIALS) {
+        const credentialsJson = Buffer.from(process.env.GOOGLE_TTS_CREDENTIALS, 'base64').toString('utf-8')
+        const credentials = JSON.parse(credentialsJson)
+        ttsClient = new TextToSpeechClient({ credentials })
+        console.log('Google Cloud TTS client initialized from env var')
+      } else {
+        // Fallback to file-based credentials (development)
+        ttsClient = new TextToSpeechClient()
+        console.log('Google Cloud TTS client initialized from file')
+      }
     } catch (error) {
       console.error('Failed to initialize Google Cloud TTS client:', error)
     }
