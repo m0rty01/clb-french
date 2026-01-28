@@ -109,8 +109,6 @@ export default function AccountPage() {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
   const [notificationsEnabled, setNotificationsEnabled] = useState(true)
-  const [currentLanguage, setCurrentLanguage] = useState('en')
-  const [languageDialogOpen, setLanguageDialogOpen] = useState(false)
   
   useEffect(() => {
     const token = Cookies.get('token')
@@ -118,10 +116,6 @@ export default function AccountPage() {
       router.push('/dashboard')
       return
     }
-    
-    // Load saved language preference
-    const savedLanguage = localStorage.getItem('preferredLanguage') || 'en'
-    setCurrentLanguage(savedLanguage)
     
     fetchUser(token)
   }, [router])
@@ -158,18 +152,9 @@ export default function AccountPage() {
     router.push('/dashboard?upgrade=true')
   }
   
-  const handleLanguageChange = (langCode) => {
-    setCurrentLanguage(langCode)
-    localStorage.setItem('preferredLanguage', langCode)
-    setLanguageDialogOpen(false)
-    const langName = LANGUAGES.find(l => l.code === langCode)?.name || langCode
-    toast.success(`Language changed to ${langName}`)
-  }
-  
   const isAdmin = user?.email === 'ravijha97.01@gmail.com'
   const tier = isAdmin ? 'admin' : user?.subscriptionTier || 'free'
   const tierData = tierInfo[tier]
-  const currentLangData = LANGUAGES.find(l => l.code === currentLanguage) || LANGUAGES[0]
   
   if (loading) {
     return (
