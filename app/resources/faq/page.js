@@ -475,38 +475,35 @@ All progress is saved to your account and visible in your dashboard.`
 This lets you experience the platform before committing to a paid plan.`
       },
       {
-        question: "What's included in Basic vs Premium?",
-        answer: `**Basic Plan ($19/month or $190/year):**
-• Full CLB 5 pathway (4 months of content)
-• All 20 grammar lessons
-• 10 TEF mock exams per skill (40 total)
-• 🎧 Audio player for listening practice
-• 📝 Sample answers for all writing tasks
-• Grammar weak topic tracking
-• Progress analytics
-• Email support
+        question: "What's included in Free vs Premium?",
+        answer: `**Free Plan ($0/month):**
+• 3 practice tests per month (all sections)
+• Access to TEF & TCF test types
+• 3 AI writing evaluations per week
+• View last 3 test results
+• Daily grammar lessons & vocabulary
+• Basic progress tracking
 
-**Premium Plan ($39/month or $390/year):**
-• Both CLB 5 AND CLB 7 pathways
-• All 20+ grammar lessons + bonus content
-• All 80 TEF mock exams (20 per skill)
-• 🤖 AI Writing Evaluation with TEF scores
-• 🎧 Audio player for listening practice
-• 📝 Sample answers for all writing tasks
-• Advanced weak topic tracking
-• Detailed performance analytics
-• Priority email support
-• Certificate of completion
+**Premium Plan ($9/month or $70/year):**
+• Everything in Free, plus:
+• ✨ Unlimited practice tests
+• ✨ Unlimited AI writing evaluations
+• 📊 Full analytics & detailed reports
+• 📈 Performance trends over time
+• 🎯 Weak areas analysis
+• 💾 Download/export test results
+• 🎧 Priority support
+• 🚫 Ad-free experience
 
-Premium is recommended for PR applicants targeting NCLC 7 who want AI-powered writing feedback.`
+Premium is recommended for serious learners who want unlimited practice and detailed performance insights.`
       },
       {
         question: "Is there a money-back guarantee?",
-        answer: `Yes! We offer a 30-day money-back guarantee on all paid plans.
+        answer: `Yes! We offer a 7-day money-back guarantee on all paid plans.
 
-If you're not satisfied with the platform for any reason within your first 30 days, contact our support team for a full refund - no questions asked.
+If you're not satisfied with the platform for any reason within your first 7 days, contact our support team for a full refund - no questions asked.
 
-We're confident in our platform because we've seen thousands of learners achieve their NCLC goals using our structured approach.`
+We're confident in our platform because we've seen thousands of learners achieve their CLB goals using our structured approach.`
       }
     ]
   },
