@@ -669,12 +669,12 @@ export default function HomePage() {
           <div className="grid md:grid-cols-4 gap-12">
             {/* Brand */}
             <div className="md:col-span-2">
-              <div className="flex items-center gap-2 mb-4">
+              <Link href="https://clbfrench.ravijha.co/" className="flex items-center gap-2 mb-4 hover:opacity-80 transition-opacity w-fit">
                 <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 via-white to-red-500">
                   <span className="text-lg font-bold text-blue-900">🇫🇷</span>
                 </div>
                 <span className="text-xl font-bold text-white">CLB French Trainer</span>
-              </div>
+              </Link>
               <p className="text-gray-400 mb-6 max-w-md">
                 The disciplined, grammar-heavy French training platform designed specifically for Canadian Language Benchmark (CLB) success.
               </p>
