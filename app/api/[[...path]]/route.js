@@ -1831,7 +1831,7 @@ Be strict but fair. TEF is a standardized test - evaluate accordingly. Return ON
     // Text-to-Speech - POST /api/tts
     if (route === '/tts' && method === 'POST') {
       const body = await request.json()
-      const { text, languageCode = 'fr-FR', voiceName, speakingRate = 1.0 } = body
+      const { text, languageCode = 'fr-FR', speakingRate = 1.0 } = body
       
       if (!text) {
         return handleCORS(NextResponse.json(
@@ -1848,39 +1848,17 @@ Be strict but fair. TEF is a standardized test - evaluate accordingly. Return ON
         ))
       }
       
-      const client = getTTSClient()
-      if (!client) {
-        return handleCORS(NextResponse.json(
-          { error: 'Text-to-speech service not configured' },
-          { status: 500 }
-        ))
-      }
-      
       try {
-        // Prepare request for Google Cloud TTS
-        const ttsRequest = {
-          input: { text },
-          voice: {
-            languageCode,
-            name: voiceName || 'fr-FR-Standard-A', // Default to French female voice
-            ssmlGender: 'FEMALE'
-          },
-          audioConfig: {
-            audioEncoding: 'MP3',
-            speakingRate: Math.max(0.5, Math.min(2.0, speakingRate)) // Clamp between 0.5 and 2.0
-          }
-        }
+        // Use REST API for better serverless compatibility
+        const audioContent = await synthesizeSpeechREST(text, languageCode, speakingRate)
         
-        // Call Google Cloud TTS API
-        const [response] = await client.synthesizeSpeech(ttsRequest)
-        
-        if (!response.audioContent) {
+        if (!audioContent) {
           throw new Error('No audio content received from TTS API')
         }
         
         // Return audio as base64 for easy frontend handling
         return handleCORS(NextResponse.json({
-          audio: response.audioContent.toString('base64'),
+          audio: audioContent,
           contentType: 'audio/mpeg'
         }))
         
