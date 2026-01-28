@@ -1472,13 +1472,15 @@ function Dashboard({ user, token, onLogout, onReset }) {
       <header className="border-b sticky top-0 bg-background/95 backdrop-blur z-50">
         <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-sm font-bold text-primary-foreground">🇫🇷</span>
-            </div>
-            <div>
-              <h1 className="font-semibold text-sm">CLB French Trainer</h1>
-              <p className="text-xs text-muted-foreground">{pathwayData.name} • Day {currentUser.currentDay}</p>
-            </div>
+            <Link href="https://clbfrench.ravijha.co/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+                <span className="text-sm font-bold text-primary-foreground">🇫🇷</span>
+              </div>
+              <div>
+                <h1 className="font-semibold text-sm">CLB French Trainer</h1>
+                <p className="text-xs text-muted-foreground">{pathwayData.name} • Day {currentUser.currentDay}</p>
+              </div>
+            </Link>
             {/* Subscription Badge */}
             <Badge className={tierInfo[tier]?.badge || tierInfo.free.badge}>
               {isAdmin ? (
