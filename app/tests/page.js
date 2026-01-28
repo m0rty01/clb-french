@@ -48,9 +48,50 @@ function formatTime(seconds) {
   return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
 }
 
-// Timer Component
+// Timer Component with Countdown and Alert Sound
 function TestTimer({ duration, onTimeUp, isActive }) {
   const [timeLeft, setTimeLeft] = useState(duration * 60)
+  const [hasPlayedAlert, setHasPlayedAlert] = useState(false)
+  const audioRef = useRef(null)
+  
+  // Play alert sound function
+  const playAlertSound = useCallback(() => {
+    if (hasPlayedAlert) return
+    
+    // Create audio context for alert sound
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext
+      const audioContext = new AudioContext()
+      
+      // Create a sequence of beeps
+      const playBeep = (frequency, startTime, duration) => {
+        const oscillator = audioContext.createOscillator()
+        const gainNode = audioContext.createGain()
+        
+        oscillator.connect(gainNode)
+        gainNode.connect(audioContext.destination)
+        
+        oscillator.type = 'sine'
+        oscillator.frequency.setValueAtTime(frequency, startTime)
+        
+        gainNode.gain.setValueAtTime(0.5, startTime)
+        gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + duration)
+        
+        oscillator.start(startTime)
+        oscillator.stop(startTime + duration)
+      }
+      
+      const now = audioContext.currentTime
+      // Play 3 ascending beeps
+      playBeep(440, now, 0.2)        // A4
+      playBeep(554, now + 0.25, 0.2) // C#5
+      playBeep(659, now + 0.5, 0.3)  // E5
+      
+      setHasPlayedAlert(true)
+    } catch (error) {
+      console.log('Could not play alert sound:', error)
+    }
+  }, [hasPlayedAlert])
   
   useEffect(() => {
     if (!isActive) return
@@ -58,30 +99,61 @@ function TestTimer({ duration, onTimeUp, isActive }) {
     const interval = setInterval(() => {
       setTimeLeft(prev => {
         if (prev <= 1) {
+          playAlertSound()
           onTimeUp()
           return 0
+        }
+        // Play warning sound at 1 minute remaining
+        if (prev === 60) {
+          try {
+            const AudioContext = window.AudioContext || window.webkitAudioContext
+            const audioContext = new AudioContext()
+            const oscillator = audioContext.createOscillator()
+            const gainNode = audioContext.createGain()
+            oscillator.connect(gainNode)
+            gainNode.connect(audioContext.destination)
+            oscillator.type = 'sine'
+            oscillator.frequency.setValueAtTime(880, audioContext.currentTime)
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime)
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5)
+            oscillator.start()
+            oscillator.stop(audioContext.currentTime + 0.5)
+          } catch (e) {}
         }
         return prev - 1
       })
     }, 1000)
     
     return () => clearInterval(interval)
-  }, [isActive, onTimeUp])
+  }, [isActive, onTimeUp, playAlertSound])
   
-  const progress = ((duration * 60 - timeLeft) / (duration * 60)) * 100
+  // Reset timer when duration changes
+  useEffect(() => {
+    setTimeLeft(duration * 60)
+    setHasPlayedAlert(false)
+  }, [duration])
+  
+  const progress = (timeLeft / (duration * 60)) * 100 // Progress now shows remaining time
   const isLowTime = timeLeft < 300 // Less than 5 minutes
+  const isCriticalTime = timeLeft < 60 // Less than 1 minute
   
   return (
-    <div className={`flex items-center gap-3 px-4 py-2 rounded-lg ${isLowTime ? 'bg-red-500/10 text-red-600' : 'bg-muted'}`}>
-      <Clock className={`h-5 w-5 ${isLowTime ? 'animate-pulse' : ''}`} />
-      <span className="font-mono text-lg font-bold">{formatTime(timeLeft)}</span>
-      <Progress value={progress} className="w-24 h-2" />
+    <div className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-all ${
+      isCriticalTime ? 'bg-red-500/20 text-red-600 animate-pulse' : 
+      isLowTime ? 'bg-orange-500/10 text-orange-600' : 
+      'bg-muted'
+    }`}>
+      <Clock className={`h-5 w-5 ${isCriticalTime ? 'animate-bounce' : isLowTime ? 'animate-pulse' : ''}`} />
+      <div className="flex flex-col">
+        <span className="font-mono text-lg font-bold">{formatTime(timeLeft)}</span>
+        <span className="text-xs opacity-70">remaining</span>
+      </div>
+      <Progress value={progress} className={`w-24 h-2 ${isLowTime ? '[&>div]:bg-orange-500' : ''} ${isCriticalTime ? '[&>div]:bg-red-500' : ''}`} />
     </div>
   )
 }
 
 // Audio Player Component for Listening Tests
-// Audio Player Component for Listening Tests - Uses Google Cloud TTS
 function AudioPlayer({ text, description }) {
   const [isPlaying, setIsPlaying] = useState(false)
   const [playbackRate, setPlaybackRate] = useState(1)
