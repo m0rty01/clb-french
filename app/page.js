@@ -362,12 +362,12 @@ export default function HomePage() {
         <div className="container mx-auto px-4">
           <div className="flex h-16 items-center justify-between">
             {/* Logo */}
-            <div className="flex items-center gap-2">
+            <Link href="https://clbfrench.ravijha.co/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
               <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 via-white to-red-500">
                 <span className="text-lg font-bold text-blue-900">🇫🇷</span>
               </div>
               <span className="text-xl font-bold">CLB French Trainer</span>
-            </div>
+            </Link>
 
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center gap-6">
