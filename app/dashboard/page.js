@@ -393,11 +393,11 @@ function AuthPage({ onAuth }) {
       </div>
       
       <div className="text-center mb-8">
-        <div className="flex items-center justify-center gap-2 mb-4">
+        <Link href="https://clbfrench.ravijha.co/" className="inline-flex items-center justify-center gap-2 mb-4 hover:opacity-80 transition-opacity">
           <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 via-white to-red-500 flex items-center justify-center">
             <span className="text-2xl font-bold text-blue-900">🇫🇷</span>
           </div>
-        </div>
+        </Link>
         <h1 className="text-3xl font-bold tracking-tight">CLB French Trainer</h1>
         <p className="text-muted-foreground mt-2">Discipline-focused training for CLB certification</p>
       </div>
