@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -20,7 +21,8 @@ import {
   ChevronLeft, ChevronRight, Check, X, Play, Pause,
   Home, Trophy, Target, Moon, Sun, Volume2, AlertTriangle,
   BookOpen, ArrowLeft, RotateCcw, Eye, CheckCircle2, XCircle,
-  Lock, Crown, Sparkles, Brain, Loader2, Square, RotateCw
+  Lock, Crown, Sparkles, Brain, Loader2, Square, RotateCw,
+  BarChart3, Award, TrendingUp
 } from 'lucide-react'
 import { 
   TEF_TEST_STRUCTURE, 
