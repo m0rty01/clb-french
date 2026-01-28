@@ -329,8 +329,11 @@ export default function HomePage() {
   }
 
   const handlePricingClick = (plan) => {
-    // Mock Stripe - just redirect to dashboard/signup
-    router.push('/dashboard')
+    if (plan.name === 'Free') {
+      router.push('/dashboard')
+    } else {
+      router.push('/pricing')
+    }
   }
   
   const handleCloseExitPopup = () => {
