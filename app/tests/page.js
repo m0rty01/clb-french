@@ -1786,7 +1786,7 @@ export default function TestsPage() {
     return (
       <TestSelection 
         onSelectTest={handleSelectTest}
-        accessibleExams={subscriptionInfo?.mockExamsPerSkill || 2}
+        subscriptionInfo={subscriptionInfo}
         subscriptionTier={subscriptionInfo?.subscriptionTier || 'free'}
         isAdmin={subscriptionInfo?.isAdmin || false}
       />
