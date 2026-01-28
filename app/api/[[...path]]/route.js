@@ -89,28 +89,16 @@ async function synthesizeSpeechREST(text, languageCode = 'fr-FR', speakingRate =
   return data.audioContent
 }
 
-// Stripe Price Configuration (in cents)
+// Stripe Price Configuration (in cents) - Freemium Model
 const STRIPE_PRICES = {
-  basic_monthly: {
-    amount: 1900, // $19.00
-    name: 'Basic Monthly',
-    tier: 'basic',
-    interval: 'month'
-  },
-  basic_yearly: {
-    amount: 19000, // $190.00
-    name: 'Basic Yearly',
-    tier: 'basic',
-    interval: 'year'
-  },
   premium_monthly: {
-    amount: 3900, // $39.00
+    amount: 900, // $9.00/month
     name: 'Premium Monthly',
     tier: 'premium',
     interval: 'month'
   },
   premium_yearly: {
-    amount: 39000, // $390.00
+    amount: 7000, // $70.00/year (~$5.83/month - 35% savings)
     name: 'Premium Yearly',
     tier: 'premium',
     interval: 'year'
