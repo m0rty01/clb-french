@@ -111,6 +111,11 @@ const ADMIN_EMAIL = 'ravijha97.01@gmail.com'
 // Subscription tier limits - Freemium Model
 const SUBSCRIPTION_LIMITS = {
   free: {
+    // Legacy properties (for backward compatibility)
+    maxDays: 999,                      // No day limit in freemium
+    pathways: ['clb5', 'clb7'],        // Access to both pathways
+    canAccessAllTopics: true,
+    // New freemium properties
     maxTestsPerMonth: 3,               // 3 practice tests per month for all sections
     testsHistoryLimit: 3,              // View last 3 test results
     aiWritingEvaluationsPerWeek: 3,    // 3 AI writing evaluations per week
@@ -125,6 +130,11 @@ const SUBSCRIPTION_LIMITS = {
     prioritySupport: false
   },
   premium: {
+    // Legacy properties
+    maxDays: 999,
+    pathways: ['clb5', 'clb7'],
+    canAccessAllTopics: true,
+    // New freemium properties
     maxTestsPerMonth: 999,             // Unlimited tests
     testsHistoryLimit: 999,            // Unlimited history
     aiWritingEvaluationsPerWeek: 999,  // Unlimited AI evaluations
@@ -139,6 +149,11 @@ const SUBSCRIPTION_LIMITS = {
     prioritySupport: true
   },
   admin: {
+    // Legacy properties
+    maxDays: 999,
+    pathways: ['clb5', 'clb7'],
+    canAccessAllTopics: true,
+    // New freemium properties
     maxTestsPerMonth: 999,
     testsHistoryLimit: 999,
     aiWritingEvaluationsPerWeek: 999,
