@@ -21,7 +21,8 @@ import {
   Mail,
   Calendar,
   Award,
-  Target
+  Target,
+  Check
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -29,8 +30,16 @@ import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import { Separator } from '@/components/ui/separator'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { useTheme } from 'next-themes'
 import { toast } from 'sonner'
+
+// Available languages
+const LANGUAGES = [
+  { code: 'en', name: 'English', nativeName: 'English', flag: '🇬🇧' },
+  { code: 'fr', name: 'French', nativeName: 'Français', flag: '🇫🇷' },
+  { code: 'hi', name: 'Hindi', nativeName: 'हिंदी', flag: '🇮🇳' },
+]
 
 // Tier info for display
 const tierInfo = {
@@ -116,6 +125,8 @@ export default function AccountPage() {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
   const [notificationsEnabled, setNotificationsEnabled] = useState(true)
+  const [currentLanguage, setCurrentLanguage] = useState('en')
+  const [languageDialogOpen, setLanguageDialogOpen] = useState(false)
   
   useEffect(() => {
     const token = Cookies.get('token')
@@ -123,6 +134,10 @@ export default function AccountPage() {
       router.push('/dashboard')
       return
     }
+    
+    // Load saved language preference
+    const savedLanguage = localStorage.getItem('preferredLanguage') || 'en'
+    setCurrentLanguage(savedLanguage)
     
     fetchUser(token)
   }, [router])
@@ -159,18 +174,18 @@ export default function AccountPage() {
     router.push('/dashboard?upgrade=true')
   }
   
+  const handleLanguageChange = (langCode) => {
+    setCurrentLanguage(langCode)
+    localStorage.setItem('preferredLanguage', langCode)
+    setLanguageDialogOpen(false)
+    const langName = LANGUAGES.find(l => l.code === langCode)?.name || langCode
+    toast.success(`Language changed to ${langName}`)
+  }
+  
   const isAdmin = user?.email === 'ravijha97.01@gmail.com'
   const tier = isAdmin ? 'admin' : user?.subscriptionTier || 'free'
   const tierData = tierInfo[tier]
-  
-  // Format join date
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A'
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'long',
-      year: 'numeric'
-    })
-  }
+  const currentLangData = LANGUAGES.find(l => l.code === currentLanguage) || LANGUAGES[0]
   
   if (loading) {
     return (
@@ -250,16 +265,6 @@ export default function AccountPage() {
               
               <Separator />
               
-              {/* Profile */}
-              <MenuItem 
-                icon={User}
-                label="Profile"
-                value={user?.name || 'Set name'}
-                onClick={() => toast.info('Profile editing coming soon!')}
-              />
-              
-              <Separator />
-              
               {/* Pathway/Exam Type */}
               <MenuItem 
                 icon={FileText}
@@ -310,12 +315,50 @@ export default function AccountPage() {
               <Separator />
               
               {/* Language */}
-              <MenuItem 
-                icon={Languages}
-                label="Language"
-                value="English"
-                onClick={() => toast.info('More languages coming soon!')}
-              />
+              <Dialog open={languageDialogOpen} onOpenChange={setLanguageDialogOpen}>
+                <DialogTrigger asChild>
+                  <div>
+                    <MenuItem 
+                      icon={Languages}
+                      label="Language"
+                      value={`${currentLangData.flag} ${currentLangData.name}`}
+                      onClick={() => setLanguageDialogOpen(true)}
+                    />
+                  </div>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Select Language</DialogTitle>
+                    <DialogDescription>
+                      Choose your preferred language for the app
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-2 py-4">
+                    {LANGUAGES.map((lang) => (
+                      <button
+                        key={lang.code}
+                        onClick={() => handleLanguageChange(lang.code)}
+                        className={`w-full flex items-center justify-between p-4 rounded-lg transition-colors ${
+                          currentLanguage === lang.code 
+                            ? 'bg-purple-100 dark:bg-purple-900/30 border-2 border-purple-500' 
+                            : 'hover:bg-muted border-2 border-transparent'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="text-2xl">{lang.flag}</span>
+                          <div className="text-left">
+                            <p className="font-medium">{lang.name}</p>
+                            <p className="text-sm text-muted-foreground">{lang.nativeName}</p>
+                          </div>
+                        </div>
+                        {currentLanguage === lang.code && (
+                          <Check className="h-5 w-5 text-purple-600" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </DialogContent>
+              </Dialog>
             </CardContent>
           </Card>
         </div>
@@ -326,20 +369,24 @@ export default function AccountPage() {
           <Card>
             <CardContent className="p-0">
               {/* Privacy Policy */}
-              <MenuItem 
-                icon={Shield}
-                label="Privacy Policy"
-                onClick={() => window.open('/privacy', '_blank')}
-              />
+              <Link href="/privacy">
+                <MenuItem 
+                  icon={Shield}
+                  label="Privacy Policy"
+                  onClick={() => {}}
+                />
+              </Link>
               
               <Separator />
               
               {/* Terms & Conditions */}
-              <MenuItem 
-                icon={ClipboardList}
-                label="Terms & Conditions"
-                onClick={() => window.open('/terms', '_blank')}
-              />
+              <Link href="/terms">
+                <MenuItem 
+                  icon={ClipboardList}
+                  label="Terms & Conditions"
+                  onClick={() => {}}
+                />
+              </Link>
               
               <Separator />
               
