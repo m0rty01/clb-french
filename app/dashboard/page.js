@@ -28,11 +28,10 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import { getPathway, getCurrentMonthData, getDailyActivities, calculateProgress, getWeekNumber, getDayOfWeek } from '@/lib/pathways'
 import { getDailyResources, getProgressDescription } from '@/lib/daily-resources'
 
-// Subscription tier display info
+// Subscription tier display info - Freemium Model
 const tierInfo = {
   free: { name: 'Free', color: 'bg-gray-500', badge: 'bg-gray-100 text-gray-700' },
-  basic: { name: 'Basic', color: 'bg-blue-500', badge: 'bg-blue-100 text-blue-700' },
-  premium: { name: 'Premium', color: 'bg-purple-500', badge: 'bg-purple-100 text-purple-700' },
+  premium: { name: 'Premium', color: 'bg-orange-500', badge: 'bg-orange-100 text-orange-700' },
   admin: { name: 'Admin', color: 'bg-red-500', badge: 'bg-red-100 text-red-700' }
 }
 
