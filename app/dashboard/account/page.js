@@ -311,54 +311,6 @@ export default function AccountPage() {
                   }}
                 />
               </MenuItem>
-              
-              <Separator />
-              
-              {/* Language */}
-              <Dialog open={languageDialogOpen} onOpenChange={setLanguageDialogOpen}>
-                <DialogTrigger asChild>
-                  <div>
-                    <MenuItem 
-                      icon={Languages}
-                      label="Language"
-                      value={`${currentLangData.flag} ${currentLangData.name}`}
-                      onClick={() => setLanguageDialogOpen(true)}
-                    />
-                  </div>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-md">
-                  <DialogHeader>
-                    <DialogTitle>Select Language</DialogTitle>
-                    <DialogDescription>
-                      Choose your preferred language for the app
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-2 py-4">
-                    {LANGUAGES.map((lang) => (
-                      <button
-                        key={lang.code}
-                        onClick={() => handleLanguageChange(lang.code)}
-                        className={`w-full flex items-center justify-between p-4 rounded-lg transition-colors ${
-                          currentLanguage === lang.code 
-                            ? 'bg-purple-100 dark:bg-purple-900/30 border-2 border-purple-500' 
-                            : 'hover:bg-muted border-2 border-transparent'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <span className="text-2xl">{lang.flag}</span>
-                          <div className="text-left">
-                            <p className="font-medium">{lang.name}</p>
-                            <p className="text-sm text-muted-foreground">{lang.nativeName}</p>
-                          </div>
-                        </div>
-                        {currentLanguage === lang.code && (
-                          <Check className="h-5 w-5 text-purple-600" />
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </DialogContent>
-              </Dialog>
             </CardContent>
           </Card>
         </div>
