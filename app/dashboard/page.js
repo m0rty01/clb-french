@@ -1428,6 +1428,13 @@ function Dashboard({ user, token, onLogout, onReset }) {
           </div>
           
           <div className="flex items-center gap-2">
+            <Link href="/dashboard/reports">
+              <Button variant="outline" size="sm" className="gap-2">
+                <BarChart3 className="h-4 w-4" />
+                <span className="hidden sm:inline">Reports</span>
+              </Button>
+            </Link>
+            
             <Link href="/tests">
               <Button variant="outline" size="sm" className="gap-2">
                 <ClipboardList className="h-4 w-4" />
