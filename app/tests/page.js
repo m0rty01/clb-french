@@ -487,7 +487,7 @@ function TestSelection({ onSelectTest, subscriptionInfo, subscriptionTier, isAdm
               <span>Back to Dashboard</span>
             </Link>
           </div>
-          <div className="flex items-center gap-4">
+          <Link href="https://clbfrench.ravijha.co/" className="flex items-center gap-4 hover:opacity-80 transition-opacity">
             <h1 className="font-bold text-lg">TEF Practice Tests</h1>
             {/* Subscription Badge */}
             <Badge className={subscriptionTier === 'premium' || isAdmin ? 'bg-purple-100 text-purple-700' : subscriptionTier === 'basic' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'}>
@@ -500,6 +500,8 @@ function TestSelection({ onSelectTest, subscriptionInfo, subscriptionTier, isAdm
                 subscriptionTier?.charAt(0).toUpperCase() + subscriptionTier?.slice(1) || 'Free'
               )}
             </Badge>
+          </Link>
+          <div className="flex items-center gap-2">
             <Button
               variant="ghost"
               size="icon"
