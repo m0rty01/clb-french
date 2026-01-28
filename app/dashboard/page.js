@@ -1343,6 +1343,7 @@ function Dashboard({ user, token, onLogout, onReset }) {
   const [activeTimer, setActiveTimer] = useState(null)
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [currentUser, setCurrentUser] = useState(user)
+  const [subscriptionInfo, setSubscriptionInfo] = useState(null)
   const { theme, setTheme } = useTheme()
   
   const pathwayData = getPathway(currentUser.pathway)
@@ -1356,7 +1357,7 @@ function Dashboard({ user, token, onLogout, onReset }) {
   const tierLimits = currentUser?.tierLimits || { 
     maxTestsPerMonth: 3, 
     testsHistoryLimit: 3,
-    aiWritingEvaluationsPerWeek: 3 
+    aiWritingEvaluationsPerMonth: 6 
   }
   const isAdmin = currentUser?.email?.toLowerCase() === 'ravijha97.01@gmail.com'
   
@@ -1366,20 +1367,25 @@ function Dashboard({ user, token, onLogout, onReset }) {
   
   const fetchData = async () => {
     try {
-      const [logRes, progressRes] = await Promise.all([
+      const [logRes, progressRes, subscriptionRes] = await Promise.all([
         fetch('/api/daily-log/today', {
           headers: { 'Authorization': `Bearer ${token}` }
         }),
         fetch('/api/progress', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        }),
+        fetch('/api/tests/access', {
           headers: { 'Authorization': `Bearer ${token}` }
         })
       ])
       
       const logData = await logRes.json()
       const progressData = await progressRes.json()
+      const subscriptionData = await subscriptionRes.json()
       
       if (logRes.ok) setDailyLog(logData.dailyLog)
       if (progressRes.ok) setProgress(progressData)
+      if (subscriptionRes.ok) setSubscriptionInfo(subscriptionData)
     } catch (error) {
       toast.error('Failed to load data')
     } finally {
