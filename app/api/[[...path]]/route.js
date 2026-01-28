@@ -118,7 +118,7 @@ const SUBSCRIPTION_LIMITS = {
     // New freemium properties
     maxTestsPerMonth: 3,               // 3 practice tests per month for all sections
     testsHistoryLimit: 3,              // View last 3 test results
-    aiWritingEvaluationsPerWeek: 3,    // 3 AI writing evaluations per week
+    aiWritingEvaluationsPerMonth: 6,   // 6 AI writing evaluations per month
     canAccessAllSections: true,        // Access all test types (TEF & TCF)
     canAccessDailyGrammar: true,       // Daily grammar lessons
     canAccessProgressTracking: true,   // Basic progress tracking
@@ -137,7 +137,7 @@ const SUBSCRIPTION_LIMITS = {
     // New freemium properties
     maxTestsPerMonth: 999,             // Unlimited tests
     testsHistoryLimit: 999,            // Unlimited history
-    aiWritingEvaluationsPerWeek: 999,  // Unlimited AI evaluations
+    aiWritingEvaluationsPerMonth: 999, // Unlimited AI evaluations
     canAccessAllSections: true,
     canAccessDailyGrammar: true,
     canAccessProgressTracking: true,
@@ -156,7 +156,7 @@ const SUBSCRIPTION_LIMITS = {
     // New freemium properties
     maxTestsPerMonth: 999,
     testsHistoryLimit: 999,
-    aiWritingEvaluationsPerWeek: 999,
+    aiWritingEvaluationsPerMonth: 999,
     canAccessAllSections: true,
     canAccessDailyGrammar: true,
     canAccessProgressTracking: true,
