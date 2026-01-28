@@ -14,8 +14,8 @@ import { Separator } from '@/components/ui/separator'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
 import { toast } from 'sonner'
 import { useTheme } from 'next-themes'
-import { 
-  BookOpen, Headphones, Mic, FileText, PenTool, 
+import {
+  BookOpen, Headphones, Mic, FileText, PenTool,
   Trophy, Flame, Clock, Calendar, Target, ChevronRight,
   Moon, Sun, LogOut, RotateCcw, Check, Play, Pause,
   AlertTriangle, Lock, Unlock, ExternalLink, TrendingUp,
@@ -63,15 +63,15 @@ const levelColors = {
 function SubscriptionBanner({ user, onUpgrade, subscriptionInfo }) {
   const tier = user?.subscriptionTier || 'free'
   const isAdmin = user?.email?.toLowerCase() === 'ravijha97.01@gmail.com'
-  
+
   // Use subscription info from API if available, otherwise fall back to defaults
   const testsRemaining = subscriptionInfo?.testsRemaining ?? 3
   const maxTests = subscriptionInfo?.maxTestsPerMonth ?? 3
-  
+
   if (tier === 'admin' || tier === 'premium' || isAdmin) {
     return null // Don't show banner for premium/admin
   }
-  
+
   return (
     <Card className="mb-6 border-2 border-orange-400/50 bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20">
       <CardContent className="pt-4">
@@ -102,19 +102,19 @@ function SubscriptionBanner({ user, onUpgrade, subscriptionInfo }) {
 // Sample Answer Button Component
 function SampleAnswerButton({ sampleAnswer, title }) {
   const [isOpen, setIsOpen] = useState(false)
-  
+
   return (
     <>
-      <Button 
-        variant="outline" 
-        size="sm" 
+      <Button
+        variant="outline"
+        size="sm"
         onClick={() => setIsOpen(true)}
         className="text-xs h-6 bg-green-500/10 border-green-500/30 text-green-700 dark:text-green-400 hover:bg-green-500/20"
       >
         <Eye className="h-3 w-3 mr-1" />
         Sample Answer
       </Button>
-      
+
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => setIsOpen(false)}>
           <div className="bg-background rounded-xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
@@ -162,10 +162,10 @@ function UpgradeModal({ isOpen, onClose, token, onUpgradeSuccess }) {
   const [upgrading, setUpgrading] = useState(false)
   const [billingCycle, setBillingCycle] = useState('monthly') // 'monthly' or 'yearly'
   const router = useRouter()
-  
+
   const handleStripeCheckout = async (priceKey) => {
     setUpgrading(true)
-    
+
     try {
       const res = await fetch('/api/stripe/create-checkout', {
         method: 'POST',
@@ -175,9 +175,9 @@ function UpgradeModal({ isOpen, onClose, token, onUpgradeSuccess }) {
         },
         body: JSON.stringify({ priceKey })
       })
-      
+
       const data = await res.json()
-      
+
       if (res.ok && data.url) {
         // Redirect to Stripe Checkout
         window.location.href = data.url
@@ -193,9 +193,9 @@ function UpgradeModal({ isOpen, onClose, token, onUpgradeSuccess }) {
   const monthlyPrice = 9
   const yearlyPrice = 70
   const savingsPercent = Math.round((1 - (yearlyPrice / (monthlyPrice * 12))) * 100)
-  
+
   if (!isOpen) return null
-  
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <Card className="w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
@@ -214,21 +214,19 @@ function UpgradeModal({ isOpen, onClose, token, onUpgradeSuccess }) {
             <div className="inline-flex items-center bg-muted p-1 rounded-full">
               <button
                 onClick={() => setBillingCycle('monthly')}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                  billingCycle === 'monthly' 
-                    ? 'bg-background text-foreground shadow-sm' 
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${billingCycle === 'monthly'
+                    ? 'bg-background text-foreground shadow-sm'
                     : 'text-muted-foreground hover:text-foreground'
-                }`}
+                  }`}
               >
                 Monthly
               </button>
               <button
                 onClick={() => setBillingCycle('yearly')}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-1 ${
-                  billingCycle === 'yearly' 
-                    ? 'bg-background text-foreground shadow-sm' 
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-1 ${billingCycle === 'yearly'
+                    ? 'bg-background text-foreground shadow-sm'
                     : 'text-muted-foreground hover:text-foreground'
-                }`}
+                  }`}
               >
                 Yearly
                 <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-xs">
@@ -255,7 +253,7 @@ function UpgradeModal({ isOpen, onClose, token, onUpgradeSuccess }) {
               </div>
             )}
           </div>
-          
+
           {/* Premium Features */}
           <div className="bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20 rounded-lg p-4 border border-orange-200 dark:border-orange-800">
             <p className="font-medium text-sm mb-3">Everything in Free, plus:</p>
@@ -290,8 +288,8 @@ function UpgradeModal({ isOpen, onClose, token, onUpgradeSuccess }) {
               </li>
             </ul>
           </div>
-          
-          <Button 
+
+          <Button
             className="w-full h-12 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-medium"
             onClick={() => handleStripeCheckout(billingCycle === 'monthly' ? 'premium_monthly' : 'premium_yearly')}
             disabled={upgrading}
@@ -308,7 +306,7 @@ function UpgradeModal({ isOpen, onClose, token, onUpgradeSuccess }) {
               </>
             )}
           </Button>
-          
+
           <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
             <span className="flex items-center gap-1">
               <Shield className="h-3 w-3" />
@@ -317,7 +315,7 @@ function UpgradeModal({ isOpen, onClose, token, onUpgradeSuccess }) {
             <span>•</span>
             <span>Cancel anytime</span>
           </div>
-          
+
           <div className="flex gap-2">
             <Button variant="outline" className="flex-1" onClick={() => router.push('/pricing')}>
               View Full Comparison
@@ -345,23 +343,23 @@ function AuthPage({ onAuth }) {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
-    
+
     try {
       const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register'
       const body = isLogin ? { email, password } : { email, password, name }
-      
+
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
       })
-      
+
       const data = await res.json()
-      
+
       if (!res.ok) {
         throw new Error(data.error || 'Authentication failed')
       }
-      
+
       Cookies.set('token', data.token, { expires: 30 })
       onAuth(data.user, data.token)
       toast.success(isLogin ? 'Welcome back!' : 'Account created successfully!')
@@ -391,17 +389,19 @@ function AuthPage({ onAuth }) {
           <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
         </Button>
       </div>
-      
+
       <div className="text-center mb-8">
         <Link href="https://clbfrench.ravijha.co/" className="inline-flex items-center justify-center gap-2 mb-4 hover:opacity-80 transition-opacity">
           <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 via-white to-red-500 flex items-center justify-center">
             <span className="text-2xl font-bold text-blue-900">🇫🇷</span>
           </div>
         </Link>
-        <h1 className="text-3xl font-bold tracking-tight">CLB French Trainer</h1>
+        <Link href="https://clbfrench.ravijha.co/" className="hover:opacity-80 transition-opacity">
+          <h1 className="text-3xl font-bold tracking-tight">CLB French Trainer</h1>
+        </Link>
         <p className="text-muted-foreground mt-2">Discipline-focused training for CLB certification</p>
       </div>
-      
+
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>{isLogin ? 'Welcome Back' : 'Create Account'}</CardTitle>
@@ -496,7 +496,7 @@ function AuthPage({ onAuth }) {
               {loading ? 'Please wait...' : (isLogin ? 'Sign In' : 'Create Account')}
             </Button>
           </form>
-          
+
           <div className="mt-4 text-center">
             <button
               type="button"
@@ -508,7 +508,7 @@ function AuthPage({ onAuth }) {
           </div>
         </CardContent>
       </Card>
-      
+
       <p className="mt-8 text-sm text-muted-foreground text-center max-w-md">
         Training software for serious learners. Based on "Practice Makes Perfect: Complete French Grammar"
       </p>
@@ -529,7 +529,7 @@ function OnboardingPage({ user, token, onComplete }) {
       toast.error('Please select a pathway')
       return
     }
-    
+
     setLoading(true)
     try {
       const res = await fetch('/api/onboarding', {
@@ -540,13 +540,13 @@ function OnboardingPage({ user, token, onComplete }) {
         },
         body: JSON.stringify({ pathway, targetExamDate, dailyTimeBudget })
       })
-      
+
       const data = await res.json()
-      
+
       if (!res.ok) {
         throw new Error(data.error || 'Failed to complete onboarding')
       }
-      
+
       onComplete(data.user)
       toast.success('Pathway activated! Your training begins now.')
     } catch (error) {
@@ -568,13 +568,13 @@ function OnboardingPage({ user, token, onComplete }) {
           <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
         </Button>
       </div>
-      
+
       <div className="max-w-2xl mx-auto pt-8">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold">Welcome, {user.name}!</h1>
           <p className="text-muted-foreground mt-2">Let's set up your training pathway</p>
         </div>
-        
+
         <Card className="mb-6">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -590,11 +590,10 @@ function OnboardingPage({ user, token, onComplete }) {
             <button
               type="button"
               onClick={() => setPathway('clb5')}
-              className={`p-6 rounded-lg border-2 text-left transition-all ${
-                pathway === 'clb5'
+              className={`p-6 rounded-lg border-2 text-left transition-all ${pathway === 'clb5'
                   ? 'border-primary bg-primary/5'
                   : 'border-border hover:border-primary/50'
-              }`}
+                }`}
             >
               <div className="flex items-center justify-between mb-2">
                 <Badge variant="secondary">CLB 5</Badge>
@@ -609,18 +608,17 @@ function OnboardingPage({ user, token, onComplete }) {
                 <span>3-4 hours daily</span>
               </div>
             </button>
-            
+
             {/* CLB 7 - Now accessible to all users in freemium model */}
             <button
               type="button"
               onClick={() => {
                 setPathway('clb7')
               }}
-              className={`p-6 rounded-lg border-2 text-left transition-all relative ${
-                pathway === 'clb7'
+              className={`p-6 rounded-lg border-2 text-left transition-all relative ${pathway === 'clb7'
                   ? 'border-primary bg-primary/5'
                   : 'border-border hover:border-primary/50'
-              }`}
+                }`}
             >
               <div className="flex items-center justify-between mb-2">
                 <Badge variant="secondary">CLB 7</Badge>
@@ -637,7 +635,7 @@ function OnboardingPage({ user, token, onComplete }) {
             </button>
           </CardContent>
         </Card>
-        
+
         <Card className="mb-6">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -658,7 +656,7 @@ function OnboardingPage({ user, token, onComplete }) {
                 Setting an exam date helps track your countdown
               </p>
             </div>
-            
+
             <div className="space-y-2">
               <Label>Daily Time Budget: {Math.floor(dailyTimeBudget / 60)}h {dailyTimeBudget % 60}m</Label>
               <input
@@ -676,7 +674,7 @@ function OnboardingPage({ user, token, onComplete }) {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card className="border-orange-500/50 bg-orange-500/5 mb-6">
           <CardContent className="pt-6">
             <div className="flex gap-4">
@@ -684,15 +682,15 @@ function OnboardingPage({ user, token, onComplete }) {
               <div>
                 <h4 className="font-semibold text-orange-600 dark:text-orange-400">Important: You Need the Book</h4>
                 <p className="text-sm text-muted-foreground mt-1">
-                  This training references "Practice Makes Perfect: Complete French Grammar". 
-                  You must own this book to follow the grammar exercises. The app will guide you 
+                  This training references "Practice Makes Perfect: Complete French Grammar".
+                  You must own this book to follow the grammar exercises. The app will guide you
                   through chapters but does not contain the book content.
                 </p>
               </div>
             </div>
           </CardContent>
         </Card>
-        
+
         <Button
           onClick={handleSubmit}
           className="w-full"
@@ -715,52 +713,52 @@ function ActivityTimer({ activity, timeSpent, allocatedTime, onTimeUpdate, isAct
     return Math.max(0, remaining)
   })
   const [hasAlerted, setHasAlerted] = useState(false)
-  
+
   // Update remaining time when timeSpent or allocatedTime changes
   useEffect(() => {
     const remaining = (allocatedTime || 60) - timeSpent
     setTimeRemaining(Math.max(0, remaining))
   }, [timeSpent, allocatedTime])
-  
+
   // Play alert sound function
   const playAlertSound = useCallback(() => {
     if (hasAlerted) return
-    
+
     try {
       const AudioContext = window.AudioContext || window.webkitAudioContext
       const audioContext = new AudioContext()
-      
+
       // Create a sequence of beeps
       const playBeep = (frequency, startTime, duration) => {
         const oscillator = audioContext.createOscillator()
         const gainNode = audioContext.createGain()
-        
+
         oscillator.connect(gainNode)
         gainNode.connect(audioContext.destination)
-        
+
         oscillator.type = 'sine'
         oscillator.frequency.setValueAtTime(frequency, startTime)
-        
+
         gainNode.gain.setValueAtTime(0.4, startTime)
         gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + duration)
-        
+
         oscillator.start(startTime)
         oscillator.stop(startTime + duration)
       }
-      
+
       const now = audioContext.currentTime
       // Play 3 ascending celebration beeps
       playBeep(523, now, 0.15)        // C5
       playBeep(659, now + 0.2, 0.15)  // E5
       playBeep(784, now + 0.4, 0.25)  // G5
-      
+
       setHasAlerted(true)
       toast.success(`${activity} time complete! Great work! 🎉`, { duration: 4000 })
     } catch (error) {
       console.log('Could not play alert sound:', error)
     }
   }, [hasAlerted, activity])
-  
+
   useEffect(() => {
     let interval
     if (isActive && timeRemaining > 0) {
@@ -782,25 +780,24 @@ function ActivityTimer({ activity, timeSpent, allocatedTime, onTimeUpdate, isAct
     }
     return () => clearInterval(interval)
   }, [isActive, timeRemaining, onTimeUpdate, playAlertSound, allocatedTime, onComplete])
-  
+
   // Reset alert when timer is reset
   useEffect(() => {
     if (timeRemaining > 0 && hasAlerted) {
       setHasAlerted(false)
     }
   }, [timeRemaining])
-  
+
   const hours = Math.floor(timeRemaining / 60)
   const minutes = timeRemaining % 60
   const isLowTime = timeRemaining > 0 && timeRemaining <= 10
   const isComplete = timeRemaining === 0
-  
+
   return (
-    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all ${
-      isComplete ? 'bg-green-500/10 border border-green-500/30' :
-      isLowTime ? 'bg-orange-500/10 border border-orange-500/30' :
-      isActive ? 'bg-blue-500/10 border border-blue-500/30' : ''
-    }`}>
+    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all ${isComplete ? 'bg-green-500/10 border border-green-500/30' :
+        isLowTime ? 'bg-orange-500/10 border border-orange-500/30' :
+          isActive ? 'bg-blue-500/10 border border-blue-500/30' : ''
+      }`}>
       <Button
         variant="outline"
         size="sm"
@@ -836,11 +833,11 @@ function GrammarQuiz({ topic, token, onComplete, onClose }) {
   const [submitting, setSubmitting] = useState(false)
   const [results, setResults] = useState(null)
   const [showExplanation, setShowExplanation] = useState(false)
-  
+
   const questions = topic.quiz || []
   const totalQuestions = questions.length
   const currentQ = questions[currentQuestion]
-  
+
   const handleAnswer = (optionIndex) => {
     setAnswers(prev => ({
       ...prev,
@@ -848,7 +845,7 @@ function GrammarQuiz({ topic, token, onComplete, onClose }) {
     }))
     setShowExplanation(true)
   }
-  
+
   const nextQuestion = () => {
     setShowExplanation(false)
     if (currentQuestion < totalQuestions - 1) {
@@ -857,10 +854,10 @@ function GrammarQuiz({ topic, token, onComplete, onClose }) {
       submitQuiz()
     }
   }
-  
+
   const submitQuiz = async () => {
     setSubmitting(true)
-    
+
     // Calculate score
     let correct = 0
     questions.forEach((q, idx) => {
@@ -868,7 +865,7 @@ function GrammarQuiz({ topic, token, onComplete, onClose }) {
         correct++
       }
     })
-    
+
     try {
       const res = await fetch('/api/grammar/submit-quiz', {
         method: 'POST',
@@ -883,9 +880,9 @@ function GrammarQuiz({ topic, token, onComplete, onClose }) {
           totalQuestions
         })
       })
-      
+
       const data = await res.json()
-      
+
       if (res.ok) {
         setResults(data.result)
         setShowResults(true)
@@ -899,7 +896,7 @@ function GrammarQuiz({ topic, token, onComplete, onClose }) {
       setSubmitting(false)
     }
   }
-  
+
   if (showResults && results) {
     return (
       <Card className="border-2 border-blue-500/30 bg-blue-500/5">
@@ -922,7 +919,7 @@ function GrammarQuiz({ topic, token, onComplete, onClose }) {
               {results.percentage}% correct
             </p>
           </div>
-          
+
           <div className={`p-4 rounded-lg ${results.percentage >= 70 ? 'bg-green-500/10 border border-green-500/30' : 'bg-orange-500/10 border border-orange-500/30'}`}>
             {results.percentage >= 70 ? (
               <p className="text-sm text-green-600 dark:text-green-400">
@@ -934,7 +931,7 @@ function GrammarQuiz({ topic, token, onComplete, onClose }) {
               </p>
             )}
           </div>
-          
+
           <div className="flex gap-2">
             <Button variant="outline" onClick={onClose} className="flex-1">
               Close
@@ -947,7 +944,7 @@ function GrammarQuiz({ topic, token, onComplete, onClose }) {
       </Card>
     )
   }
-  
+
   return (
     <Card className="border-2 border-blue-500/30">
       <CardHeader>
@@ -968,20 +965,19 @@ function GrammarQuiz({ topic, token, onComplete, onClose }) {
             <div className="p-4 bg-muted/50 rounded-lg">
               <p className="text-lg font-medium">{currentQ.question}</p>
             </div>
-            
+
             <div className="space-y-2">
               {currentQ.options.map((option, idx) => {
                 const isSelected = answers[currentQuestion] === idx
                 const isCorrect = idx === currentQ.correctAnswer
                 const showCorrectness = showExplanation && isSelected
-                
+
                 return (
                   <button
                     key={idx}
                     onClick={() => !showExplanation && handleAnswer(idx)}
                     disabled={showExplanation}
-                    className={`w-full p-3 text-left rounded-lg border transition-all ${
-                      showExplanation
+                    className={`w-full p-3 text-left rounded-lg border transition-all ${showExplanation
                         ? isCorrect
                           ? 'bg-green-500/10 border-green-500 text-green-700 dark:text-green-300'
                           : isSelected
@@ -990,7 +986,7 @@ function GrammarQuiz({ topic, token, onComplete, onClose }) {
                         : isSelected
                           ? 'bg-primary/10 border-primary'
                           : 'bg-background border-border hover:border-primary/50 hover:bg-muted/50'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center gap-2">
                       {showExplanation && isCorrect && <CheckCircle2 className="h-4 w-4 text-green-500" />}
@@ -1001,7 +997,7 @@ function GrammarQuiz({ topic, token, onComplete, onClose }) {
                 )
               })}
             </div>
-            
+
             {showExplanation && (
               <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
                 <div className="flex items-start gap-2">
@@ -1013,7 +1009,7 @@ function GrammarQuiz({ topic, token, onComplete, onClose }) {
                 </div>
               </div>
             )}
-            
+
             {showExplanation && (
               <Button onClick={nextQuestion} className="w-full" disabled={submitting}>
                 {currentQuestion < totalQuestions - 1 ? 'Next Question' : (submitting ? 'Submitting...' : 'See Results')}
@@ -1033,11 +1029,11 @@ function DailyGrammarSection({ token, onGrammarComplete }) {
   const [grammarData, setGrammarData] = useState(null)
   const [showQuiz, setShowQuiz] = useState(false)
   const [showExplanation, setShowExplanation] = useState(false)
-  
+
   useEffect(() => {
     fetchGrammarTopic()
   }, [])
-  
+
   const fetchGrammarTopic = async () => {
     try {
       const res = await fetch('/api/grammar/daily-topic', {
@@ -1053,13 +1049,13 @@ function DailyGrammarSection({ token, onGrammarComplete }) {
       setLoading(false)
     }
   }
-  
+
   const handleQuizComplete = (results) => {
     setShowQuiz(false)
     setGrammarData(prev => ({ ...prev, completed: true, score: results.percentage }))
     if (onGrammarComplete) onGrammarComplete()
   }
-  
+
   if (loading) {
     return (
       <Card className="border-blue-500/30 bg-blue-500/5">
@@ -1075,7 +1071,7 @@ function DailyGrammarSection({ token, onGrammarComplete }) {
       </Card>
     )
   }
-  
+
   if (!grammarData?.topic) {
     return (
       <Card className="border-dashed border-blue-500/30">
@@ -1091,9 +1087,9 @@ function DailyGrammarSection({ token, onGrammarComplete }) {
       </Card>
     )
   }
-  
+
   const { topic, completed, score } = grammarData
-  
+
   if (showQuiz) {
     return (
       <GrammarQuiz
@@ -1104,7 +1100,7 @@ function DailyGrammarSection({ token, onGrammarComplete }) {
       />
     )
   }
-  
+
   return (
     <Card className={`border-2 transition-all ${completed ? 'border-green-500/30 bg-green-500/5' : 'border-blue-500/30 bg-blue-500/5'}`}>
       <CardHeader>
@@ -1147,7 +1143,7 @@ function DailyGrammarSection({ token, onGrammarComplete }) {
             </div>
             {showExplanation ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
           </button>
-          
+
           {showExplanation && (
             <div className="p-4 bg-background border-t">
               <div className="prose prose-sm dark:prose-invert max-w-none">
@@ -1164,7 +1160,7 @@ function DailyGrammarSection({ token, onGrammarComplete }) {
             </div>
           )}
         </div>
-        
+
         {/* Quiz Button */}
         {!completed ? (
           <Button onClick={() => setShowQuiz(true)} className="w-full bg-blue-500 hover:bg-blue-600">
@@ -1195,11 +1191,11 @@ function WeakTopicsSection({ token }) {
   const [selectedTopic, setSelectedTopic] = useState(null)
   const [showQuiz, setShowQuiz] = useState(false)
   const [expanded, setExpanded] = useState(false)
-  
+
   useEffect(() => {
     fetchWeakTopics()
   }, [])
-  
+
   const fetchWeakTopics = async () => {
     try {
       const res = await fetch('/api/grammar/weak-topics', {
@@ -1215,14 +1211,14 @@ function WeakTopicsSection({ token }) {
       setLoading(false)
     }
   }
-  
+
   const handleQuizComplete = async (results) => {
     setShowQuiz(false)
     setSelectedTopic(null)
     // Refresh weak topics list
     fetchWeakTopics()
   }
-  
+
   const removeFromWeak = async (topicId) => {
     try {
       const res = await fetch('/api/grammar/remove-weak', {
@@ -1233,7 +1229,7 @@ function WeakTopicsSection({ token }) {
         },
         body: JSON.stringify({ topicId })
       })
-      
+
       if (res.ok) {
         setWeakTopics(prev => prev.filter(t => t.id !== topicId))
         toast.success('Topic removed from weak areas')
@@ -1242,15 +1238,15 @@ function WeakTopicsSection({ token }) {
       toast.error('Failed to remove topic')
     }
   }
-  
+
   if (loading) {
     return null
   }
-  
+
   if (weakTopics.length === 0) {
     return null
   }
-  
+
   if (showQuiz && selectedTopic) {
     return (
       <GrammarQuiz
@@ -1264,7 +1260,7 @@ function WeakTopicsSection({ token }) {
       />
     )
   }
-  
+
   return (
     <Card className="border-orange-500/30 bg-orange-500/5">
       <CardHeader>
@@ -1289,7 +1285,7 @@ function WeakTopicsSection({ token }) {
           </div>
         </button>
       </CardHeader>
-      
+
       {expanded && (
         <CardContent className="pt-0">
           <div className="space-y-2">
@@ -1345,26 +1341,26 @@ function Dashboard({ user, token, onLogout, onReset }) {
   const [currentUser, setCurrentUser] = useState(user)
   const [subscriptionInfo, setSubscriptionInfo] = useState(null)
   const { theme, setTheme } = useTheme()
-  
+
   const pathwayData = getPathway(currentUser.pathway)
   const currentMonthData = getCurrentMonthData(currentUser.pathway, currentUser.currentDay)
   const dailyActivities = getDailyActivities(currentUser.pathway, currentUser.currentDay)
   const dailyResources = getDailyResources(currentUser.currentDay, currentUser.pathway)
   const levelProgress = getProgressDescription(currentUser.currentDay, currentUser.pathway)
-  
+
   // Get tier info
   const tier = currentUser?.subscriptionTier || 'free'
-  const tierLimits = currentUser?.tierLimits || { 
-    maxTestsPerMonth: 3, 
+  const tierLimits = currentUser?.tierLimits || {
+    maxTestsPerMonth: 3,
     testsHistoryLimit: 3,
-    aiWritingEvaluationsPerMonth: 6 
+    aiWritingEvaluationsPerMonth: 6
   }
   const isAdmin = currentUser?.email?.toLowerCase() === 'ravijha97.01@gmail.com'
-  
+
   useEffect(() => {
     fetchData()
   }, [])
-  
+
   const fetchData = async () => {
     try {
       const [logRes, progressRes, subscriptionRes] = await Promise.all([
@@ -1378,11 +1374,11 @@ function Dashboard({ user, token, onLogout, onReset }) {
           headers: { 'Authorization': `Bearer ${token}` }
         })
       ])
-      
+
       const logData = await logRes.json()
       const progressData = await progressRes.json()
       const subscriptionData = await subscriptionRes.json()
-      
+
       if (logRes.ok) setDailyLog(logData.dailyLog)
       if (progressRes.ok) setProgress(progressData)
       if (subscriptionRes.ok) setSubscriptionInfo(subscriptionData)
@@ -1392,15 +1388,15 @@ function Dashboard({ user, token, onLogout, onReset }) {
       setLoading(false)
     }
   }
-  
+
   const handleUpgradeSuccess = (updatedUser) => {
     setCurrentUser(updatedUser)
     toast.success('Subscription upgraded! Enjoy your new features.')
   }
-  
+
   const updateActivity = async (activityKey, updates) => {
     if (!dailyLog) return
-    
+
     const newActivities = {
       ...dailyLog.activities,
       [activityKey]: {
@@ -1408,9 +1404,9 @@ function Dashboard({ user, token, onLogout, onReset }) {
         ...updates
       }
     }
-    
+
     setDailyLog({ ...dailyLog, activities: newActivities })
-    
+
     try {
       await fetch('/api/daily-log', {
         method: 'PUT',
@@ -1424,16 +1420,16 @@ function Dashboard({ user, token, onLogout, onReset }) {
       toast.error('Failed to save progress')
     }
   }
-  
+
   const completeDay = async () => {
     try {
       const res = await fetch('/api/daily-log/complete', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       })
-      
+
       const data = await res.json()
-      
+
       if (res.ok) {
         toast.success('Day completed! Keep up the discipline.')
         window.location.reload()
@@ -1444,12 +1440,12 @@ function Dashboard({ user, token, onLogout, onReset }) {
       toast.error(error.message)
     }
   }
-  
+
   const allActivitiesCompleted = dailyLog && Object.values(dailyLog.activities).every(a => a.completed)
-  
+
   // Check if user has reached their day limit
   const hasReachedLimit = !isAdmin && currentUser.currentDay >= tierLimits.maxDays
-  
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -1457,17 +1453,17 @@ function Dashboard({ user, token, onLogout, onReset }) {
       </div>
     )
   }
-  
+
   return (
     <div className="min-h-screen bg-background">
       {/* Upgrade Modal */}
-      <UpgradeModal 
-        isOpen={showUpgradeModal} 
+      <UpgradeModal
+        isOpen={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
         token={token}
         onUpgradeSuccess={handleUpgradeSuccess}
       />
-      
+
       {/* Header */}
       <header className="border-b sticky top-0 bg-background/95 backdrop-blur z-50">
         <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
@@ -1493,7 +1489,7 @@ function Dashboard({ user, token, onLogout, onReset }) {
               )}
             </Badge>
           </div>
-          
+
           <div className="flex items-center gap-2">
             <Link href="/dashboard/account">
               <Button variant="outline" size="sm" className="gap-2">
@@ -1501,21 +1497,21 @@ function Dashboard({ user, token, onLogout, onReset }) {
                 <span className="hidden sm:inline">Account</span>
               </Button>
             </Link>
-            
+
             <Link href="/dashboard/reports">
               <Button variant="outline" size="sm" className="gap-2">
                 <BarChart3 className="h-4 w-4" />
                 <span className="hidden sm:inline">Reports</span>
               </Button>
             </Link>
-            
+
             <Link href="/tests">
               <Button variant="outline" size="sm" className="gap-2">
                 <ClipboardList className="h-4 w-4" />
                 <span className="hidden sm:inline">Practice Tests</span>
               </Button>
             </Link>
-            
+
             <Button
               variant="ghost"
               size="icon"
@@ -1524,7 +1520,7 @@ function Dashboard({ user, token, onLogout, onReset }) {
               <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
               <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
             </Button>
-            
+
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="ghost" size="icon">
@@ -1546,24 +1542,24 @@ function Dashboard({ user, token, onLogout, onReset }) {
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
-            
+
             <Button variant="ghost" size="icon" onClick={onLogout}>
               <LogOut className="h-4 w-4" />
             </Button>
           </div>
         </div>
       </header>
-      
+
       <main className="max-w-5xl mx-auto px-4 py-6 space-y-6">
         {/* Subscription Banner - Shows for free users */}
         {!isAdmin && tier !== 'premium' && (
-          <SubscriptionBanner 
-            user={currentUser} 
+          <SubscriptionBanner
+            user={currentUser}
             onUpgrade={() => setShowUpgradeModal(true)}
             subscriptionInfo={subscriptionInfo}
           />
         )}
-        
+
         {/* Limit Reached Block */}
         {hasReachedLimit && (
           <Card className="border-2 border-red-500 bg-red-500/5">
@@ -1571,11 +1567,11 @@ function Dashboard({ user, token, onLogout, onReset }) {
               <Lock className="h-12 w-12 text-red-500 mx-auto mb-4" />
               <h3 className="text-xl font-bold mb-2">Day Limit Reached</h3>
               <p className="text-muted-foreground mb-4">
-                You've completed {tierLimits.maxDays} days on the {tier} plan. 
+                You've completed {tierLimits.maxDays} days on the {tier} plan.
                 Upgrade to continue your French learning journey!
               </p>
-              <Button 
-                onClick={() => setShowUpgradeModal(true)} 
+              <Button
+                onClick={() => setShowUpgradeModal(true)}
                 className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
               >
                 <Crown className="mr-2 h-4 w-4" />
@@ -1584,7 +1580,7 @@ function Dashboard({ user, token, onLogout, onReset }) {
             </CardContent>
           </Card>
         )}
-        
+
         {/* Progress Overview */}
         <div className="grid gap-4 md:grid-cols-4">
           <Card>
@@ -1600,7 +1596,7 @@ function Dashboard({ user, token, onLogout, onReset }) {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
@@ -1614,7 +1610,7 @@ function Dashboard({ user, token, onLogout, onReset }) {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
@@ -1630,7 +1626,7 @@ function Dashboard({ user, token, onLogout, onReset }) {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
@@ -1645,7 +1641,7 @@ function Dashboard({ user, token, onLogout, onReset }) {
             </CardContent>
           </Card>
         </div>
-        
+
         {/* Overall Progress Bar */}
         <Card>
           <CardContent className="pt-6">
@@ -1664,7 +1660,7 @@ function Dashboard({ user, token, onLogout, onReset }) {
             </div>
           </CardContent>
         </Card>
-        
+
         {/* Current Phase Info */}
         <Card className="border-primary/30 bg-primary/5">
           <CardHeader>
@@ -1691,7 +1687,7 @@ function Dashboard({ user, token, onLogout, onReset }) {
             </div>
           </CardContent>
         </Card>
-        
+
         {/* Daily Grammar Section */}
         <div>
           <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
@@ -1700,24 +1696,24 @@ function Dashboard({ user, token, onLogout, onReset }) {
           </h2>
           <DailyGrammarSection token={token} onGrammarComplete={fetchData} />
         </div>
-        
+
         {/* Weak Topics Review */}
         <WeakTopicsSection token={token} />
-        
+
         {/* Daily Activities */}
         <div>
           <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
             <Calendar className="h-5 w-5" />
             Today's Non-Negotiable Routine
           </h2>
-          
+
           <div className="space-y-4">
             {Object.entries(dailyActivities).map(([key, activity]) => {
               const Icon = activityIcons[key]
               const logActivity = dailyLog?.activities?.[key] || { completed: false, timeSpent: 0, notes: '' }
               const isTimerActive = activeTimer === key
               const resource = dailyResources[key]
-              
+
               return (
                 <Card key={key} className={`transition-all ${logActivity.completed ? 'bg-green-500/5 border-green-500/30' : ''}`}>
                   <CardContent className="pt-6">
@@ -1743,7 +1739,7 @@ function Dashboard({ user, token, onLogout, onReset }) {
                             )}
                           </div>
                           <p className="text-sm text-muted-foreground mb-2">{activity.focus || activity.instructions}</p>
-                          
+
                           {/* Book Chapters for Grammar */}
                           {key === 'grammar' && activity.bookChapters && (
                             <div className="bg-muted/50 rounded-lg p-3 mt-2">
@@ -1755,7 +1751,7 @@ function Dashboard({ user, token, onLogout, onReset }) {
                               </ul>
                             </div>
                           )}
-                          
+
                           {/* Daily Resource - Listening */}
                           {key === 'listening' && resource && (
                             <div className="bg-purple-500/5 border border-purple-500/20 rounded-lg p-3 mt-2">
@@ -1766,9 +1762,9 @@ function Dashboard({ user, token, onLogout, onReset }) {
                                     <p className="font-medium text-sm">{resource.title}</p>
                                     <p className="text-xs text-muted-foreground">{resource.description}</p>
                                   </div>
-                                  <a 
-                                    href={resource.url} 
-                                    target="_blank" 
+                                  <a
+                                    href={resource.url}
+                                    target="_blank"
                                     rel="noopener noreferrer"
                                     className="flex items-center gap-1 text-xs bg-purple-500 text-white px-3 py-1.5 rounded-md hover:bg-purple-600 transition-colors whitespace-nowrap"
                                   >
@@ -1782,7 +1778,7 @@ function Dashboard({ user, token, onLogout, onReset }) {
                               </div>
                             </div>
                           )}
-                          
+
                           {/* Daily Resource - Reading */}
                           {key === 'reading' && resource && (
                             <div className="bg-orange-500/5 border border-orange-500/20 rounded-lg p-3 mt-2">
@@ -1793,9 +1789,9 @@ function Dashboard({ user, token, onLogout, onReset }) {
                                     <p className="font-medium text-sm">{resource.title}</p>
                                     <p className="text-xs text-muted-foreground">{resource.description}</p>
                                   </div>
-                                  <a 
-                                    href={resource.url} 
-                                    target="_blank" 
+                                  <a
+                                    href={resource.url}
+                                    target="_blank"
                                     rel="noopener noreferrer"
                                     className="flex items-center gap-1 text-xs bg-orange-500 text-white px-3 py-1.5 rounded-md hover:bg-orange-600 transition-colors whitespace-nowrap"
                                   >
@@ -1806,7 +1802,7 @@ function Dashboard({ user, token, onLogout, onReset }) {
                               </div>
                             </div>
                           )}
-                          
+
                           {/* Daily Resource - Writing */}
                           {key === 'writing' && resource && (
                             <div className="bg-pink-500/5 border border-pink-500/20 rounded-lg p-3 mt-2">
@@ -1828,7 +1824,7 @@ function Dashboard({ user, token, onLogout, onReset }) {
                               </div>
                             </div>
                           )}
-                          
+
                           {/* Daily Resource - Speaking */}
                           {key === 'speaking' && resource && (
                             <div className="bg-green-500/5 border border-green-500/20 rounded-lg p-3 mt-2">
@@ -1845,7 +1841,7 @@ function Dashboard({ user, token, onLogout, onReset }) {
                               </div>
                             </div>
                           )}
-                          
+
                           {/* Topics/Activities */}
                           {(activity.topics || activity.activities) && (
                             <div className="flex flex-wrap gap-1 mt-2">
@@ -1858,7 +1854,7 @@ function Dashboard({ user, token, onLogout, onReset }) {
                           )}
                         </div>
                       </div>
-                      
+
                       {/* Controls */}
                       <div className="flex items-center gap-4 md:flex-col md:items-end">
                         <ActivityTimer
@@ -1885,7 +1881,7 @@ function Dashboard({ user, token, onLogout, onReset }) {
             })}
           </div>
         </div>
-        
+
         {/* Complete Day Button */}
         <Card className={allActivitiesCompleted ? 'border-green-500 bg-green-500/5' : 'border-dashed'}>
           <CardContent className="pt-6">
@@ -1895,7 +1891,7 @@ function Dashboard({ user, token, onLogout, onReset }) {
                   {allActivitiesCompleted ? '🎉 All activities completed!' : 'Complete all activities to finish the day'}
                 </h3>
                 <p className="text-sm text-muted-foreground">
-                  {allActivitiesCompleted 
+                  {allActivitiesCompleted
                     ? 'Click the button to advance to the next day'
                     : `${Object.values(dailyLog?.activities || {}).filter(a => a.completed).length}/5 activities done`
                   }
@@ -1916,7 +1912,7 @@ function Dashboard({ user, token, onLogout, onReset }) {
             </div>
           </CardContent>
         </Card>
-        
+
         {/* Discipline Reminder */}
         <Card className="bg-muted/30">
           <CardContent className="pt-6">
@@ -1937,7 +1933,7 @@ function AppContent() {
   const [loading, setLoading] = useState(true)
   const searchParams = useSearchParams()
   const router = useRouter()
-  
+
   // Handle payment callback and Google OAuth callback
   useEffect(() => {
     const paymentStatus = searchParams.get('payment')
@@ -1945,7 +1941,7 @@ function AppContent() {
     const googleAuth = searchParams.get('google_auth')
     const googleToken = searchParams.get('token')
     const authError = searchParams.get('auth_error')
-    
+
     // Handle Google OAuth success
     if (googleAuth === 'success' && googleToken) {
       Cookies.set('token', googleToken, { expires: 30 })
@@ -1956,7 +1952,7 @@ function AppContent() {
       fetchUser(googleToken)
       return
     }
-    
+
     // Handle Google OAuth error
     if (authError) {
       const errorMessages = {
@@ -1971,7 +1967,7 @@ function AppContent() {
       router.replace('/dashboard', { scroll: false })
       return
     }
-    
+
     // Handle payment success
     if (paymentStatus === 'success' && tier) {
       toast.success(`🎉 Payment successful! You've been upgraded to ${tier.charAt(0).toUpperCase() + tier.slice(1)}!`, {
@@ -1992,7 +1988,7 @@ function AppContent() {
       router.replace('/dashboard', { scroll: false })
     }
   }, [searchParams])
-  
+
   useEffect(() => {
     const savedToken = Cookies.get('token')
     if (savedToken) {
@@ -2001,13 +1997,13 @@ function AppContent() {
       setLoading(false)
     }
   }, [])
-  
+
   const fetchUser = async (authToken) => {
     try {
       const res = await fetch('/api/auth/me', {
         headers: { 'Authorization': `Bearer ${authToken}` }
       })
-      
+
       if (res.ok) {
         const data = await res.json()
         setUser(data.user)
@@ -2021,25 +2017,25 @@ function AppContent() {
       setLoading(false)
     }
   }
-  
+
   const handleAuth = (userData, authToken) => {
     setUser(userData)
     setToken(authToken)
   }
-  
+
   const handleLogout = () => {
     Cookies.remove('token')
     setUser(null)
     setToken(null)
   }
-  
+
   const handleReset = async () => {
     try {
       const res = await fetch('/api/pathway/reset', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       })
-      
+
       if (res.ok) {
         const data = await res.json()
         setUser(data.user)
@@ -2049,11 +2045,11 @@ function AppContent() {
       toast.error('Failed to reset pathway')
     }
   }
-  
+
   const handleOnboardingComplete = (userData) => {
     setUser(userData)
   }
-  
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -2061,28 +2057,28 @@ function AppContent() {
       </div>
     )
   }
-  
+
   // Not logged in
   if (!user) {
     return <AuthPage onAuth={handleAuth} />
   }
-  
+
   // Logged in but needs onboarding
   if (!user.onboardingComplete) {
     return (
-      <OnboardingPage 
-        user={user} 
-        token={token} 
+      <OnboardingPage
+        user={user}
+        token={token}
         onComplete={handleOnboardingComplete}
       />
     )
   }
-  
+
   // Full dashboard
   return (
-    <Dashboard 
-      user={user} 
-      token={token} 
+    <Dashboard
+      user={user}
+      token={token}
       onLogout={handleLogout}
       onReset={handleReset}
     />
