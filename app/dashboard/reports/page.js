@@ -233,7 +233,7 @@ export default function ReportsPage() {
       })
       
       if (!userRes.ok) {
-        localStorage.removeItem('token')
+        Cookies.remove('token')
         router.push('/dashboard')
         return
       }
