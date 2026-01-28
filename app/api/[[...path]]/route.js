@@ -5,7 +5,7 @@ import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import Stripe from 'stripe'
 import { getGrammarForDay, getGrammarTopicById, getAllGrammarTopics } from '@/lib/grammar-curriculum'
-import { TextToSpeechClient } from '@google-cloud/text-to-speech'
+import { GoogleAuth } from 'google-auth-library'
 
 // JWT Secret - MUST be set in environment for production
 const JWT_SECRET = process.env.JWT_SECRET
@@ -24,28 +24,69 @@ function getStripe() {
   return stripe
 }
 
-// Initialize Google Cloud TTS client lazily
-let ttsClient = null
-function getTTSClient() {
-  if (!ttsClient) {
-    try {
-      // For production: Read credentials from GOOGLE_TTS_CREDENTIALS env var (base64 encoded)
-      // For development: Use GOOGLE_APPLICATION_CREDENTIALS file path
-      if (process.env.GOOGLE_TTS_CREDENTIALS) {
-        const credentialsJson = Buffer.from(process.env.GOOGLE_TTS_CREDENTIALS, 'base64').toString('utf-8')
-        const credentials = JSON.parse(credentialsJson)
-        ttsClient = new TextToSpeechClient({ credentials })
-        console.log('Google Cloud TTS client initialized from env var')
-      } else {
-        // Fallback to file-based credentials (development)
-        ttsClient = new TextToSpeechClient()
-        console.log('Google Cloud TTS client initialized from file')
-      }
-    } catch (error) {
-      console.error('Failed to initialize Google Cloud TTS client:', error)
+// Google Cloud TTS REST API helper (works better with serverless than gRPC)
+let ttsCredentials = null
+let ttsAuthClient = null
+
+async function getTTSAccessToken() {
+  if (!ttsCredentials) {
+    if (process.env.GOOGLE_TTS_CREDENTIALS) {
+      const credentialsJson = Buffer.from(process.env.GOOGLE_TTS_CREDENTIALS, 'base64').toString('utf-8')
+      ttsCredentials = JSON.parse(credentialsJson)
+    } else if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+      // For local development with file
+      const fs = await import('fs')
+      const content = fs.readFileSync(process.env.GOOGLE_APPLICATION_CREDENTIALS, 'utf-8')
+      ttsCredentials = JSON.parse(content)
+    } else {
+      throw new Error('No Google TTS credentials configured')
     }
   }
-  return ttsClient
+  
+  if (!ttsAuthClient) {
+    ttsAuthClient = new GoogleAuth({
+      credentials: ttsCredentials,
+      scopes: ['https://www.googleapis.com/auth/cloud-platform']
+    })
+  }
+  
+  const client = await ttsAuthClient.getClient()
+  const accessToken = await client.getAccessToken()
+  return accessToken.token
+}
+
+async function synthesizeSpeechREST(text, languageCode = 'fr-FR', speakingRate = 1.0) {
+  const accessToken = await getTTSAccessToken()
+  
+  const requestBody = {
+    input: { text },
+    voice: {
+      languageCode,
+      name: 'fr-FR-Standard-A',
+      ssmlGender: 'FEMALE'
+    },
+    audioConfig: {
+      audioEncoding: 'MP3',
+      speakingRate: Math.max(0.5, Math.min(2.0, speakingRate))
+    }
+  }
+  
+  const response = await fetch('https://texttospeech.googleapis.com/v1/text:synthesize', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(requestBody)
+  })
+  
+  if (!response.ok) {
+    const errorData = await response.json()
+    throw new Error(errorData.error?.message || 'TTS API request failed')
+  }
+  
+  const data = await response.json()
+  return data.audioContent
 }
 
 // Stripe Price Configuration (in cents)
