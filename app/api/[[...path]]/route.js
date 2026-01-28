@@ -108,35 +108,49 @@ const STRIPE_PRICES = {
 // Admin email with full access
 const ADMIN_EMAIL = 'ravijha97.01@gmail.com'
 
-// Subscription tier limits
+// Subscription tier limits - Freemium Model
 const SUBSCRIPTION_LIMITS = {
   free: {
-    maxDays: 7,                    // First 7 days only
-    grammarLessonsPerWeek: 3,      // 3 grammar lessons per week
-    mockExamsPerSkill: 2,          // 2 mock exams per skill (8 total)
-    pathways: ['clb5'],            // Only CLB 5
-    canAccessAllTopics: false
-  },
-  basic: {
-    maxDays: 112,                  // Full CLB 5 pathway
-    grammarLessonsPerWeek: 999,    // Unlimited
-    mockExamsPerSkill: 10,         // 10 per skill (40 total)
-    pathways: ['clb5'],            // Only CLB 5
-    canAccessAllTopics: true
+    maxTestsPerMonth: 3,               // 3 practice tests per month for all sections
+    testsHistoryLimit: 3,              // View last 3 test results
+    aiWritingEvaluationsPerWeek: 3,    // 3 AI writing evaluations per week
+    canAccessAllSections: true,        // Access all test types (TEF & TCF)
+    canAccessDailyGrammar: true,       // Daily grammar lessons
+    canAccessProgressTracking: true,   // Basic progress tracking
+    canAccessFullAnalytics: false,     // No detailed analytics
+    canDownloadResults: false,         // Cannot download results
+    canAccessPerformanceTrends: false, // No performance trends
+    canAccessWeakAreas: false,         // No weak areas analysis
+    adFree: false,                     // Has ads
+    prioritySupport: false
   },
   premium: {
-    maxDays: 999,                  // Both pathways
-    grammarLessonsPerWeek: 999,    // Unlimited
-    mockExamsPerSkill: 20,         // All 20 per skill (80 total)
-    pathways: ['clb5', 'clb7'],    // Both pathways
-    canAccessAllTopics: true
+    maxTestsPerMonth: 999,             // Unlimited tests
+    testsHistoryLimit: 999,            // Unlimited history
+    aiWritingEvaluationsPerWeek: 999,  // Unlimited AI evaluations
+    canAccessAllSections: true,
+    canAccessDailyGrammar: true,
+    canAccessProgressTracking: true,
+    canAccessFullAnalytics: true,      // Full analytics & reports
+    canDownloadResults: true,          // Download/export results
+    canAccessPerformanceTrends: true,  // Performance over time
+    canAccessWeakAreas: true,          // Weak areas analysis
+    adFree: true,                      // Ad-free experience
+    prioritySupport: true
   },
   admin: {
-    maxDays: 999,
-    grammarLessonsPerWeek: 999,
-    mockExamsPerSkill: 20,
-    pathways: ['clb5', 'clb7'],
-    canAccessAllTopics: true
+    maxTestsPerMonth: 999,
+    testsHistoryLimit: 999,
+    aiWritingEvaluationsPerWeek: 999,
+    canAccessAllSections: true,
+    canAccessDailyGrammar: true,
+    canAccessProgressTracking: true,
+    canAccessFullAnalytics: true,
+    canDownloadResults: true,
+    canAccessPerformanceTrends: true,
+    canAccessWeakAreas: true,
+    adFree: true,
+    prioritySupport: true
   }
 }
 
