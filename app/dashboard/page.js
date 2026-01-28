@@ -731,44 +731,123 @@ function OnboardingPage({ user, token, onComplete }) {
   )
 }
 
-// Timer Component
-function ActivityTimer({ activity, timeSpent, onTimeUpdate, isActive, onToggle }) {
-  const [localTime, setLocalTime] = useState(timeSpent)
+// Timer Component - Countdown with Alert Sound
+function ActivityTimer({ activity, timeSpent, allocatedTime, onTimeUpdate, isActive, onToggle, onComplete }) {
+  const [timeRemaining, setTimeRemaining] = useState(() => {
+    // Calculate remaining time: allocated time minus time already spent
+    const remaining = (allocatedTime || 60) - timeSpent
+    return Math.max(0, remaining)
+  })
+  const [hasAlerted, setHasAlerted] = useState(false)
   
+  // Update remaining time when timeSpent or allocatedTime changes
   useEffect(() => {
-    setLocalTime(timeSpent)
-  }, [timeSpent])
+    const remaining = (allocatedTime || 60) - timeSpent
+    setTimeRemaining(Math.max(0, remaining))
+  }, [timeSpent, allocatedTime])
+  
+  // Play alert sound function
+  const playAlertSound = useCallback(() => {
+    if (hasAlerted) return
+    
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext
+      const audioContext = new AudioContext()
+      
+      // Create a sequence of beeps
+      const playBeep = (frequency, startTime, duration) => {
+        const oscillator = audioContext.createOscillator()
+        const gainNode = audioContext.createGain()
+        
+        oscillator.connect(gainNode)
+        gainNode.connect(audioContext.destination)
+        
+        oscillator.type = 'sine'
+        oscillator.frequency.setValueAtTime(frequency, startTime)
+        
+        gainNode.gain.setValueAtTime(0.4, startTime)
+        gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + duration)
+        
+        oscillator.start(startTime)
+        oscillator.stop(startTime + duration)
+      }
+      
+      const now = audioContext.currentTime
+      // Play 3 ascending celebration beeps
+      playBeep(523, now, 0.15)        // C5
+      playBeep(659, now + 0.2, 0.15)  // E5
+      playBeep(784, now + 0.4, 0.25)  // G5
+      
+      setHasAlerted(true)
+      toast.success(`${activity} time complete! Great work! 🎉`, { duration: 4000 })
+    } catch (error) {
+      console.log('Could not play alert sound:', error)
+    }
+  }, [hasAlerted, activity])
   
   useEffect(() => {
     let interval
-    if (isActive) {
+    if (isActive && timeRemaining > 0) {
       interval = setInterval(() => {
-        setLocalTime(t => {
-          const newTime = t + 1
-          onTimeUpdate(newTime)
-          return newTime
+        setTimeRemaining(prev => {
+          if (prev <= 1) {
+            // Timer complete
+            playAlertSound()
+            onTimeUpdate(allocatedTime || 60) // Mark as fully spent
+            if (onComplete) onComplete()
+            return 0
+          }
+          // Update the timeSpent (increment by 1 minute)
+          const newTimeSpent = (allocatedTime || 60) - (prev - 1)
+          onTimeUpdate(newTimeSpent)
+          return prev - 1
         })
       }, 60000) // Update every minute
     }
     return () => clearInterval(interval)
-  }, [isActive, onTimeUpdate])
+  }, [isActive, timeRemaining, onTimeUpdate, playAlertSound, allocatedTime, onComplete])
   
-  const hours = Math.floor(localTime / 60)
-  const minutes = localTime % 60
+  // Reset alert when timer is reset
+  useEffect(() => {
+    if (timeRemaining > 0 && hasAlerted) {
+      setHasAlerted(false)
+    }
+  }, [timeRemaining])
+  
+  const hours = Math.floor(timeRemaining / 60)
+  const minutes = timeRemaining % 60
+  const isLowTime = timeRemaining > 0 && timeRemaining <= 10
+  const isComplete = timeRemaining === 0
   
   return (
-    <div className="flex items-center gap-2">
+    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all ${
+      isComplete ? 'bg-green-500/10 border border-green-500/30' :
+      isLowTime ? 'bg-orange-500/10 border border-orange-500/30' :
+      isActive ? 'bg-blue-500/10 border border-blue-500/30' : ''
+    }`}>
       <Button
         variant="outline"
         size="sm"
         onClick={onToggle}
-        className={isActive ? 'bg-green-500/10 border-green-500' : ''}
+        className={`${isActive ? 'bg-green-500/10 border-green-500' : ''} ${isComplete ? 'bg-green-500/20' : ''}`}
+        disabled={isComplete}
       >
-        {isActive ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+        {isComplete ? (
+          <Check className="h-4 w-4 text-green-600" />
+        ) : isActive ? (
+          <Pause className="h-4 w-4" />
+        ) : (
+          <Play className="h-4 w-4" />
+        )}
       </Button>
-      <span className="text-sm font-mono min-w-[60px]">
-        {hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`}
-      </span>
+      <div className="flex flex-col">
+        <span className={`text-sm font-mono min-w-[60px] ${isLowTime ? 'text-orange-600 font-bold' : ''} ${isComplete ? 'text-green-600' : ''}`}>
+          {isComplete ? '✓ Done' : hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`}
+        </span>
+        {!isComplete && (
+          <span className="text-[10px] text-muted-foreground">remaining</span>
+        )}
+      </div>
     </div>
   )
 }
