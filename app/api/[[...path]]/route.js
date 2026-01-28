@@ -1576,19 +1576,15 @@ async function handleRoute(request, { params }) {
         completedAt: { $gte: startOfMonth }
       })
       
-      // Count AI evaluations this week
-      const startOfWeek = new Date()
-      startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay())
-      startOfWeek.setHours(0, 0, 0, 0)
-      
-      const aiEvaluationsThisWeek = await db.collection('writing_evaluations').countDocuments({
+      // Count AI evaluations this month (changed from weekly)
+      const aiEvaluationsThisMonth = await db.collection('writing_evaluations').countDocuments({
         userId: decoded.userId,
-        createdAt: { $gte: startOfWeek }
+        createdAt: { $gte: startOfMonth }
       })
       
       const isPremiumOrAdmin = getUserTier(user) === 'premium' || isAdmin(user.email)
       const testsRemaining = isPremiumOrAdmin ? 999 : Math.max(0, tierLimits.maxTestsPerMonth - testsThisMonth)
-      const aiEvaluationsRemaining = isPremiumOrAdmin ? 999 : Math.max(0, tierLimits.aiWritingEvaluationsPerWeek - aiEvaluationsThisWeek)
+      const aiEvaluationsRemaining = isPremiumOrAdmin ? 999 : Math.max(0, tierLimits.aiWritingEvaluationsPerMonth - aiEvaluationsThisMonth)
       
       return handleCORS(NextResponse.json({
         subscriptionTier: getUserTier(user),
