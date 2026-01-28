@@ -60,46 +60,38 @@ const levelColors = {
   'B2': 'bg-orange-500/10 text-orange-600 border-orange-500/30'
 }
 
-// Subscription Banner Component
+// Subscription Banner Component - Freemium Model
 function SubscriptionBanner({ user, onUpgrade }) {
   const tier = user?.subscriptionTier || 'free'
-  const tierLimits = user?.tierLimits || { maxDays: 7 }
-  const currentDay = user?.currentDay || 0
-  const daysRemaining = Math.max(0, tierLimits.maxDays - currentDay)
-  const isLimitReached = currentDay >= tierLimits.maxDays
+  const tierLimits = user?.tierLimits || {}
+  const testsThisMonth = user?.testsThisMonth || 0
+  const maxTests = tierLimits.maxTestsPerMonth || 3
+  const testsRemaining = Math.max(0, maxTests - testsThisMonth)
   
   if (tier === 'admin' || tier === 'premium') {
     return null // Don't show banner for premium/admin
   }
   
   return (
-    <Card className={`mb-6 border-2 ${isLimitReached ? 'border-red-500/50 bg-red-500/5' : 'border-yellow-500/50 bg-yellow-500/5'}`}>
+    <Card className="mb-6 border-2 border-orange-400/50 bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20">
       <CardContent className="pt-4">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-3">
-            {isLimitReached ? (
-              <Lock className="h-6 w-6 text-red-500" />
-            ) : (
-              <AlertTriangle className="h-6 w-6 text-yellow-500" />
-            )}
+            <div className="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+              <Crown className="h-5 w-5 text-orange-500" />
+            </div>
             <div>
               <p className="font-semibold">
-                {isLimitReached 
-                  ? `You've reached the ${tierLimits.maxDays}-day limit for the ${tier} plan`
-                  : `${tier.charAt(0).toUpperCase() + tier.slice(1)} Plan: ${daysRemaining} days remaining`
-                }
+                Free Plan: {testsRemaining} tests remaining this month
               </p>
               <p className="text-sm text-muted-foreground">
-                {tier === 'free' 
-                  ? 'Upgrade to Basic for full CLB 5 pathway, or Premium for both pathways + all 80 mock exams'
-                  : 'Upgrade to Premium for CLB 7 pathway + all 80 mock exams'
-                }
+                Upgrade to Premium for unlimited tests, AI evaluations & detailed analytics
               </p>
             </div>
           </div>
-          <Button onClick={onUpgrade} className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600">
+          <Button onClick={onUpgrade} className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white">
             <Crown className="mr-2 h-4 w-4" />
-            Upgrade Now
+            Upgrade - $9/mo
           </Button>
         </div>
       </CardContent>
