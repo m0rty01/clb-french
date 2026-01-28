@@ -1553,11 +1553,12 @@ function Dashboard({ user, token, onLogout, onReset }) {
       </header>
       
       <main className="max-w-5xl mx-auto px-4 py-6 space-y-6">
-        {/* Subscription Banner - Shows for free/basic users */}
+        {/* Subscription Banner - Shows for free users */}
         {!isAdmin && tier !== 'premium' && (
           <SubscriptionBanner 
             user={currentUser} 
-            onUpgrade={() => setShowUpgradeModal(true)} 
+            onUpgrade={() => setShowUpgradeModal(true)}
+            subscriptionInfo={subscriptionInfo}
           />
         )}
         
