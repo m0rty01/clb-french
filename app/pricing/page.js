@@ -349,7 +349,7 @@ export default function PricingPage() {
                     <PenTool className="h-4 w-4 text-muted-foreground" />
                     AI Writing Evaluation
                   </td>
-                  <td className="py-4 px-4 text-center">3/week</td>
+                  <td className="py-4 px-4 text-center">6/month</td>
                   <td className="py-4 px-4 text-center font-medium text-orange-600">Unlimited</td>
                 </tr>
                 <tr className="border-b">
