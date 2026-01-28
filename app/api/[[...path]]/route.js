@@ -1861,7 +1861,7 @@ Be strict but fair. TEF is a standardized test - evaluate accordingly. Return ON
         ))
       }
       
-      const db = await getDb()
+      const db = await connectToMongo()
       
       // Calculate percentage and grade
       const percentage = Math.round((score / totalQuestions) * 100)
@@ -1941,7 +1941,7 @@ Be strict but fair. TEF is a standardized test - evaluate accordingly. Return ON
         return handleCORS(NextResponse.json({ error: 'Invalid token' }, { status: 401 }))
       }
       
-      const db = await getDb()
+      const db = await connectToMongo()
       const result = await db.collection('test_results').findOne({ 
         id: resultId,
         email: decoded.email 
@@ -1972,7 +1972,7 @@ Be strict but fair. TEF is a standardized test - evaluate accordingly. Return ON
         return handleCORS(NextResponse.json({ error: 'Invalid token' }, { status: 401 }))
       }
       
-      const db = await getDb()
+      const db = await connectToMongo()
       const user = await db.collection('users').findOne({ email: decoded.email })
       
       // Check subscription tier
@@ -2026,7 +2026,7 @@ Be strict but fair. TEF is a standardized test - evaluate accordingly. Return ON
         return handleCORS(NextResponse.json({ error: 'Invalid token' }, { status: 401 }))
       }
       
-      const db = await getDb()
+      const db = await connectToMongo()
       const user = await db.collection('users').findOne({ email: decoded.email })
       
       // Check subscription tier
