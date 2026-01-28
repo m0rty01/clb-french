@@ -1729,23 +1729,23 @@ async function handleRoute(request, { params }) {
       const tierLimits = getTierLimits(user)
       const isPremiumOrAdmin = getUserTier(user) === 'premium' || isAdmin(user.email)
       
-      // Check weekly AI evaluation limit for free users
+      // Check monthly AI evaluation limit for free users (changed from weekly)
       if (!isPremiumOrAdmin) {
-        const startOfWeek = new Date()
-        startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay())
-        startOfWeek.setHours(0, 0, 0, 0)
+        const startOfMonth = new Date()
+        startOfMonth.setDate(1)
+        startOfMonth.setHours(0, 0, 0, 0)
         
-        const aiEvaluationsThisWeek = await db.collection('writing_evaluations').countDocuments({
+        const aiEvaluationsThisMonth = await db.collection('writing_evaluations').countDocuments({
           userId: decoded.userId,
-          createdAt: { $gte: startOfWeek }
+          createdAt: { $gte: startOfMonth }
         })
         
-        if (aiEvaluationsThisWeek >= tierLimits.aiWritingEvaluationsPerWeek) {
+        if (aiEvaluationsThisMonth >= tierLimits.aiWritingEvaluationsPerMonth) {
           return handleCORS(NextResponse.json({
-            error: 'Weekly AI evaluation limit reached',
-            message: `You've used all ${tierLimits.aiWritingEvaluationsPerWeek} AI writing evaluations this week. Upgrade to Premium for unlimited evaluations.`,
-            aiEvaluationsThisWeek,
-            maxPerWeek: tierLimits.aiWritingEvaluationsPerWeek,
+            error: 'Monthly AI evaluation limit reached',
+            message: `You've used all ${tierLimits.aiWritingEvaluationsPerMonth} AI writing evaluations this month. Upgrade to Premium for unlimited evaluations.`,
+            aiEvaluationsThisMonth,
+            maxPerMonth: tierLimits.aiWritingEvaluationsPerMonth,
             upgradeRequired: true
           }, { status: 403 }))
         }
