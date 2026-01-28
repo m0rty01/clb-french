@@ -1566,17 +1566,52 @@ async function handleRoute(request, { params }) {
       
       const tierLimits = getTierLimits(user)
       
+      // Count tests taken this month for freemium limit
+      const startOfMonth = new Date()
+      startOfMonth.setDate(1)
+      startOfMonth.setHours(0, 0, 0, 0)
+      
+      const testsThisMonth = await db.collection('testResults').countDocuments({
+        odUserId: user.id,
+        completedAt: { $gte: startOfMonth }
+      })
+      
+      // Count AI evaluations this week
+      const startOfWeek = new Date()
+      startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay())
+      startOfWeek.setHours(0, 0, 0, 0)
+      
+      const aiEvaluationsThisWeek = await db.collection('testResults').countDocuments({
+        odUserId: user.id,
+        completedAt: { $gte: startOfWeek },
+        hasAiEvaluation: true
+      })
+      
+      const isPremiumOrAdmin = getUserTier(user) === 'premium' || isAdmin(user.email)
+      const testsRemaining = isPremiumOrAdmin ? 999 : Math.max(0, tierLimits.maxTestsPerMonth - testsThisMonth)
+      const aiEvaluationsRemaining = isPremiumOrAdmin ? 999 : Math.max(0, tierLimits.aiWritingEvaluationsPerWeek - aiEvaluationsThisWeek)
+      
       return handleCORS(NextResponse.json({
         subscriptionTier: getUserTier(user),
-        mockExamsPerSkill: tierLimits.mockExamsPerSkill,
+        isAdmin: isAdmin(user.email),
+        // New freemium model
+        maxTestsPerMonth: tierLimits.maxTestsPerMonth,
+        testsThisMonth: testsThisMonth,
+        testsRemaining: testsRemaining,
+        aiWritingEvaluationsPerWeek: tierLimits.aiWritingEvaluationsPerWeek,
+        aiEvaluationsThisWeek: aiEvaluationsThisWeek,
+        aiEvaluationsRemaining: aiEvaluationsRemaining,
+        canAccessFullAnalytics: tierLimits.canAccessFullAnalytics,
+        canDownloadResults: tierLimits.canDownloadResults,
+        // For backward compatibility - show all tests as accessible
+        mockExamsPerSkill: isPremiumOrAdmin ? 20 : 20, // All tests are accessible in freemium
         accessibleExams: {
-          listening: tierLimits.mockExamsPerSkill,
-          reading: tierLimits.mockExamsPerSkill,
-          writing: tierLimits.mockExamsPerSkill,
-          speaking: tierLimits.mockExamsPerSkill
+          listening: 20,
+          reading: 20,
+          writing: 20,
+          speaking: 20
         },
-        totalAccessible: tierLimits.mockExamsPerSkill * 4,
-        isAdmin: isAdmin(user.email)
+        totalAccessible: 80 // All tests accessible, but usage is limited per month
       }))
     }
 
