@@ -1,6 +1,7 @@
 import './globals.css'
 import { ThemeProvider } from '@/components/theme-provider'
 import { Toaster } from '@/components/ui/sonner'
+import { FloatingSupportButton } from '@/components/FloatingSupportButton'
 import Script from 'next/script'
 
 // Google Analytics Measurement ID - Replace with your actual ID
@@ -47,6 +48,7 @@ export default function RootLayout({ children }) {
         >
           {children}
           <Toaster position="top-center" />
+          <FloatingSupportButton />
         </ThemeProvider>
       </body>
     </html>
