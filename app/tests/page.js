@@ -1423,52 +1423,162 @@ function SpeakingTest({ test, onComplete, onBack }) {
 }
 
 // Results View Component
-function ResultsView({ testType, test, answers, onBack }) {
+function ResultsView({ testType, test, answers, onBack, examId, examTitle }) {
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [resultId, setResultId] = useState(null)
+  const router = useRouter()
+  
   const allQuestions = test.sections.flatMap(s => s.questions)
   const totalQuestions = allQuestions.length
   
   let correct = 0
+  const answerDetails = []
+  
   allQuestions.forEach(q => {
-    if (answers[q.id] === q.correctAnswer) {
-      correct++
-    }
+    const isCorrect = answers[q.id] === q.correctAnswer
+    if (isCorrect) correct++
+    
+    answerDetails.push({
+      questionId: q.id,
+      userAnswer: answers[q.id],
+      correctAnswer: q.correctAnswer,
+      isCorrect,
+      questionText: q.question?.substring(0, 100),
+      questionType: q.questionType || 'multiple_choice'
+    })
   })
   
   const score = Math.round((correct / totalQuestions) * 100)
   const clbResult = calculateCLBScore(score)
   
+  // Calculate grade
+  let grade = 'F'
+  if (score >= 90) grade = 'A'
+  else if (score >= 80) grade = 'B'
+  else if (score >= 70) grade = 'C'
+  else if (score >= 60) grade = 'D'
+  
+  // Save results to database
+  useEffect(() => {
+    const saveResults = async () => {
+      const token = localStorage.getItem('token')
+      if (!token || saved) return
+      
+      setSaving(true)
+      try {
+        const response = await fetch('/api/tests/results', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            testType,
+            examId: examId || test.id,
+            examTitle: examTitle || test.title || `${testType} Test`,
+            score: correct,
+            totalQuestions,
+            correctAnswers: correct,
+            timeSpent: 0, // TODO: Track actual time
+            answers: answerDetails
+          })
+        })
+        
+        if (response.ok) {
+          const data = await response.json()
+          setResultId(data.resultId)
+          setSaved(true)
+          toast.success('Results saved!')
+        }
+      } catch (error) {
+        console.error('Failed to save results:', error)
+      } finally {
+        setSaving(false)
+      }
+    }
+    
+    saveResults()
+  }, [])
+  
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b">
-        <div className="max-w-4xl mx-auto px-4 h-16 flex items-center">
+        <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
           <Button variant="ghost" onClick={onBack}>
             <ArrowLeft className="h-4 w-4 mr-2" /> Back to Tests
           </Button>
+          <div className="flex gap-2">
+            {saving && (
+              <Badge variant="outline" className="flex items-center gap-1">
+                <Loader2 className="h-3 w-3 animate-spin" /> Saving...
+              </Badge>
+            )}
+            <Button variant="outline" onClick={() => router.push('/dashboard/reports')}>
+              <BarChart3 className="h-4 w-4 mr-2" /> View Reports
+            </Button>
+          </div>
         </div>
       </header>
       
       <main className="max-w-4xl mx-auto px-4 py-8">
         {/* Score Card */}
-        <Card className="mb-6">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl">Test Complete!</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-3 gap-4 text-center mb-6">
-              <div className="p-4 rounded-lg bg-muted">
-                <p className="text-3xl font-bold">{correct}/{totalQuestions}</p>
-                <p className="text-sm text-muted-foreground">Correct Answers</p>
+        <Card className="mb-6 overflow-hidden">
+          <div className="bg-gradient-to-r from-purple-500/10 to-blue-500/10 dark:from-purple-500/20 dark:to-blue-500/20">
+            <CardHeader className="text-center pb-2">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center">
+                <Award className="h-8 w-8 text-white" />
               </div>
-              <div className="p-4 rounded-lg bg-primary/10">
-                <p className="text-3xl font-bold text-primary">{score}%</p>
-                <p className="text-sm text-muted-foreground">Score</p>
+              <CardTitle className="text-2xl">Test Complete!</CardTitle>
+              <CardDescription>{examTitle || test.title}</CardDescription>
+            </CardHeader>
+            <CardContent className="pb-6">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                <div className="p-4 rounded-lg bg-background/80 backdrop-blur">
+                  <p className="text-3xl font-bold">{correct}/{totalQuestions}</p>
+                  <p className="text-sm text-muted-foreground">Correct</p>
+                </div>
+                <div className="p-4 rounded-lg bg-background/80 backdrop-blur">
+                  <p className="text-3xl font-bold text-primary">{score}%</p>
+                  <p className="text-sm text-muted-foreground">Score</p>
+                </div>
+                <div className="p-4 rounded-lg bg-background/80 backdrop-blur">
+                  <p className="text-3xl font-bold text-green-600">CLB {clbResult.clb}</p>
+                  <p className="text-sm text-muted-foreground">{clbResult.cefr} Level</p>
+                </div>
+                <div className="p-4 rounded-lg bg-background/80 backdrop-blur">
+                  <p className={`text-3xl font-bold ${
+                    grade === 'A' ? 'text-green-600' :
+                    grade === 'B' ? 'text-blue-600' :
+                    grade === 'C' ? 'text-yellow-600' :
+                    grade === 'D' ? 'text-orange-600' : 'text-red-600'
+                  }`}>{grade}</p>
+                  <p className="text-sm text-muted-foreground">Grade</p>
+                </div>
               </div>
-              <div className="p-4 rounded-lg bg-green-500/10">
-                <p className="text-3xl font-bold text-green-600">CLB {clbResult.clb}</p>
-                <p className="text-sm text-muted-foreground">{clbResult.cefr} Level</p>
+              
+              {/* Performance Summary */}
+              <div className="mt-6 p-4 rounded-lg bg-background/80 backdrop-blur">
+                <h4 className="font-medium mb-3 flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4" /> Performance Summary
+                </h4>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Questions Answered</span>
+                    <span className="font-medium">{Object.keys(answers).length} / {totalQuestions}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Accuracy</span>
+                    <span className="font-medium">{score}%</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Incorrect Answers</span>
+                    <span className="font-medium text-red-600">{totalQuestions - correct}</span>
+                  </div>
+                </div>
               </div>
-            </div>
-          </CardContent>
+            </CardContent>
+          </div>
         </Card>
         
         {/* Answer Review */}
