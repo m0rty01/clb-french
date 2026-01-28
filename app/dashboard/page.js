@@ -1868,9 +1868,11 @@ function Dashboard({ user, token, onLogout, onReset }) {
                         <ActivityTimer
                           activity={key}
                           timeSpent={logActivity.timeSpent}
+                          allocatedTime={activity.duration}
                           onTimeUpdate={(time) => updateActivity(key, { timeSpent: time })}
                           isActive={isTimerActive}
                           onToggle={() => setActiveTimer(isTimerActive ? null : key)}
+                          onComplete={() => updateActivity(key, { completed: true })}
                         />
                         <div className="flex items-center gap-2">
                           <span className="text-sm text-muted-foreground">Complete</span>
