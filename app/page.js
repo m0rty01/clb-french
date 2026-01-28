@@ -558,34 +558,34 @@ export default function HomePage() {
       </section>
 
       {/* Pricing Section */}
-      <section id="pricing" className="py-20">
+      <section id="pricing" className="py-20 bg-gradient-to-b from-background to-muted/30">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <Badge className="mb-4">Pricing</Badge>
+            <Badge className="mb-4 bg-orange-100 text-orange-700">Pricing</Badge>
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
               Simple, Transparent Pricing
             </h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Choose the plan that fits your CLB preparation needs. Start free, upgrade anytime.
+              Start practicing for free, then upgrade to Premium for unlimited access. Cancel anytime.
             </p>
             <p className="text-sm text-muted-foreground mt-2">
               🎉 No credit card required to start!
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
             {pricingPlans.map((plan, index) => (
               <Card 
                 key={index} 
-                className={`relative ${plan.popular ? 'border-2 border-blue-500 shadow-xl scale-105' : 'border shadow-lg'}`}
+                className={`relative ${plan.popular ? 'border-2 border-orange-400 shadow-xl bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20' : 'border shadow-lg'}`}
               >
                 {plan.popular && (
                   <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                    <Badge className="bg-blue-600 text-white px-4 py-1">Most Popular</Badge>
+                    <Badge className="bg-orange-500 text-white px-4 py-1">Most Popular</Badge>
                   </div>
                 )}
                 <CardHeader className="text-center pb-2">
-                  <CardTitle className="text-2xl">{plan.name}</CardTitle>
+                  <CardTitle className={`text-2xl ${plan.popular ? 'text-orange-600 dark:text-orange-400' : ''}`}>{plan.name}</CardTitle>
                   <CardDescription>{plan.description}</CardDescription>
                 </CardHeader>
                 <CardContent className="text-center">
@@ -596,14 +596,14 @@ export default function HomePage() {
                     {plan.yearlyPrice && (
                       <div className="mt-2">
                         <p className="text-sm text-muted-foreground">{plan.yearlyPrice}</p>
-                        <Badge variant="secondary" className="mt-1">{plan.yearlySavings}</Badge>
+                        <Badge variant="secondary" className="mt-1 bg-green-100 text-green-700">{plan.yearlySavings}</Badge>
                       </div>
                     )}
                   </div>
 
                   {/* CTA Button */}
                   <Button 
-                    className={`w-full mb-6 ${plan.popular ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
+                    className={`w-full mb-6 ${plan.popular ? 'bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white' : ''}`}
                     variant={plan.popular ? 'default' : 'outline'}
                     onClick={() => handlePricingClick(plan)}
                   >
