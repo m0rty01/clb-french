@@ -173,78 +173,50 @@ function ExitIntentPopup({ isOpen, onClose, onSubmit }) {
   )
 }
 
-// Pricing plans
+// Pricing plans - Freemium Model
 const pricingPlans = [
   {
     name: "Free",
     price: "$0",
-    period: "forever",
-    description: "Get started with basic features",
+    period: "/month",
+    description: "Perfect for getting started",
     features: [
-      "Access to CLB 5 pathway (first 7 days)",
-      "3 grammar lessons per week",
-      "2 TEF mock exams",
-      "Basic progress tracking",
-      "Sample writing answers",
-      "Community support"
+      "3 practice tests per month (all sections)",
+      "Access to TEF & TCF test types",
+      "3 AI writing evaluations per week",
+      "View last 3 test results",
+      "Daily grammar lessons & vocabulary",
+      "Basic progress tracking"
     ],
     notIncluded: [
-      "Full pathway access",
-      "AI Writing Evaluation",
-      "Audio listening practice",
-      "All 20 mock exams per skill",
+      "Unlimited practice tests",
+      "Unlimited AI evaluations",
+      "Full analytics & reports",
+      "Download results",
       "Priority support"
     ],
     cta: "Start Free",
     popular: false
   },
   {
-    name: "Basic",
-    price: "$19",
-    period: "/month",
-    yearlyPrice: "$190/year",
-    yearlySavings: "Save $38",
-    description: "Perfect for serious learners",
-    features: [
-      "Full CLB 5 pathway (4 months)",
-      "All 20 grammar lessons",
-      "10 TEF mock exams per skill",
-      "🎧 Audio player for listening practice",
-      "📝 Sample answers for all writing tasks",
-      "Grammar weak topic tracking",
-      "Progress analytics",
-      "Email support"
-    ],
-    notIncluded: [
-      "CLB 7 pathway",
-      "AI Writing Evaluation",
-      "All 20 mock exams",
-      "Priority support"
-    ],
-    cta: "Get Basic",
-    popular: false
-  },
-  {
     name: "Premium",
-    price: "$39",
+    price: "$9",
     period: "/month",
-    yearlyPrice: "$390/year",
-    yearlySavings: "Save $78",
-    description: "Complete CLB mastery",
+    yearlyPrice: "$70/year",
+    yearlySavings: "Save 35%",
+    description: "Unlimited practice & analytics",
     features: [
-      "Both CLB 5 & CLB 7 pathways",
-      "All 20 grammar lessons + bonus content",
-      "All 80 TEF mock exams (20 per skill)",
-      "🤖 AI Writing Evaluation with TEF scores",
-      "🎧 Audio player for listening practice",
-      "📝 Sample answers for all writing tasks",
-      "Advanced weak topic tracking",
-      "Detailed performance analytics",
-      "Priority email support",
-      "Certificate of completion"
+      "✨ Unlimited practice tests",
+      "✨ Unlimited AI writing evaluations",
+      "📊 Full analytics & detailed reports",
+      "📈 Performance trends over time",
+      "🎯 Weak areas analysis",
+      "💾 Download/export test results",
+      "🎧 Priority support",
+      "🚫 Ad-free experience"
     ],
     notIncluded: [],
-    cta: "Go Premium",
+    cta: "Upgrade to Premium",
     popular: true
   }
 ]
