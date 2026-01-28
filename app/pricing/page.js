@@ -83,12 +83,12 @@ export default function PricingPage() {
             <ArrowLeft className="h-5 w-5" />
             <span className="hidden sm:inline">Back to Dashboard</span>
           </Link>
-          <div className="flex items-center gap-2">
+          <Link href="https://clbfrench.ravijha.co/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
               <span className="text-white text-lg">🇫🇷</span>
             </div>
             <span className="font-bold">CLB French Trainer</span>
-          </div>
+          </Link>
           <div className="w-20" />
         </div>
       </header>
