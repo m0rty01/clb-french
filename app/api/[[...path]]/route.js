@@ -1976,7 +1976,7 @@ Be strict but fair. TEF is a standardized test - evaluate accordingly. Return ON
       const user = await db.collection('users').findOne({ email: decoded.email })
       
       // Check subscription tier
-      const tier = getUserSubscriptionTier(user)
+      const tier = getUserTier(user)
       if (tier === 'free') {
         return handleCORS(NextResponse.json({
           error: 'Reports not available for free tier',
