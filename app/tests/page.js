@@ -516,12 +516,15 @@ function TestSelection({ onSelectTest, subscriptionInfo, subscriptionTier, isAdm
         <div className="text-center mb-8">
           <h2 className="text-3xl font-bold mb-2">TEF Mock Exams</h2>
           <p className="text-muted-foreground">Practice with TEF-style questions to prepare for your exam</p>
-          {!isAdmin && subscriptionTier !== 'premium' && (
-            <p className="text-sm text-muted-foreground mt-2">
-              <Lock className="inline h-4 w-4 mr-1" />
-              You have access to {maxExamsPerSkill} exams per skill. 
-              <Link href="/dashboard" className="text-blue-600 hover:underline ml-1">Upgrade to Premium</Link> for all 20.
-            </p>
+          {!isPremiumOrAdmin && (
+            <div className="mt-4 p-4 bg-orange-50 dark:bg-orange-950/20 rounded-lg border border-orange-200 dark:border-orange-800 max-w-md mx-auto">
+              <p className="text-sm font-medium text-orange-800 dark:text-orange-200">
+                Free Plan: {testsRemaining} of {maxTestsPerMonth} tests remaining this month
+              </p>
+              <p className="text-xs text-orange-600 dark:text-orange-400 mt-1">
+                <Link href="/pricing" className="underline hover:text-orange-700">Upgrade to Premium</Link> for unlimited tests
+              </p>
+            </div>
           )}
         </div>
         
@@ -553,7 +556,7 @@ function TestSelection({ onSelectTest, subscriptionInfo, subscriptionTier, isAdm
                       <Target className="h-4 w-4" /> {structure.totalQuestions} questions
                     </span>
                     <span className="flex items-center gap-1">
-                      <CheckCircle2 className="h-4 w-4 text-green-500" /> {maxExamsPerSkill}/{tests.length} accessible
+                      <CheckCircle2 className="h-4 w-4 text-green-500" /> {tests.length} exams available
                     </span>
                   </div>
                   <p className="text-sm text-muted-foreground mb-4">{structure.description}</p>
@@ -561,7 +564,8 @@ function TestSelection({ onSelectTest, subscriptionInfo, subscriptionTier, isAdm
                   {/* Available Tests */}
                   <div className="space-y-2 max-h-64 overflow-y-auto">
                     {tests.map((test, index) => {
-                      const isLocked = !isAdmin && index >= maxExamsPerSkill
+                      // In freemium model, tests are not locked by position, but by monthly quota
+                      const isLocked = !canTakeTest
                       
                       return (
                         <Button
@@ -570,7 +574,7 @@ function TestSelection({ onSelectTest, subscriptionInfo, subscriptionTier, isAdm
                           className={`w-full justify-between ${isLocked ? 'opacity-60' : ''}`}
                           onClick={() => {
                             if (isLocked) {
-                              toast.error(`This exam requires Premium subscription. You have access to ${maxExamsPerSkill} exams per skill.`)
+                              toast.error(`You've used all ${maxTestsPerMonth} tests this month. Upgrade to Premium for unlimited tests.`)
                             } else {
                               onSelectTest(key, test)
                             }
