@@ -1823,6 +1823,301 @@ Be strict but fair. TEF is a standardized test - evaluate accordingly. Return ON
       }
     }
 
+    // ============================================
+    // TEST RESULTS & REPORTS API
+    // ============================================
+
+    // Save Test Result - POST /api/tests/results
+    if (route === '/tests/results' && method === 'POST') {
+      const authHeader = request.headers.get('authorization')
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return handleCORS(NextResponse.json({ error: 'Unauthorized' }, { status: 401 }))
+      }
+      
+      const token = authHeader.split(' ')[1]
+      let decoded
+      try {
+        decoded = jwt.verify(token, JWT_SECRET)
+      } catch (error) {
+        return handleCORS(NextResponse.json({ error: 'Invalid token' }, { status: 401 }))
+      }
+      
+      const body = await request.json()
+      const { 
+        testType, // comprehensionOrale, comprehensionEcrite, expressionEcrite, expressionOrale
+        examId,
+        examTitle,
+        score,
+        totalQuestions,
+        correctAnswers,
+        timeSpent, // in seconds
+        answers // array of { questionId, userAnswer, correctAnswer, isCorrect, questionText, questionType }
+      } = body
+      
+      if (!testType || !examId || score === undefined || !totalQuestions) {
+        return handleCORS(NextResponse.json(
+          { error: 'Missing required fields' },
+          { status: 400 }
+        ))
+      }
+      
+      const db = await getDb()
+      
+      // Calculate percentage and grade
+      const percentage = Math.round((score / totalQuestions) * 100)
+      let grade = 'F'
+      if (percentage >= 90) grade = 'A'
+      else if (percentage >= 80) grade = 'B'
+      else if (percentage >= 70) grade = 'C'
+      else if (percentage >= 60) grade = 'D'
+      
+      // Identify weak areas from wrong answers
+      const weakAreas = answers
+        ?.filter(a => !a.isCorrect)
+        .map(a => ({
+          questionText: a.questionText?.substring(0, 100),
+          questionType: a.questionType || 'general'
+        })) || []
+      
+      const testResult = {
+        id: uuidv4(),
+        email: decoded.email,
+        testType,
+        examId,
+        examTitle: examTitle || `${testType} - Exam`,
+        score,
+        totalQuestions,
+        correctAnswers: correctAnswers || score,
+        percentage,
+        grade,
+        timeSpent: timeSpent || 0,
+        answers: answers || [],
+        weakAreas,
+        completedAt: new Date()
+      }
+      
+      await db.collection('test_results').insertOne(testResult)
+      
+      // Update user's test statistics
+      await db.collection('users').updateOne(
+        { email: decoded.email },
+        { 
+          $inc: { 
+            totalTestsTaken: 1,
+            [`testsCompleted.${testType}`]: 1
+          },
+          $set: { lastTestDate: new Date() }
+        }
+      )
+      
+      return handleCORS(NextResponse.json({
+        success: true,
+        resultId: testResult.id,
+        summary: {
+          score,
+          totalQuestions,
+          percentage,
+          grade,
+          timeSpent,
+          weakAreasCount: weakAreas.length
+        }
+      }))
+    }
+
+    // Get Test Result by ID - GET /api/tests/results/:resultId
+    if (route.startsWith('/tests/results/') && method === 'GET') {
+      const resultId = route.replace('/tests/results/', '')
+      
+      const authHeader = request.headers.get('authorization')
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return handleCORS(NextResponse.json({ error: 'Unauthorized' }, { status: 401 }))
+      }
+      
+      const token = authHeader.split(' ')[1]
+      let decoded
+      try {
+        decoded = jwt.verify(token, JWT_SECRET)
+      } catch (error) {
+        return handleCORS(NextResponse.json({ error: 'Invalid token' }, { status: 401 }))
+      }
+      
+      const db = await getDb()
+      const result = await db.collection('test_results').findOne({ 
+        id: resultId,
+        email: decoded.email 
+      })
+      
+      if (!result) {
+        return handleCORS(NextResponse.json(
+          { error: 'Result not found' },
+          { status: 404 }
+        ))
+      }
+      
+      return handleCORS(NextResponse.json(result))
+    }
+
+    // Get Test History - GET /api/tests/history?testType=&limit=
+    if (route === '/tests/history' && method === 'GET') {
+      const authHeader = request.headers.get('authorization')
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return handleCORS(NextResponse.json({ error: 'Unauthorized' }, { status: 401 }))
+      }
+      
+      const token = authHeader.split(' ')[1]
+      let decoded
+      try {
+        decoded = jwt.verify(token, JWT_SECRET)
+      } catch (error) {
+        return handleCORS(NextResponse.json({ error: 'Invalid token' }, { status: 401 }))
+      }
+      
+      const db = await getDb()
+      const user = await db.collection('users').findOne({ email: decoded.email })
+      
+      // Check subscription tier
+      const tier = getUserSubscriptionTier(user)
+      if (tier === 'free') {
+        return handleCORS(NextResponse.json({
+          error: 'Reports not available for free tier',
+          upgradeRequired: true
+        }, { status: 403 }))
+      }
+      
+      const url = new URL(request.url)
+      const testType = url.searchParams.get('testType')
+      const limitParam = url.searchParams.get('limit')
+      
+      // Basic users get 10 results, Premium gets all
+      const limit = tier === 'premium' || tier === 'admin' 
+        ? (limitParam ? parseInt(limitParam) : 100) 
+        : Math.min(parseInt(limitParam) || 10, 10)
+      
+      const query = { email: decoded.email }
+      if (testType && testType !== 'all') {
+        query.testType = testType
+      }
+      
+      const results = await db.collection('test_results')
+        .find(query)
+        .sort({ completedAt: -1 })
+        .limit(limit)
+        .toArray()
+      
+      return handleCORS(NextResponse.json({
+        results,
+        total: results.length,
+        tier
+      }))
+    }
+
+    // Get Performance Analytics - GET /api/tests/analytics
+    if (route === '/tests/analytics' && method === 'GET') {
+      const authHeader = request.headers.get('authorization')
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return handleCORS(NextResponse.json({ error: 'Unauthorized' }, { status: 401 }))
+      }
+      
+      const token = authHeader.split(' ')[1]
+      let decoded
+      try {
+        decoded = jwt.verify(token, JWT_SECRET)
+      } catch (error) {
+        return handleCORS(NextResponse.json({ error: 'Invalid token' }, { status: 401 }))
+      }
+      
+      const db = await getDb()
+      const user = await db.collection('users').findOne({ email: decoded.email })
+      
+      // Check subscription tier
+      const tier = getUserSubscriptionTier(user)
+      if (tier === 'free') {
+        return handleCORS(NextResponse.json({
+          error: 'Analytics not available for free tier',
+          upgradeRequired: true
+        }, { status: 403 }))
+      }
+      
+      // Get all results for analytics
+      const allResults = await db.collection('test_results')
+        .find({ email: decoded.email })
+        .sort({ completedAt: -1 })
+        .toArray()
+      
+      if (allResults.length === 0) {
+        return handleCORS(NextResponse.json({
+          totalTests: 0,
+          bySkill: {},
+          recentProgress: [],
+          weakAreas: [],
+          tier
+        }))
+      }
+      
+      // Group by skill
+      const bySkill = {
+        comprehensionOrale: { count: 0, totalScore: 0, avgPercentage: 0 },
+        comprehensionEcrite: { count: 0, totalScore: 0, avgPercentage: 0 },
+        expressionEcrite: { count: 0, totalScore: 0, avgPercentage: 0 },
+        expressionOrale: { count: 0, totalScore: 0, avgPercentage: 0 }
+      }
+      
+      const weakAreasMap = {}
+      
+      allResults.forEach(result => {
+        if (bySkill[result.testType]) {
+          bySkill[result.testType].count++
+          bySkill[result.testType].totalScore += result.percentage
+        }
+        
+        // Collect weak areas (only for premium)
+        if (tier === 'premium' || tier === 'admin') {
+          result.weakAreas?.forEach(wa => {
+            const key = wa.questionType || 'general'
+            if (!weakAreasMap[key]) {
+              weakAreasMap[key] = { type: key, count: 0, skill: result.testType }
+            }
+            weakAreasMap[key].count++
+          })
+        }
+      })
+      
+      // Calculate averages
+      Object.keys(bySkill).forEach(skill => {
+        if (bySkill[skill].count > 0) {
+          bySkill[skill].avgPercentage = Math.round(bySkill[skill].totalScore / bySkill[skill].count)
+        }
+      })
+      
+      // Get recent progress (last 10 tests per skill)
+      const recentProgress = {}
+      Object.keys(bySkill).forEach(skill => {
+        recentProgress[skill] = allResults
+          .filter(r => r.testType === skill)
+          .slice(0, 10)
+          .map(r => ({
+            date: r.completedAt,
+            percentage: r.percentage,
+            examTitle: r.examTitle
+          }))
+          .reverse() // Oldest to newest for chart
+      })
+      
+      // Sort weak areas by count
+      const weakAreas = Object.values(weakAreasMap)
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 10)
+      
+      return handleCORS(NextResponse.json({
+        totalTests: allResults.length,
+        bySkill,
+        recentProgress,
+        weakAreas,
+        lastTestDate: allResults[0]?.completedAt,
+        tier
+      }))
+    }
+
     // Root endpoint
     if (route === '/' && method === 'GET') {
       return handleCORS(NextResponse.json({ message: 'CLB French Trainer API', version: '1.0.0' }))
