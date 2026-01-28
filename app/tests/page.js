@@ -632,6 +632,8 @@ function MultipleChoiceTest({ testType, test, onComplete, onBack }) {
         test={test}
         answers={answers}
         onBack={onBack}
+        examId={test.id}
+        examTitle={test.title || structure.name}
       />
     )
   }
