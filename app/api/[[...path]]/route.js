@@ -1571,8 +1571,8 @@ async function handleRoute(request, { params }) {
       startOfMonth.setDate(1)
       startOfMonth.setHours(0, 0, 0, 0)
       
-      const testsThisMonth = await db.collection('testResults').countDocuments({
-        odUserId: user.id,
+      const testsThisMonth = await db.collection('test_results').countDocuments({
+        email: user.email,
         completedAt: { $gte: startOfMonth }
       })
       
@@ -1581,10 +1581,9 @@ async function handleRoute(request, { params }) {
       startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay())
       startOfWeek.setHours(0, 0, 0, 0)
       
-      const aiEvaluationsThisWeek = await db.collection('testResults').countDocuments({
-        odUserId: user.id,
-        completedAt: { $gte: startOfWeek },
-        hasAiEvaluation: true
+      const aiEvaluationsThisWeek = await db.collection('writing_evaluations').countDocuments({
+        userId: decoded.userId,
+        createdAt: { $gte: startOfWeek }
       })
       
       const isPremiumOrAdmin = getUserTier(user) === 'premium' || isAdmin(user.email)
