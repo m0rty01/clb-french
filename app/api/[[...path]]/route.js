@@ -1894,6 +1894,39 @@ Be strict but fair. TEF is a standardized test - evaluate accordingly. Return ON
         return handleCORS(NextResponse.json({ error: 'Invalid token' }, { status: 401 }))
       }
       
+      const db = await connectToMongo()
+      
+      // Get user to check subscription tier
+      const user = await db.collection('users').findOne({ email: decoded.email })
+      if (!user) {
+        return handleCORS(NextResponse.json({ error: 'User not found' }, { status: 404 }))
+      }
+      
+      const tierLimits = getTierLimits(user)
+      const isPremiumOrAdmin = getUserTier(user) === 'premium' || isAdmin(user.email)
+      
+      // Check monthly test limit for free users
+      if (!isPremiumOrAdmin) {
+        const startOfMonth = new Date()
+        startOfMonth.setDate(1)
+        startOfMonth.setHours(0, 0, 0, 0)
+        
+        const testsThisMonth = await db.collection('test_results').countDocuments({
+          email: decoded.email,
+          completedAt: { $gte: startOfMonth }
+        })
+        
+        if (testsThisMonth >= tierLimits.maxTestsPerMonth) {
+          return handleCORS(NextResponse.json({
+            error: 'Monthly test limit reached',
+            message: `You've used all ${tierLimits.maxTestsPerMonth} tests this month. Upgrade to Premium for unlimited tests.`,
+            testsThisMonth,
+            maxTestsPerMonth: tierLimits.maxTestsPerMonth,
+            upgradeRequired: true
+          }, { status: 403 }))
+        }
+      }
+      
       const body = await request.json()
       const { 
         testType, // comprehensionOrale, comprehensionEcrite, expressionEcrite, expressionOrale
@@ -1912,8 +1945,6 @@ Be strict but fair. TEF is a standardized test - evaluate accordingly. Return ON
           { status: 400 }
         ))
       }
-      
-      const db = await connectToMongo()
       
       // Calculate percentage and grade
       const percentage = Math.round((score / totalQuestions) * 100)
