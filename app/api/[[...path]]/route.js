@@ -1740,8 +1740,8 @@ async function handleRoute(request, { params }) {
         startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay())
         startOfWeek.setHours(0, 0, 0, 0)
         
-        const aiEvaluationsThisWeek = await db.collection('ai_evaluations').countDocuments({
-          email: decoded.email,
+        const aiEvaluationsThisWeek = await db.collection('writing_evaluations').countDocuments({
+          userId: decoded.userId,
           createdAt: { $gte: startOfWeek }
         })
         
