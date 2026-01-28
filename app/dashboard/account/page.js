@@ -7,22 +7,14 @@ import Cookies from 'js-cookie'
 import { 
   ArrowLeft,
   Crown,
-  User,
   FileText,
   Moon,
   Bell,
-  Languages,
   Shield,
   ClipboardList,
   LogOut,
   ChevronRight,
-  Sun,
-  Loader2,
-  Mail,
-  Calendar,
-  Award,
-  Target,
-  Check
+  Loader2
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -30,16 +22,8 @@ import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import { Separator } from '@/components/ui/separator'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { useTheme } from 'next-themes'
 import { toast } from 'sonner'
-
-// Available languages
-const LANGUAGES = [
-  { code: 'en', name: 'English', nativeName: 'English', flag: '🇬🇧' },
-  { code: 'fr', name: 'French', nativeName: 'Français', flag: '🇫🇷' },
-  { code: 'hi', name: 'Hindi', nativeName: 'हिंदी', flag: '🇮🇳' },
-]
 
 // Tier info for display
 const tierInfo = {
