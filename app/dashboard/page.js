@@ -513,6 +513,20 @@ function AuthPage({ onAuth }) {
         </div>
       )}
 
+      {/* Embedded Browser Warning Banner - Shows at top when in embedded browser */}
+      {isEmbeddedBrowser && !showEmbeddedWarning && (
+        <div className="absolute top-0 left-0 right-0 bg-amber-500 text-white px-4 py-2 text-center text-sm">
+          <span className="font-medium">⚠️ You're using an in-app browser. </span>
+          <button 
+            onClick={handleCopyLink}
+            className="underline font-medium hover:no-underline"
+          >
+            {copied ? 'Link Copied!' : 'Copy link'} 
+          </button>
+          <span> and open in Safari/Chrome for best experience.</span>
+        </div>
+      )}
+
       <div className="absolute top-4 right-4">
         <Button
           variant="ghost"
