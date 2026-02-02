@@ -439,6 +439,80 @@ function AuthPage({ onAuth }) {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-b from-background to-muted/30">
+      {/* Embedded Browser Warning Modal */}
+      {showEmbeddedWarning && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <Card className="w-full max-w-md mx-4 animate-in zoom-in-95 duration-200">
+            <CardHeader className="text-center pb-2">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                <AlertTriangle className="h-8 w-8 text-amber-600" />
+              </div>
+              <CardTitle className="text-xl">Open in Browser</CardTitle>
+              <CardDescription className="text-base">
+                Google Sign-In doesn't work in app browsers like Messenger or Instagram
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="bg-muted rounded-lg p-4 space-y-3">
+                <p className="text-sm font-medium">To sign in with Google:</p>
+                <ol className="text-sm text-muted-foreground space-y-2">
+                  <li className="flex items-start gap-2">
+                    <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 text-primary text-xs flex items-center justify-center font-medium">1</span>
+                    <span>Copy this page link using the button below</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 text-primary text-xs flex items-center justify-center font-medium">2</span>
+                    <span>Open <strong>Safari</strong> or <strong>Chrome</strong></span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 text-primary text-xs flex items-center justify-center font-medium">3</span>
+                    <span>Paste the link and sign in with Google</span>
+                  </li>
+                </ol>
+              </div>
+              
+              <Button 
+                className="w-full h-12 bg-blue-600 hover:bg-blue-700"
+                onClick={handleCopyLink}
+              >
+                {copied ? (
+                  <>
+                    <CheckCircle2 className="mr-2 h-5 w-5" />
+                    Link Copied!
+                  </>
+                ) : (
+                  <>
+                    <Copy className="mr-2 h-5 w-5" />
+                    Copy Link to Clipboard
+                  </>
+                )}
+              </Button>
+              
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">or</span>
+                </div>
+              </div>
+              
+              <Button 
+                variant="outline" 
+                className="w-full"
+                onClick={() => setShowEmbeddedWarning(false)}
+              >
+                Use Email Instead
+              </Button>
+              
+              <p className="text-xs text-center text-muted-foreground">
+                Tip: In Messenger, tap <strong>⋯</strong> menu → <strong>Open in Browser</strong>
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       <div className="absolute top-4 right-4">
         <Button
           variant="ghost"
