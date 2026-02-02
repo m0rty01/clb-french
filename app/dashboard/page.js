@@ -340,7 +340,59 @@ function AuthPage({ onAuth }) {
   const [name, setName] = useState('')
   const [loading, setLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
+  const [isEmbeddedBrowser, setIsEmbeddedBrowser] = useState(false)
+  const [showEmbeddedWarning, setShowEmbeddedWarning] = useState(false)
+  const [copied, setCopied] = useState(false)
   const { theme, setTheme } = useTheme()
+
+  // Detect embedded browsers (Messenger, Instagram, Facebook, etc.)
+  useEffect(() => {
+    const detectEmbeddedBrowser = () => {
+      const ua = navigator.userAgent || navigator.vendor || window.opera
+      
+      // Check for common embedded browsers
+      const embeddedBrowsers = [
+        /FBAN|FBAV/i,           // Facebook App
+        /FB_IAB/i,              // Facebook In-App Browser
+        /Instagram/i,           // Instagram
+        /Messenger/i,           // Facebook Messenger
+        /Line/i,                // Line App
+        /Twitter/i,             // Twitter App
+        /LinkedIn/i,            // LinkedIn App
+        /Pinterest/i,           // Pinterest App
+        /Snapchat/i,            // Snapchat
+        /TikTok/i,              // TikTok
+        /WhatsApp/i,            // WhatsApp (rare but possible)
+        /WebView/i,             // Generic WebView
+        /wv\)/i,                // Android WebView
+      ]
+      
+      const isEmbedded = embeddedBrowsers.some(pattern => pattern.test(ua))
+      setIsEmbeddedBrowser(isEmbedded)
+    }
+    
+    detectEmbeddedBrowser()
+  }, [])
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href)
+      setCopied(true)
+      toast.success('Link copied! Paste it in Safari or Chrome')
+      setTimeout(() => setCopied(false), 3000)
+    } catch (error) {
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea')
+      textArea.value = window.location.href
+      document.body.appendChild(textArea)
+      textArea.select()
+      document.execCommand('copy')
+      document.body.removeChild(textArea)
+      setCopied(true)
+      toast.success('Link copied! Paste it in Safari or Chrome')
+      setTimeout(() => setCopied(false), 3000)
+    }
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -373,6 +425,12 @@ function AuthPage({ onAuth }) {
   }
 
   const handleGoogleLogin = () => {
+    // Check if in embedded browser first
+    if (isEmbeddedBrowser) {
+      setShowEmbeddedWarning(true)
+      return
+    }
+    
     setGoogleLoading(true)
     // Redirect to Google OAuth - this will redirect the user to Google's login page
     // After authentication, Google will redirect back to /api/auth/google/callback
