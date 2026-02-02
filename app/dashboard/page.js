@@ -20,7 +20,7 @@ import {
   Moon, Sun, LogOut, RotateCcw, Check, Play, Pause,
   AlertTriangle, Lock, Unlock, ExternalLink, TrendingUp,
   ClipboardList, Brain, CheckCircle2, XCircle, RefreshCw,
-  ChevronDown, ChevronUp, Lightbulb, BookMarked, Crown, Sparkles, Shield, Eye, X, BarChart3, User
+  ChevronDown, ChevronUp, Lightbulb, BookMarked, Crown, Sparkles, Shield, Eye, X, BarChart3, User, Copy
 } from 'lucide-react'
 import Cookies from 'js-cookie'
 import Link from 'next/link'
@@ -338,7 +338,59 @@ function AuthPage({ onAuth }) {
   const [name, setName] = useState('')
   const [loading, setLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
+  const [isEmbeddedBrowser, setIsEmbeddedBrowser] = useState(false)
+  const [showEmbeddedWarning, setShowEmbeddedWarning] = useState(false)
+  const [copied, setCopied] = useState(false)
   const { theme, setTheme } = useTheme()
+
+  // Detect embedded browsers (Messenger, Instagram, Facebook, etc.)
+  useEffect(() => {
+    const detectEmbeddedBrowser = () => {
+      const ua = navigator.userAgent || navigator.vendor || window.opera
+      
+      // Check for common embedded browsers
+      const embeddedBrowsers = [
+        /FBAN|FBAV/i,           // Facebook App
+        /FB_IAB/i,              // Facebook In-App Browser
+        /Instagram/i,           // Instagram
+        /Messenger/i,           // Facebook Messenger
+        /Line/i,                // Line App
+        /Twitter/i,             // Twitter App
+        /LinkedIn/i,            // LinkedIn App
+        /Pinterest/i,           // Pinterest App
+        /Snapchat/i,            // Snapchat
+        /TikTok/i,              // TikTok
+        /WhatsApp/i,            // WhatsApp (rare but possible)
+        /WebView/i,             // Generic WebView
+        /wv\)/i,                // Android WebView
+      ]
+      
+      const isEmbedded = embeddedBrowsers.some(pattern => pattern.test(ua))
+      setIsEmbeddedBrowser(isEmbedded)
+    }
+    
+    detectEmbeddedBrowser()
+  }, [])
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href)
+      setCopied(true)
+      toast.success('Link copied! Paste it in Safari or Chrome')
+      setTimeout(() => setCopied(false), 3000)
+    } catch (error) {
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea')
+      textArea.value = window.location.href
+      document.body.appendChild(textArea)
+      textArea.select()
+      document.execCommand('copy')
+      document.body.removeChild(textArea)
+      setCopied(true)
+      toast.success('Link copied! Paste it in Safari or Chrome')
+      setTimeout(() => setCopied(false), 3000)
+    }
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -371,6 +423,12 @@ function AuthPage({ onAuth }) {
   }
 
   const handleGoogleLogin = () => {
+    // Check if in embedded browser first
+    if (isEmbeddedBrowser) {
+      setShowEmbeddedWarning(true)
+      return
+    }
+    
     setGoogleLoading(true)
     // Redirect to Google OAuth - this will redirect the user to Google's login page
     // After authentication, Google will redirect back to /api/auth/google/callback
@@ -379,6 +437,94 @@ function AuthPage({ onAuth }) {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-b from-background to-muted/30">
+      {/* Embedded Browser Warning Modal */}
+      {showEmbeddedWarning && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <Card className="w-full max-w-md mx-4 animate-in zoom-in-95 duration-200">
+            <CardHeader className="text-center pb-2">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                <AlertTriangle className="h-8 w-8 text-amber-600" />
+              </div>
+              <CardTitle className="text-xl">Open in Browser</CardTitle>
+              <CardDescription className="text-base">
+                Google Sign-In doesn't work in app browsers like Messenger or Instagram
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="bg-muted rounded-lg p-4 space-y-3">
+                <p className="text-sm font-medium">To sign in with Google:</p>
+                <ol className="text-sm text-muted-foreground space-y-2">
+                  <li className="flex items-start gap-2">
+                    <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 text-primary text-xs flex items-center justify-center font-medium">1</span>
+                    <span>Copy this page link using the button below</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 text-primary text-xs flex items-center justify-center font-medium">2</span>
+                    <span>Open <strong>Safari</strong> or <strong>Chrome</strong></span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 text-primary text-xs flex items-center justify-center font-medium">3</span>
+                    <span>Paste the link and sign in with Google</span>
+                  </li>
+                </ol>
+              </div>
+              
+              <Button 
+                className="w-full h-12 bg-blue-600 hover:bg-blue-700"
+                onClick={handleCopyLink}
+              >
+                {copied ? (
+                  <>
+                    <CheckCircle2 className="mr-2 h-5 w-5" />
+                    Link Copied!
+                  </>
+                ) : (
+                  <>
+                    <Copy className="mr-2 h-5 w-5" />
+                    Copy Link to Clipboard
+                  </>
+                )}
+              </Button>
+              
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">or</span>
+                </div>
+              </div>
+              
+              <Button 
+                variant="outline" 
+                className="w-full"
+                onClick={() => setShowEmbeddedWarning(false)}
+              >
+                Use Email Instead
+              </Button>
+              
+              <p className="text-xs text-center text-muted-foreground">
+                Tip: In Messenger, tap <strong>⋯</strong> menu → <strong>Open in Browser</strong>
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Embedded Browser Warning Banner - Shows at top when in embedded browser */}
+      {isEmbeddedBrowser && !showEmbeddedWarning && (
+        <div className="absolute top-0 left-0 right-0 bg-amber-500 text-white px-4 py-2 text-center text-sm">
+          <span className="font-medium">⚠️ You're using an in-app browser. </span>
+          <button 
+            onClick={handleCopyLink}
+            className="underline font-medium hover:no-underline"
+          >
+            {copied ? 'Link Copied!' : 'Copy link'} 
+          </button>
+          <span> and open in Safari/Chrome for best experience.</span>
+        </div>
+      )}
+
       <div className="absolute top-4 right-4">
         <Button
           variant="ghost"
