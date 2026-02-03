@@ -487,6 +487,270 @@ class CLBFrenchTrainerTester:
             self.log(f"❌ Pathway reset failed - Status: {response.status_code}, Response: {response.text}")
             return False
 
+    def test_get_account_settings(self):
+        """Test GET /api/account/settings"""
+        self.log("🧪 Testing Get Account Settings API...")
+        
+        if not self.token:
+            self.log("❌ No token available for authentication")
+            return False
+            
+        headers = {"Authorization": f"Bearer {self.token}"}
+        response = self.make_request("GET", "/account/settings", headers=headers)
+        
+        if not response:
+            self.log("❌ Get account settings request failed")
+            return False
+            
+        if response.status_code == 200:
+            result = response.json()
+            if "settings" in result:
+                settings = result["settings"]
+                required_fields = ["examType", "notificationsEnabled", "dailyReminderTime", 
+                                 "emailNotifications", "practiceReminders", "progressUpdates"]
+                
+                if all(field in settings for field in required_fields):
+                    self.log(f"✅ Account settings retrieved successfully")
+                    self.log(f"✅ Exam type: {settings.get('examType')}")
+                    self.log(f"✅ Notifications enabled: {settings.get('notificationsEnabled')}")
+                    self.log(f"✅ Daily reminder time: {settings.get('dailyReminderTime')}")
+                    return True
+                else:
+                    missing_fields = [field for field in required_fields if field not in settings]
+                    self.log(f"❌ Account settings missing fields: {missing_fields}")
+                    return False
+            else:
+                self.log(f"❌ Account settings response missing settings field: {result}")
+                return False
+        else:
+            self.log(f"❌ Get account settings failed - Status: {response.status_code}, Response: {response.text}")
+            return False
+
+    def test_update_account_settings(self):
+        """Test PUT /api/account/settings"""
+        self.log("🧪 Testing Update Account Settings API...")
+        
+        if not self.token:
+            self.log("❌ No token available for authentication")
+            return False
+            
+        # Test updating notification settings
+        data = {
+            "notificationsEnabled": False,
+            "dailyReminderTime": "08:30",
+            "emailNotifications": True,
+            "practiceReminders": False
+        }
+        
+        headers = {"Authorization": f"Bearer {self.token}"}
+        response = self.make_request("PUT", "/account/settings", data, headers)
+        
+        if not response:
+            self.log("❌ Update account settings request failed")
+            return False
+            
+        if response.status_code == 200:
+            result = response.json()
+            if "message" in result and "settings" in result:
+                settings = result["settings"]
+                
+                # Verify updates were applied
+                if (settings.get("notificationsEnabled") == False and
+                    settings.get("dailyReminderTime") == "08:30" and
+                    settings.get("emailNotifications") == True and
+                    settings.get("practiceReminders") == False):
+                    self.log(f"✅ Account settings updated successfully")
+                    self.log(f"✅ Message: {result.get('message')}")
+                    return True
+                else:
+                    self.log(f"❌ Settings not updated correctly - Settings: {settings}")
+                    return False
+            else:
+                self.log(f"❌ Update account settings response missing required fields: {result}")
+                return False
+        else:
+            self.log(f"❌ Update account settings failed - Status: {response.status_code}, Response: {response.text}")
+            return False
+
+    def test_invalid_exam_type(self):
+        """Test PUT /api/account/settings with invalid exam type"""
+        self.log("🧪 Testing Invalid Exam Type...")
+        
+        if not self.token:
+            self.log("❌ No token available for authentication")
+            return False
+            
+        data = {"examType": "invalid_exam"}
+        headers = {"Authorization": f"Bearer {self.token}"}
+        response = self.make_request("PUT", "/account/settings", data, headers)
+        
+        if response is None:
+            self.log("❌ Invalid exam type request failed")
+            return False
+            
+        if response.status_code == 400:
+            result = response.json()
+            if "invalid exam type" in result.get("error", "").lower():
+                self.log("✅ Invalid exam type properly rejected")
+                return True
+            else:
+                self.log(f"❌ Wrong error message: {result.get('error')}")
+                return False
+        else:
+            self.log(f"❌ Expected 400, got {response.status_code}: {response.text}")
+            return False
+
+    def test_invalid_time_format(self):
+        """Test PUT /api/account/settings with invalid time format"""
+        self.log("🧪 Testing Invalid Time Format...")
+        
+        if not self.token:
+            self.log("❌ No token available for authentication")
+            return False
+            
+        data = {"dailyReminderTime": "25:70"}  # Invalid time
+        headers = {"Authorization": f"Bearer {self.token}"}
+        response = self.make_request("PUT", "/account/settings", data, headers)
+        
+        if response is None:
+            self.log("❌ Invalid time format request failed")
+            return False
+            
+        if response.status_code == 400:
+            result = response.json()
+            if "invalid time format" in result.get("error", "").lower():
+                self.log("✅ Invalid time format properly rejected")
+                return True
+            else:
+                self.log(f"❌ Wrong error message: {result.get('error')}")
+                return False
+        else:
+            self.log(f"❌ Expected 400, got {response.status_code}: {response.text}")
+            return False
+
+    def test_change_exam_type_without_reset(self):
+        """Test POST /api/account/change-exam-type without reset"""
+        self.log("🧪 Testing Change Exam Type Without Reset...")
+        
+        if not self.token:
+            self.log("❌ No token available for authentication")
+            return False
+            
+        data = {
+            "examType": "tef",
+            "resetProgress": False
+        }
+        
+        headers = {"Authorization": f"Bearer {self.token}"}
+        response = self.make_request("POST", "/account/change-exam-type", data, headers)
+        
+        if not response:
+            self.log("❌ Change exam type request failed")
+            return False
+            
+        if response.status_code == 200:
+            result = response.json()
+            if "message" in result and "user" in result:
+                user = result["user"]
+                
+                # Verify exam type was changed
+                if user.get("examType") == "tef":
+                    self.log(f"✅ Exam type changed to TEF successfully")
+                    self.log(f"✅ Message: {result.get('message')}")
+                    return True
+                else:
+                    self.log(f"❌ Exam type not changed - User data: {user}")
+                    return False
+            else:
+                self.log(f"❌ Change exam type response missing required fields: {result}")
+                return False
+        else:
+            self.log(f"❌ Change exam type failed - Status: {response.status_code}, Response: {response.text}")
+            return False
+
+    def test_change_exam_type_with_reset(self):
+        """Test POST /api/account/change-exam-type with reset"""
+        self.log("🧪 Testing Change Exam Type With Reset...")
+        
+        if not self.token:
+            self.log("❌ No token available for authentication")
+            return False
+            
+        data = {
+            "examType": "clb5",
+            "resetProgress": True
+        }
+        
+        headers = {"Authorization": f"Bearer {self.token}"}
+        response = self.make_request("POST", "/account/change-exam-type", data, headers)
+        
+        if not response:
+            self.log("❌ Change exam type with reset request failed")
+            return False
+            
+        if response.status_code == 200:
+            result = response.json()
+            if "message" in result and "user" in result:
+                user = result["user"]
+                
+                # Verify exam type and pathway were changed with reset
+                if (user.get("examType") == "clb5" and 
+                    user.get("pathway") == "clb5" and
+                    user.get("currentDay") == 1 and
+                    user.get("onboardingComplete") == True):
+                    self.log(f"✅ Exam type changed to CLB5 with progress reset")
+                    self.log(f"✅ Pathway: {user.get('pathway')}, Current day: {user.get('currentDay')}")
+                    self.log(f"✅ Message: {result.get('message')}")
+                    return True
+                else:
+                    self.log(f"❌ Exam type change with reset not applied correctly - User data: {user}")
+                    return False
+            else:
+                self.log(f"❌ Change exam type with reset response missing required fields: {result}")
+                return False
+        else:
+            self.log(f"❌ Change exam type with reset failed - Status: {response.status_code}, Response: {response.text}")
+            return False
+
+    def test_verify_settings_persistence(self):
+        """Test that settings changes persist by getting settings again"""
+        self.log("🧪 Testing Settings Persistence...")
+        
+        if not self.token:
+            self.log("❌ No token available for authentication")
+            return False
+            
+        headers = {"Authorization": f"Bearer {self.token}"}
+        response = self.make_request("GET", "/account/settings", headers=headers)
+        
+        if not response:
+            self.log("❌ Get account settings for persistence test failed")
+            return False
+            
+        if response.status_code == 200:
+            result = response.json()
+            if "settings" in result:
+                settings = result["settings"]
+                
+                # Verify the changes from previous tests persisted
+                if (settings.get("examType") == "clb5" and  # From change exam type test
+                    settings.get("notificationsEnabled") == False and  # From update settings test
+                    settings.get("dailyReminderTime") == "08:30"):  # From update settings test
+                    self.log(f"✅ Settings persistence verified")
+                    self.log(f"✅ Exam type: {settings.get('examType')}")
+                    self.log(f"✅ Notifications: {settings.get('notificationsEnabled')}")
+                    self.log(f"✅ Reminder time: {settings.get('dailyReminderTime')}")
+                    return True
+                else:
+                    self.log(f"❌ Settings not persisted correctly - Settings: {settings}")
+                    return False
+            else:
+                self.log(f"❌ Settings persistence test response missing settings field: {result}")
+                return False
+        else:
+            self.log(f"❌ Settings persistence test failed - Status: {response.status_code}, Response: {response.text}")
+            return False
+
     def test_stripe_checkout_unauthorized(self):
         """Test Stripe checkout without authentication"""
         self.log("🧪 Testing Stripe Checkout - Unauthorized...")
