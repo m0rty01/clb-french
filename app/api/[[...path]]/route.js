@@ -667,6 +667,212 @@ async function handleRoute(request, { params }) {
       }))
     }
     
+    // ============ ACCOUNT SETTINGS ROUTES ============
+    
+    // Get account settings - GET /api/account/settings
+    if (route === '/account/settings' && method === 'GET') {
+      const decoded = verifyToken(request)
+      if (!decoded) {
+        return handleCORS(NextResponse.json(
+          { error: 'Unauthorized' },
+          { status: 401 }
+        ))
+      }
+      
+      const user = await db.collection('users').findOne({ id: decoded.userId })
+      if (!user) {
+        return handleCORS(NextResponse.json(
+          { error: 'User not found' },
+          { status: 404 }
+        ))
+      }
+      
+      // Return account settings (with defaults if not set)
+      const settings = {
+        examType: user.examType || user.pathway || 'clb7', // Default to pathway or clb7
+        notificationsEnabled: user.notificationsEnabled !== false, // Default true
+        dailyReminderTime: user.dailyReminderTime || '09:00',
+        emailNotifications: user.emailNotifications !== false, // Default true
+        practiceReminders: user.practiceReminders !== false, // Default true
+        progressUpdates: user.progressUpdates !== false, // Default true
+      }
+      
+      return handleCORS(NextResponse.json({ settings }))
+    }
+    
+    // Update account settings - PUT /api/account/settings
+    if (route === '/account/settings' && method === 'PUT') {
+      const decoded = verifyToken(request)
+      if (!decoded) {
+        return handleCORS(NextResponse.json(
+          { error: 'Unauthorized' },
+          { status: 401 }
+        ))
+      }
+      
+      const body = await request.json()
+      const { 
+        examType,
+        notificationsEnabled,
+        dailyReminderTime,
+        emailNotifications,
+        practiceReminders,
+        progressUpdates
+      } = body
+      
+      const user = await db.collection('users').findOne({ id: decoded.userId })
+      if (!user) {
+        return handleCORS(NextResponse.json(
+          { error: 'User not found' },
+          { status: 404 }
+        ))
+      }
+      
+      // Build update object with only provided fields
+      const updateFields = {}
+      
+      // Exam Type validation
+      if (examType !== undefined) {
+        if (!['clb5', 'clb7', 'tef', 'tcf'].includes(examType)) {
+          return handleCORS(NextResponse.json(
+            { error: 'Invalid exam type. Must be clb5, clb7, tef, or tcf' },
+            { status: 400 }
+          ))
+        }
+        updateFields.examType = examType
+      }
+      
+      // Notification settings
+      if (notificationsEnabled !== undefined) {
+        updateFields.notificationsEnabled = Boolean(notificationsEnabled)
+      }
+      
+      if (dailyReminderTime !== undefined) {
+        // Validate time format (HH:MM)
+        if (!/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(dailyReminderTime)) {
+          return handleCORS(NextResponse.json(
+            { error: 'Invalid time format. Use HH:MM (24-hour format)' },
+            { status: 400 }
+          ))
+        }
+        updateFields.dailyReminderTime = dailyReminderTime
+      }
+      
+      if (emailNotifications !== undefined) {
+        updateFields.emailNotifications = Boolean(emailNotifications)
+      }
+      
+      if (practiceReminders !== undefined) {
+        updateFields.practiceReminders = Boolean(practiceReminders)
+      }
+      
+      if (progressUpdates !== undefined) {
+        updateFields.progressUpdates = Boolean(progressUpdates)
+      }
+      
+      // Add updated timestamp
+      updateFields.settingsUpdatedAt = new Date()
+      
+      // Update the user
+      await db.collection('users').updateOne(
+        { id: decoded.userId },
+        { $set: updateFields }
+      )
+      
+      // Return updated settings
+      const updatedUser = await db.collection('users').findOne({ id: decoded.userId })
+      const settings = {
+        examType: updatedUser.examType || updatedUser.pathway || 'clb7',
+        notificationsEnabled: updatedUser.notificationsEnabled !== false,
+        dailyReminderTime: updatedUser.dailyReminderTime || '09:00',
+        emailNotifications: updatedUser.emailNotifications !== false,
+        practiceReminders: updatedUser.practiceReminders !== false,
+        progressUpdates: updatedUser.progressUpdates !== false,
+      }
+      
+      return handleCORS(NextResponse.json({ 
+        message: 'Settings updated successfully',
+        settings 
+      }))
+    }
+    
+    // Change exam type (with pathway reset option) - POST /api/account/change-exam-type
+    if (route === '/account/change-exam-type' && method === 'POST') {
+      const decoded = verifyToken(request)
+      if (!decoded) {
+        return handleCORS(NextResponse.json(
+          { error: 'Unauthorized' },
+          { status: 401 }
+        ))
+      }
+      
+      const body = await request.json()
+      const { examType, resetProgress } = body
+      
+      if (!examType || !['clb5', 'clb7', 'tef', 'tcf'].includes(examType)) {
+        return handleCORS(NextResponse.json(
+          { error: 'Invalid exam type. Must be clb5, clb7, tef, or tcf' },
+          { status: 400 }
+        ))
+      }
+      
+      const user = await db.collection('users').findOne({ id: decoded.userId })
+      if (!user) {
+        return handleCORS(NextResponse.json(
+          { error: 'User not found' },
+          { status: 404 }
+        ))
+      }
+      
+      // Check tier permissions for pathway changes
+      const tierLimits = getTierLimits(user)
+      if (['clb5', 'clb7'].includes(examType) && !tierLimits.pathways.includes(examType)) {
+        return handleCORS(NextResponse.json(
+          { error: `Your subscription (${user.subscriptionTier || 'free'}) does not include the ${examType.toUpperCase()} pathway. Please upgrade to Premium.` },
+          { status: 403 }
+        ))
+      }
+      
+      const updateFields = {
+        examType,
+        settingsUpdatedAt: new Date()
+      }
+      
+      // If resetProgress is true, reset the pathway and progress
+      if (resetProgress) {
+        if (['clb5', 'clb7'].includes(examType)) {
+          updateFields.pathway = examType
+          updateFields.pathwayStartDate = new Date()
+          updateFields.currentDay = 1
+          updateFields.onboardingComplete = true
+        } else {
+          // For TEF/TCF, just store the exam type preference
+          updateFields.pathway = null
+          updateFields.pathwayStartDate = null
+          updateFields.currentDay = 0
+          updateFields.onboardingComplete = false
+        }
+        
+        // Delete existing daily logs if resetting
+        await db.collection('daily_logs').deleteMany({ userId: decoded.userId })
+      }
+      
+      await db.collection('users').updateOne(
+        { id: decoded.userId },
+        { $set: updateFields }
+      )
+      
+      const updatedUser = await db.collection('users').findOne({ id: decoded.userId })
+      const { password: _, ...userWithoutPassword } = updatedUser
+      
+      return handleCORS(NextResponse.json({ 
+        message: resetProgress 
+          ? `Exam type changed to ${examType.toUpperCase()} and progress reset` 
+          : `Exam type preference updated to ${examType.toUpperCase()}`,
+        user: userWithoutPassword
+      }))
+    }
+    
     // ============ DAILY LOG ROUTES ============
     
     // Get today's log - GET /api/daily-log/today
