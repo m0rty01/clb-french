@@ -14,7 +14,11 @@ import {
   ClipboardList,
   LogOut,
   ChevronRight,
-  Loader2
+  Loader2,
+  Clock,
+  Mail,
+  Target,
+  CheckCircle
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -22,6 +26,9 @@ import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import { Separator } from '@/components/ui/separator'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Label } from '@/components/ui/label'
 import { useTheme } from 'next-themes'
 import { toast } from 'sonner'
 
@@ -48,6 +55,14 @@ const tierInfo = {
     description: 'Full administrative access'
   }
 }
+
+// Exam types
+const examTypes = [
+  { value: 'clb5', label: 'CLB 5', description: '4 months, Foundation level' },
+  { value: 'clb7', label: 'CLB 7', description: '8-12 months, Advanced level' },
+  { value: 'tef', label: 'TEF Canada', description: 'Test d\'évaluation de français' },
+  { value: 'tcf', label: 'TCF Canada', description: 'Test de connaissance du français' },
+]
 
 // Avatar component with initials
 function UserAvatar({ name, email, size = 'large' }) {
@@ -108,7 +123,22 @@ export default function AccountPage() {
   const { theme, setTheme } = useTheme()
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true)
+  const [savingSettings, setSavingSettings] = useState(false)
+  
+  // Settings state
+  const [settings, setSettings] = useState({
+    examType: 'clb7',
+    notificationsEnabled: true,
+    dailyReminderTime: '09:00',
+    emailNotifications: true,
+    practiceReminders: true,
+    progressUpdates: true
+  })
+  
+  // Dialogs state
+  const [examTypeDialogOpen, setExamTypeDialogOpen] = useState(false)
+  const [selectedExamType, setSelectedExamType] = useState('')
+  const [resetProgress, setResetProgress] = useState(false)
   
   useEffect(() => {
     const token = Cookies.get('token')
@@ -118,6 +148,7 @@ export default function AccountPage() {
     }
     
     fetchUser(token)
+    fetchSettings(token)
   }, [router])
   
   const fetchUser = async (token) => {
@@ -142,6 +173,112 @@ export default function AccountPage() {
     }
   }
   
+  const fetchSettings = async (token) => {
+    try {
+      const response = await fetch('/api/account/settings', {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        setSettings(data.settings)
+      }
+    } catch (error) {
+      console.error('Error fetching settings:', error)
+    }
+  }
+  
+  const updateSettings = async (newSettings) => {
+    const token = Cookies.get('token')
+    if (!token) return
+    
+    setSavingSettings(true)
+    try {
+      const response = await fetch('/api/account/settings', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(newSettings)
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        setSettings(data.settings)
+        toast.success('Settings saved')
+      } else {
+        const error = await response.json()
+        toast.error(error.error || 'Failed to save settings')
+      }
+    } catch (error) {
+      console.error('Error updating settings:', error)
+      toast.error('Failed to save settings')
+    } finally {
+      setSavingSettings(false)
+    }
+  }
+  
+  const handleNotificationToggle = (checked) => {
+    setSettings(prev => ({ ...prev, notificationsEnabled: checked }))
+    updateSettings({ notificationsEnabled: checked })
+  }
+  
+  const handleEmailNotificationsToggle = (checked) => {
+    setSettings(prev => ({ ...prev, emailNotifications: checked }))
+    updateSettings({ emailNotifications: checked })
+  }
+  
+  const handlePracticeRemindersToggle = (checked) => {
+    setSettings(prev => ({ ...prev, practiceReminders: checked }))
+    updateSettings({ practiceReminders: checked })
+  }
+  
+  const handleProgressUpdatesToggle = (checked) => {
+    setSettings(prev => ({ ...prev, progressUpdates: checked }))
+    updateSettings({ progressUpdates: checked })
+  }
+  
+  const handleExamTypeChange = async () => {
+    const token = Cookies.get('token')
+    if (!token || !selectedExamType) return
+    
+    setSavingSettings(true)
+    try {
+      const response = await fetch('/api/account/change-exam-type', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ 
+          examType: selectedExamType,
+          resetProgress 
+        })
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        setUser(data.user)
+        setSettings(prev => ({ ...prev, examType: selectedExamType }))
+        toast.success(data.message)
+        setExamTypeDialogOpen(false)
+        
+        // Refresh user data
+        fetchUser(token)
+      } else {
+        const error = await response.json()
+        toast.error(error.error || 'Failed to change exam type')
+      }
+    } catch (error) {
+      console.error('Error changing exam type:', error)
+      toast.error('Failed to change exam type')
+    } finally {
+      setSavingSettings(false)
+      setResetProgress(false)
+    }
+  }
+  
   const handleLogout = () => {
     Cookies.remove('token')
     toast.success('Logged out successfully')
@@ -155,6 +292,9 @@ export default function AccountPage() {
   const isAdmin = user?.email === 'ravijha97.01@gmail.com'
   const tier = isAdmin ? 'admin' : user?.subscriptionTier || 'free'
   const tierData = tierInfo[tier]
+  
+  // Get display label for exam type
+  const currentExamType = examTypes.find(e => e.value === (settings.examType || user?.pathway)) || examTypes[1]
   
   if (loading) {
     return (
@@ -234,13 +374,86 @@ export default function AccountPage() {
               
               <Separator />
               
-              {/* Pathway/Exam Type */}
-              <MenuItem 
-                icon={FileText}
-                label="Exam Type"
-                badge={user?.pathway === 'clb7' ? 'CLB 7' : 'CLB 5'}
-                onClick={() => toast.info('Exam type can be changed in pathway settings')}
-              />
+              {/* Exam Type Dialog */}
+              <Dialog open={examTypeDialogOpen} onOpenChange={setExamTypeDialogOpen}>
+                <DialogTrigger asChild>
+                  <div>
+                    <MenuItem 
+                      icon={Target}
+                      label="Exam Type"
+                      badge={currentExamType.label}
+                      onClick={() => {
+                        setSelectedExamType(settings.examType || user?.pathway || 'clb7')
+                        setExamTypeDialogOpen(true)
+                      }}
+                    />
+                  </div>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Change Exam Type</DialogTitle>
+                    <DialogDescription>
+                      Select the exam you're preparing for. Changing exam type may affect your learning pathway.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                      <Label>Target Exam</Label>
+                      <Select value={selectedExamType} onValueChange={setSelectedExamType}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select exam type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {examTypes.map((exam) => (
+                            <SelectItem key={exam.value} value={exam.value}>
+                              <div className="flex flex-col">
+                                <span className="font-medium">{exam.label}</span>
+                                <span className="text-xs text-muted-foreground">{exam.description}</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    {['clb5', 'clb7'].includes(selectedExamType) && selectedExamType !== user?.pathway && (
+                      <div className="flex items-start gap-3 p-3 bg-amber-50 dark:bg-amber-950/30 rounded-lg border border-amber-200 dark:border-amber-800">
+                        <input
+                          type="checkbox"
+                          id="resetProgress"
+                          checked={resetProgress}
+                          onChange={(e) => setResetProgress(e.target.checked)}
+                          className="mt-1"
+                        />
+                        <div>
+                          <Label htmlFor="resetProgress" className="text-amber-800 dark:text-amber-200 font-medium cursor-pointer">
+                            Reset progress and start fresh
+                          </Label>
+                          <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                            This will clear all your daily logs and restart from Day 1. Your test history will be preserved.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setExamTypeDialogOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button 
+                      onClick={handleExamTypeChange}
+                      disabled={savingSettings || !selectedExamType}
+                    >
+                      {savingSettings ? (
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      ) : (
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                      )}
+                      Save Changes
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </CardContent>
           </Card>
         </div>
@@ -265,7 +478,7 @@ export default function AccountPage() {
               
               <Separator />
               
-              {/* Notifications */}
+              {/* Master Notifications Toggle */}
               <MenuItem 
                 icon={Bell}
                 label="Notifications"
@@ -273,13 +486,69 @@ export default function AccountPage() {
                 onClick={() => {}}
               >
                 <Switch
-                  checked={notificationsEnabled}
-                  onCheckedChange={(checked) => {
-                    setNotificationsEnabled(checked)
-                    toast.success(checked ? 'Notifications enabled' : 'Notifications disabled')
-                  }}
+                  checked={settings.notificationsEnabled}
+                  onCheckedChange={handleNotificationToggle}
+                  disabled={savingSettings}
                 />
               </MenuItem>
+              
+              {settings.notificationsEnabled && (
+                <>
+                  <Separator />
+                  
+                  {/* Email Notifications */}
+                  <div className="pl-6">
+                    <MenuItem 
+                      icon={Mail}
+                      label="Email Notifications"
+                      showArrow={false}
+                      onClick={() => {}}
+                    >
+                      <Switch
+                        checked={settings.emailNotifications}
+                        onCheckedChange={handleEmailNotificationsToggle}
+                        disabled={savingSettings}
+                      />
+                    </MenuItem>
+                  </div>
+                  
+                  <Separator />
+                  
+                  {/* Practice Reminders */}
+                  <div className="pl-6">
+                    <MenuItem 
+                      icon={Clock}
+                      label="Daily Practice Reminders"
+                      showArrow={false}
+                      onClick={() => {}}
+                    >
+                      <Switch
+                        checked={settings.practiceReminders}
+                        onCheckedChange={handlePracticeRemindersToggle}
+                        disabled={savingSettings}
+                      />
+                    </MenuItem>
+                  </div>
+                  
+                  <Separator />
+                  
+                  {/* Progress Updates */}
+                  <div className="pl-6">
+                    <MenuItem 
+                      icon={Target}
+                      label="Weekly Progress Updates"
+                      showArrow={false}
+                      onClick={() => {}}
+                    >
+                      <Switch
+                        checked={settings.progressUpdates}
+                        onCheckedChange={handleProgressUpdatesToggle}
+                        disabled={savingSettings}
+                      />
+                    </MenuItem>
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
         </div>
