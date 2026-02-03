@@ -156,11 +156,14 @@ backend:
     file: "app/api/[[...path]]/route.js"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "POST /api/account/change-exam-type - Changes exam type with optional progress reset. Validates tier permissions for pathway changes. Tested with TEF and CLB5 exam types."
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Change Exam Type API working correctly. Successfully changes exam type to TEF without reset (preserves progress). Successfully changes to CLB5 with resetProgress=true (resets pathway, currentDay=1, onboardingComplete=true, deletes daily logs). Validates examType and handles both CLB pathways and TEF/TCF exam types properly."
 
   - task: "User Login API"
     implemented: true
