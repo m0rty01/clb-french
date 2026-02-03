@@ -10,7 +10,7 @@ import sys
 from datetime import datetime
 
 # Base URL from environment
-BASE_URL = "https://tef-analytics.preview.emergentagent.com"
+BASE_URL = "https://tef-tcf-prep.preview.emergentagent.com"
 
 class GrammarAPITester:
     def __init__(self):
