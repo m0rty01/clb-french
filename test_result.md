@@ -120,6 +120,42 @@ backend:
         agent: "testing"
         comment: "✅ TESTED: Registration API working correctly. Creates user with UUID, hashes password with bcrypt, returns JWT token. Validates required fields (email, password). Tested with realistic user data."
 
+  - task: "Account Settings API - GET"
+    implemented: true
+    working: true
+    file: "app/api/[[...path]]/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "GET /api/account/settings - Returns user account settings including examType, notificationsEnabled, dailyReminderTime, emailNotifications, practiceReminders, progressUpdates"
+
+  - task: "Account Settings API - PUT"
+    implemented: true
+    working: true
+    file: "app/api/[[...path]]/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "PUT /api/account/settings - Updates user settings. Validates examType (clb5, clb7, tef, tcf), dailyReminderTime format (HH:MM). Successfully tested with curl."
+
+  - task: "Change Exam Type API"
+    implemented: true
+    working: true
+    file: "app/api/[[...path]]/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "POST /api/account/change-exam-type - Changes exam type with optional progress reset. Validates tier permissions for pathway changes. Tested with TEF and CLB5 exam types."
+
   - task: "User Login API"
     implemented: true
     working: true
