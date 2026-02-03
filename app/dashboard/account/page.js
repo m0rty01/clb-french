@@ -597,7 +597,7 @@ export default function AccountPage() {
                   <AlertDialogHeader>
                     <AlertDialogTitle>Log Out?</AlertDialogTitle>
                     <AlertDialogDescription>
-                      Are you sure you want to log out of your account? You'll need to sign in again to access your progress.
+                      Are you sure you want to log out of your account? You will need to sign in again to access your progress.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
