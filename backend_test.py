@@ -923,6 +923,15 @@ class CLBFrenchTrainerTester:
             ("Update Daily Log", self.test_update_daily_log),
             ("Complete Daily Log", self.test_complete_daily_log),
             ("Get Progress", self.test_get_progress),
+            # Account Settings API Tests
+            ("Get Account Settings", self.test_get_account_settings),
+            ("Update Account Settings", self.test_update_account_settings),
+            ("Invalid Exam Type", self.test_invalid_exam_type),
+            ("Invalid Time Format", self.test_invalid_time_format),
+            ("Change Exam Type Without Reset", self.test_change_exam_type_without_reset),
+            ("Change Exam Type With Reset", self.test_change_exam_type_with_reset),
+            ("Verify Settings Persistence", self.test_verify_settings_persistence),
+            # Stripe and other tests
             ("Stripe Checkout - Unauthorized", self.test_stripe_checkout_unauthorized),
             ("Stripe Checkout - Invalid Price", self.test_stripe_checkout_invalid_price),
             ("Stripe Checkout - Missing Price", self.test_stripe_checkout_missing_price),
