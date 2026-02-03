@@ -141,11 +141,14 @@ backend:
     file: "app/api/[[...path]]/route.js"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "PUT /api/account/settings - Updates user settings. Validates examType (clb5, clb7, tef, tcf), dailyReminderTime format (HH:MM). Successfully tested with curl."
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Account Settings PUT API working correctly. Successfully updates notificationsEnabled, dailyReminderTime (08:30), emailNotifications, practiceReminders. Validates examType (rejects invalid_exam with 400). Validates time format (rejects 25:70 with 400). Returns updated settings and success message."
 
   - task: "Change Exam Type API"
     implemented: true
