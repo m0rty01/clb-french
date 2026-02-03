@@ -1908,11 +1908,11 @@ function Dashboard({ user, token, onLogout, onReset }) {
                                     <p className="font-medium text-sm">{resource.title}</p>
                                     <p className="text-xs text-muted-foreground">{resource.description}</p>
                                   </div>
-                                  <a
-                                    href={resource.url}
-                                    target="_blank"
+                                  <a 
+                                    href={resource.primaryUrl || resource.specificUrl} 
+                                    target="_blank" 
                                     rel="noopener noreferrer"
-                                    className="flex items-center gap-1 text-xs bg-purple-500 text-white px-3 py-1.5 rounded-md hover:bg-purple-600 transition-colors whitespace-nowrap"
+                                    className="flex items-center gap-1 text-xs bg-purple-500 text-white px-3 py-1.5 rounded-md hover:bg-purple-600 transition-colors whitespace-nowrap cursor-pointer"
                                   >
                                     Open <ExternalLink className="h-3 w-3" />
                                   </a>
@@ -1935,11 +1935,11 @@ function Dashboard({ user, token, onLogout, onReset }) {
                                     <p className="font-medium text-sm">{resource.title}</p>
                                     <p className="text-xs text-muted-foreground">{resource.description}</p>
                                   </div>
-                                  <a
-                                    href={resource.url}
-                                    target="_blank"
+                                  <a 
+                                    href={resource.primaryUrl || resource.specificUrl} 
+                                    target="_blank" 
                                     rel="noopener noreferrer"
-                                    className="flex items-center gap-1 text-xs bg-orange-500 text-white px-3 py-1.5 rounded-md hover:bg-orange-600 transition-colors whitespace-nowrap"
+                                    className="flex items-center gap-1 text-xs bg-orange-500 text-white px-3 py-1.5 rounded-md hover:bg-orange-600 transition-colors whitespace-nowrap cursor-pointer"
                                   >
                                     Open <ExternalLink className="h-3 w-3" />
                                   </a>
