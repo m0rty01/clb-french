@@ -393,7 +393,7 @@ export default function AccountPage() {
                   <DialogHeader>
                     <DialogTitle>Change Exam Type</DialogTitle>
                     <DialogDescription>
-                      Select the exam you're preparing for. Changing exam type may affect your learning pathway.
+                      Select the exam you are preparing for. Changing exam type may affect your learning pathway.
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4 py-4">
