@@ -2116,17 +2116,49 @@ function AppContent() {
 
     // Handle payment success
     if (paymentStatus === 'success' && tier) {
-      toast.success(`🎉 Payment successful! You've been upgraded to ${tier.charAt(0).toUpperCase() + tier.slice(1)}!`, {
-        duration: 5000,
-        description: 'Your new features are now available.'
-      })
-      // Clear URL params
+      // Clear URL params immediately so the user doesn't see them on refresh
       router.replace('/dashboard', { scroll: false })
-      // Refresh user data to get new tier
+
       const savedToken = Cookies.get('token')
-      if (savedToken) {
-        fetchUser(savedToken)
+      const sessionId = searchParams.get('session_id')
+
+      // Inner async function — useEffect callback itself must be synchronous
+      const handlePaymentSuccess = async () => {
+        if (savedToken && sessionId) {
+          // Call verify-session first: this guarantees the upgrade is applied in MongoDB
+          // even if Stripe's webhook hasn't fired yet (race condition fallback)
+          try {
+            const verifyRes = await fetch('/api/stripe/verify-session', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${savedToken}`
+              },
+              body: JSON.stringify({ sessionId })
+            })
+            const verifyData = await verifyRes.json()
+            if (verifyRes.ok && verifyData.verified) {
+              toast.success(`🎉 Payment successful! You've been upgraded to Premium!`, {
+                duration: 5000,
+                description: 'Your new features are now available.'
+              })
+            } else {
+              // Session not yet paid — very rare; webhook should handle it
+              toast.info('Payment is being processed. Your upgrade will appear shortly.', { duration: 6000 })
+            }
+          } catch (err) {
+            console.error('verify-session call failed:', err)
+            toast.success(`🎉 Payment successful! Refreshing your account...`, { duration: 4000 })
+          }
+          // Always refresh user state so the UI reflects the new tier
+          fetchUser(savedToken)
+        } else if (savedToken) {
+          // No session_id in URL (unexpected) — still refresh
+          toast.success(`🎉 Payment successful! You've been upgraded to Premium!`, { duration: 5000 })
+          fetchUser(savedToken)
+        }
       }
+      handlePaymentSuccess()
     } else if (paymentStatus === 'cancelled') {
       toast.info('Payment cancelled. You can upgrade anytime!', {
         duration: 4000

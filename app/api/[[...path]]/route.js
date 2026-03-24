@@ -175,11 +175,19 @@ function isAdmin(email) {
 }
 
 // Helper to get user's effective subscription tier
+// Checks subscription expiry so expired premium users fall back to free
 function getUserTier(user) {
   if (isAdmin(user.email)) {
     return 'admin'
   }
-  return user.subscriptionTier || 'free'
+  const tier = user.subscriptionTier || 'free'
+  // If the subscription has an end date and it has passed, treat as free
+  if (tier === 'premium' && user.subscriptionEndDate) {
+    if (new Date() > new Date(user.subscriptionEndDate)) {
+      return 'free'
+    }
+  }
+  return tier
 }
 
 // Helper to get tier limits for a user
@@ -1360,7 +1368,9 @@ async function handleRoute(request, { params }) {
             },
           ],
           mode: 'subscription',
-          success_url: `${baseUrl}/dashboard?payment=success&tier=${priceConfig.tier}`,
+          // Include session_id in success URL so the dashboard can verify the payment
+          // even if the webhook hasn't fired yet (race-condition fallback)
+          success_url: `${baseUrl}/dashboard?payment=success&tier=${priceConfig.tier}&session_id={CHECKOUT_SESSION_ID}`,
           cancel_url: `${baseUrl}/dashboard?payment=cancelled`,
           metadata: {
             userId: user.id,
@@ -1387,63 +1397,241 @@ async function handleRoute(request, { params }) {
       try {
         const body = await request.text()
         const signature = request.headers.get('stripe-signature')
-        
-        // For now, we'll process without signature verification in test mode
-        // In production, add STRIPE_WEBHOOK_SECRET and verify signature
-        const event = JSON.parse(body)
-        
+        const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
+
+        const stripeInstance = getStripe()
+        if (!stripeInstance) {
+          return handleCORS(NextResponse.json(
+            { error: 'Stripe is not configured' },
+            { status: 500 }
+          ))
+        }
+
+        let event
+        if (webhookSecret && signature) {
+          // Verify the webhook signature using the raw body (required by Stripe)
+          try {
+            event = stripeInstance.webhooks.constructEvent(body, signature, webhookSecret)
+          } catch (sigErr) {
+            console.error('Webhook signature verification failed:', sigErr.message)
+            return handleCORS(NextResponse.json(
+              { error: `Webhook signature verification failed: ${sigErr.message}` },
+              { status: 400 }
+            ))
+          }
+        } else {
+          // No webhook secret configured — parse without verification (dev/test only)
+          console.warn('STRIPE_WEBHOOK_SECRET not set — skipping signature verification (dev mode only)')
+          event = JSON.parse(body)
+        }
+
         console.log('Stripe webhook event:', event.type)
-        
+
+        // ---- checkout.session.completed: initial purchase ----
         if (event.type === 'checkout.session.completed') {
           const session = event.data.object
           const userId = session.metadata?.userId
           const tier = session.metadata?.tier
-          
+
           if (userId && tier) {
-            const subscriptionDays = session.metadata?.priceKey?.includes('yearly') ? 365 : 30
-            
+            // Use Stripe's actual subscription period end for accuracy.
+            // If available on the session (expanded), use it; otherwise fetch the subscription.
+            let subscriptionEndDate
+            if (session.subscription) {
+              try {
+                const sub = await stripeInstance.subscriptions.retrieve(session.subscription)
+                subscriptionEndDate = new Date(sub.current_period_end * 1000)
+              } catch (_) {
+                // Fallback: calculate from priceKey
+                const days = session.metadata?.priceKey?.includes('yearly') ? 365 : 30
+                subscriptionEndDate = new Date(Date.now() + days * 24 * 60 * 60 * 1000)
+              }
+            } else {
+              const days = session.metadata?.priceKey?.includes('yearly') ? 365 : 30
+              subscriptionEndDate = new Date(Date.now() + days * 24 * 60 * 60 * 1000)
+            }
+
             await db.collection('users').updateOne(
               { id: userId },
               {
                 $set: {
                   subscriptionTier: tier,
                   subscriptionStartDate: new Date(),
-                  subscriptionEndDate: new Date(Date.now() + subscriptionDays * 24 * 60 * 60 * 1000),
+                  subscriptionEndDate,
                   stripeSubscriptionId: session.subscription,
                   stripeCustomerId: session.customer
                 }
               }
             )
-            
-            console.log(`User ${userId} upgraded to ${tier}`)
+            console.log(`User ${userId} upgraded to ${tier}, expires ${subscriptionEndDate.toISOString()}`)
           }
         }
-        
+
+        // ---- customer.subscription.updated: renewals & plan changes ----
+        if (event.type === 'customer.subscription.updated') {
+          const subscription = event.data.object
+          const customerId = subscription.customer
+          const newEndDate = new Date(subscription.current_period_end * 1000)
+
+          // Only extend when subscription is active
+          if (subscription.status === 'active') {
+            await db.collection('users').updateOne(
+              { stripeCustomerId: customerId },
+              {
+                $set: {
+                  subscriptionEndDate: newEndDate,
+                  subscriptionTier: 'premium'
+                }
+              }
+            )
+            console.log(`Subscription renewed for customer ${customerId}, new end: ${newEndDate.toISOString()}`)
+          }
+        }
+
+        // ---- invoice.payment_failed: failed renewal ----
+        if (event.type === 'invoice.payment_failed') {
+          const invoice = event.data.object
+          const customerId = invoice.customer
+          // Stripe will eventually cancel the subscription after retries;
+          // for now log the failure. The subscription.deleted event will downgrade.
+          console.warn(`Payment failed for customer ${customerId}. Stripe will retry automatically.`)
+        }
+
+        // ---- customer.subscription.deleted: cancellation / final failure ----
         if (event.type === 'customer.subscription.deleted') {
           const subscription = event.data.object
           const customerId = subscription.customer
-          
-          // Find user by Stripe customer ID and downgrade to free
+
           await db.collection('users').updateOne(
             { stripeCustomerId: customerId },
             {
               $set: {
                 subscriptionTier: 'free',
-                subscriptionEndDate: new Date(),
+                subscriptionEndDate: new Date(), // expired now
                 stripeSubscriptionId: null
               }
             }
           )
-          
-          console.log(`Subscription cancelled for customer ${customerId}`)
+          console.log(`Subscription cancelled/deleted for customer ${customerId}`)
         }
-        
+
         return handleCORS(NextResponse.json({ received: true }))
       } catch (error) {
         console.error('Webhook error:', error)
         return handleCORS(NextResponse.json(
           { error: 'Webhook processing failed' },
           { status: 400 }
+        ))
+      }
+    }
+
+    // Verify Stripe Checkout Session - POST /api/stripe/verify-session
+    // Called by the dashboard on the payment=success redirect as a fallback
+    // in case the webhook hasn't fired yet (race condition).
+    if (route === '/stripe/verify-session' && method === 'POST') {
+      const decoded = verifyToken(request)
+      if (!decoded) {
+        return handleCORS(NextResponse.json(
+          { error: 'Unauthorized' },
+          { status: 401 }
+        ))
+      }
+
+      const body = await request.json()
+      const { sessionId } = body
+
+      if (!sessionId) {
+        return handleCORS(NextResponse.json(
+          { error: 'sessionId is required' },
+          { status: 400 }
+        ))
+      }
+
+      const stripeInstance = getStripe()
+      if (!stripeInstance) {
+        return handleCORS(NextResponse.json(
+          { error: 'Stripe is not configured' },
+          { status: 500 }
+        ))
+      }
+
+      try {
+        // Retrieve the session directly from Stripe — ground truth
+        const session = await stripeInstance.checkout.sessions.retrieve(sessionId)
+
+        if (session.payment_status !== 'paid') {
+          return handleCORS(NextResponse.json(
+            { verified: false, status: session.payment_status },
+            { status: 200 }
+          ))
+        }
+
+        // Confirm the session belongs to the authenticated user
+        const userId = session.metadata?.userId
+        if (userId !== decoded.userId) {
+          return handleCORS(NextResponse.json(
+            { error: 'Session does not belong to this user' },
+            { status: 403 }
+          ))
+        }
+
+        const tier = session.metadata?.tier
+        if (!tier) {
+          return handleCORS(NextResponse.json(
+            { error: 'Missing tier metadata in session' },
+            { status: 400 }
+          ))
+        }
+
+        // Check if webhook already upgraded the user (idempotency)
+        const user = await db.collection('users').findOne({ id: userId })
+        const userAlreadyUpgraded =
+          user?.subscriptionTier === tier &&
+          user?.stripeSubscriptionId === session.subscription
+
+        if (!userAlreadyUpgraded) {
+          // Webhook hasn't fired yet — apply the upgrade now (idempotent fallback)
+          let subscriptionEndDate
+          if (session.subscription) {
+            try {
+              const sub = await stripeInstance.subscriptions.retrieve(session.subscription)
+              subscriptionEndDate = new Date(sub.current_period_end * 1000)
+            } catch (_) {
+              const priceKey = session.metadata?.priceKey || ''
+              const days = priceKey.includes('yearly') ? 365 : 30
+              subscriptionEndDate = new Date(Date.now() + days * 24 * 60 * 60 * 1000)
+            }
+          } else {
+            const priceKey = session.metadata?.priceKey || ''
+            const days = priceKey.includes('yearly') ? 365 : 30
+            subscriptionEndDate = new Date(Date.now() + days * 24 * 60 * 60 * 1000)
+          }
+
+          await db.collection('users').updateOne(
+            { id: userId },
+            {
+              $set: {
+                subscriptionTier: tier,
+                subscriptionStartDate: new Date(),
+                subscriptionEndDate,
+                stripeSubscriptionId: session.subscription,
+                stripeCustomerId: session.customer
+              }
+            }
+          )
+          console.log(`[verify-session] Applied upgrade for user ${userId} to ${tier} (webhook fallback)`)
+        }
+
+        return handleCORS(NextResponse.json({
+          verified: true,
+          tier,
+          alreadyUpgraded: userAlreadyUpgraded
+        }))
+      } catch (error) {
+        console.error('verify-session error:', error.message)
+        return handleCORS(NextResponse.json(
+          { error: 'Failed to verify session', details: error.message },
+          { status: 500 }
         ))
       }
     }
