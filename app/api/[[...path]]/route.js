@@ -236,6 +236,43 @@ const STRIPE_PRICES = {
 // Admin email with full access
 const ADMIN_EMAIL = 'ravijha97.01@gmail.com'
 
+// TEF/TCF Canada style speaking prompts (Expression Orale)
+const SPEAKING_PROMPTS = [
+  {
+    id: 'tef_a_logement',
+    taskType: 'TEF Section A - Obtenir des renseignements',
+    title: 'Appel pour une location',
+    prompt: "Vous voyez une annonce pour un appartement à louer. Appelez le propriétaire pour obtenir des informations (loyer, disponibilité, charges, visite). Posez au moins 5 questions pertinentes.",
+    durationSec: 120,
+    targetLevel: 'B1'
+  },
+  {
+    id: 'tef_b_teletravail',
+    taskType: 'TEF Section B - Donner son opinion',
+    title: 'Le télétravail',
+    prompt: "Selon vous, le télétravail est-il bénéfique pour les employés et les entreprises ? Présentez votre opinion en la justifiant avec des arguments et des exemples concrets.",
+    durationSec: 180,
+    targetLevel: 'B2'
+  },
+  {
+    id: 'tcf_environnement',
+    taskType: 'TCF - Tâche 3 (Exprimer un point de vue)',
+    title: 'Protéger l\'environnement',
+    prompt: "Que peut-on faire au quotidien pour protéger l'environnement ? Donnez votre point de vue et proposez des solutions concrètes.",
+    durationSec: 180,
+    targetLevel: 'B2'
+  },
+  {
+    id: 'tcf_technologie',
+    taskType: 'TCF - Tâche 2 (Interaction)',
+    title: 'Les réseaux sociaux',
+    prompt: "Un ami pense que les réseaux sociaux sont mauvais pour les jeunes. Réagissez : donnez votre avis, nuancez, et proposez un usage équilibré.",
+    durationSec: 150,
+    targetLevel: 'B1'
+  }
+]
+
+
 // Subscription tier limits - 3-Tier Model (Free / Standard / Premium)
 // NOTE: 999 is the "unlimited" sentinel used throughout the codebase.
 const UNLIMITED = 999
@@ -2092,8 +2129,29 @@ async function handleRoute(request, { params }) {
       return handleCORS(NextResponse.json(usage))
     }
 
-    // AI Speaking Practice (Premium only) - POST /api/ai/speaking
-    // Feature build is a follow-up phase; this gates access by tier.
+    // AI Speaking Practice - prompts list - GET /api/ai/speaking/prompts (Premium only)
+    if (route === '/ai/speaking/prompts' && method === 'GET') {
+      const decoded = verifyToken(request)
+      if (!decoded) {
+        return handleCORS(NextResponse.json({ error: 'Unauthorized' }, { status: 401 }))
+      }
+      const user = await db.collection('users').findOne({ id: decoded.userId })
+      if (!user) {
+        return handleCORS(NextResponse.json({ error: 'User not found' }, { status: 404 }))
+      }
+      const tierLimits = getTierLimits(user)
+      if (!tierLimits.aiSpeakingEnabled) {
+        return handleCORS(NextResponse.json({
+          error: 'AI Speaking Practice is a Premium feature',
+          code: 'FEATURE_LOCKED',
+          upgradeRequired: true,
+          requiredTier: 'premium'
+        }, { status: 403 }))
+      }
+      return handleCORS(NextResponse.json({ prompts: SPEAKING_PROMPTS }))
+    }
+
+    // AI Speaking Practice - gate check - POST /api/ai/speaking (Premium only)
     if (route === '/ai/speaking' && method === 'POST') {
       const decoded = verifyToken(request)
       if (!decoded) {
@@ -2113,11 +2171,154 @@ async function handleRoute(request, { params }) {
           requiredTier: 'premium'
         }, { status: 403 }))
       }
-      // Premium user: feature is being built (Coming Soon).
-      return handleCORS(NextResponse.json({
-        status: 'coming_soon',
-        message: 'AI Speaking Practice is launching soon for Premium members.'
-      }))
+      return handleCORS(NextResponse.json({ status: 'ok', enabled: true }))
+    }
+
+    // AI Speaking Practice - evaluate recording - POST /api/ai/speaking/evaluate (Premium only)
+    if (route === '/ai/speaking/evaluate' && method === 'POST') {
+      const decoded = verifyToken(request)
+      if (!decoded) {
+        return handleCORS(NextResponse.json({ error: 'Unauthorized' }, { status: 401 }))
+      }
+      const user = await db.collection('users').findOne({ id: decoded.userId })
+      if (!user) {
+        return handleCORS(NextResponse.json({ error: 'User not found' }, { status: 404 }))
+      }
+      const tierLimits = getTierLimits(user)
+      if (!tierLimits.aiSpeakingEnabled) {
+        return handleCORS(NextResponse.json({
+          error: 'AI Speaking Practice is a Premium feature',
+          code: 'FEATURE_LOCKED',
+          message: 'Upgrade to Premium to unlock AI Speaking Practice.',
+          upgradeRequired: true,
+          requiredTier: 'premium'
+        }, { status: 403 }))
+      }
+
+      // Rate limit to protect the LLM endpoint
+      const rl = await checkRateLimit(db, user, 'speaking')
+      if (!rl.allowed) {
+        return handleCORS(NextResponse.json({
+          error: 'Rate limit exceeded',
+          message: `You're sending requests too quickly. Please wait a moment and try again.`,
+          retryAfter: rl.retryAfter
+        }, { status: 429 }))
+      }
+
+      const geminiKey = process.env.GEMINI_API_KEY
+      if (!geminiKey) {
+        return handleCORS(NextResponse.json({ error: 'AI service not configured' }, { status: 500 }))
+      }
+
+      const body = await request.json()
+      const { audioBase64, mimeType, promptId } = body
+      if (!audioBase64 || !mimeType) {
+        return handleCORS(NextResponse.json({ error: 'audioBase64 and mimeType are required' }, { status: 400 }))
+      }
+      // Guard against oversized payloads (~12MB base64)
+      if (audioBase64.length > 12 * 1024 * 1024) {
+        return handleCORS(NextResponse.json({ error: 'Recording too long. Please keep it under ~4 minutes.' }, { status: 413 }))
+      }
+
+      const promptObj = SPEAKING_PROMPTS.find(p => p.id === promptId) || SPEAKING_PROMPTS[0]
+
+      try {
+        const instruction = `You are an expert TEF/TCF Canada examiner for Expression Orale.
+The attached audio is a candidate's spoken response in French to this task:
+
+TASK (${promptObj.taskType}): ${promptObj.title}
+PROMPT: ${promptObj.prompt}
+
+Step 1: Transcribe the French audio verbatim (preserve diacritics; do not translate).
+Step 2: Evaluate the response against official TEF/TCF criteria. Score each 0-5.
+Be strict but fair: reward developed, coherent answers; penalize very short/off-topic ones; tolerate minor slips.
+
+Return ONLY JSON matching the provided schema. Feedback fields should be in clear English with concrete, actionable advice. The modelAnswer must be a strong sample response in French at the target level.`
+
+        const schema = {
+          type: 'object',
+          properties: {
+            transcript: { type: 'string' },
+            scores: {
+              type: 'object',
+              properties: {
+                fluency: { type: 'number' },
+                pronunciation: { type: 'number' },
+                grammar: { type: 'number' },
+                vocabulary: { type: 'number' },
+                taskAchievement: { type: 'number' }
+              },
+              required: ['fluency', 'pronunciation', 'grammar', 'vocabulary', 'taskAchievement']
+            },
+            totalScore: { type: 'number' },
+            clbLevel: { type: 'string' },
+            cefrLevel: { type: 'string' },
+            strengths: { type: 'array', items: { type: 'string' } },
+            improvements: { type: 'array', items: { type: 'string' } },
+            overallFeedback: { type: 'string' },
+            modelAnswer: { type: 'string' }
+          },
+          required: ['transcript', 'scores', 'totalScore', 'clbLevel', 'strengths', 'improvements', 'overallFeedback', 'modelAnswer']
+        }
+
+        const geminiResponse = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent?key=${geminiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [
+                { parts: [ { text: instruction }, { inlineData: { mimeType, data: audioBase64 } } ] }
+              ],
+              generationConfig: {
+                temperature: 0.3,
+                maxOutputTokens: 4000,
+                responseMimeType: 'application/json',
+                responseSchema: schema
+              }
+            })
+          }
+        )
+
+        if (!geminiResponse.ok) {
+          const errText = await geminiResponse.text()
+          console.error('Gemini speaking API error:', errText)
+          return handleCORS(NextResponse.json({ error: 'AI evaluation service error' }, { status: 502 }))
+        }
+
+        const geminiData = await geminiResponse.json()
+        const aiText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text
+        if (!aiText) {
+          console.error('No response from Gemini speaking:', JSON.stringify(geminiData).slice(0, 500))
+          return handleCORS(NextResponse.json({ error: 'No response from AI service' }, { status: 502 }))
+        }
+
+        let evaluation
+        try {
+          const cleaned = aiText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
+          const match = cleaned.match(/\{[\s\S]*\}/)
+          evaluation = JSON.parse(match ? match[0] : cleaned)
+        } catch (parseErr) {
+          console.error('Failed to parse speaking evaluation:', aiText.slice(0, 300))
+          return handleCORS(NextResponse.json({ error: 'Failed to parse AI evaluation' }, { status: 502 }))
+        }
+
+        // Persist (success only) - counts as usage for analytics
+        await db.collection('speaking_evaluations').insertOne({
+          id: uuidv4(),
+          userId: decoded.userId,
+          promptId: promptObj.id,
+          taskType: promptObj.taskType,
+          transcript: evaluation.transcript,
+          evaluation,
+          createdAt: new Date()
+        })
+
+        return handleCORS(NextResponse.json({ success: true, evaluation }))
+      } catch (error) {
+        console.error('Speaking evaluation error:', error)
+        return handleCORS(NextResponse.json({ error: 'Failed to evaluate speaking' }, { status: 500 }))
+      }
     }
 
     // Email subscription for marketing - POST /api/subscribe

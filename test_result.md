@@ -135,6 +135,19 @@ backend:
         agent: "testing"
         comment: "✅ COMPREHENSIVE TESTING COMPLETE (4/4 tests passed): Reconcile endpoint tested with all auth and validation scenarios - (1) No Authorization header returns 401 with {error:'Unauthorized'}, (2) Invalid/garbage Bearer token returns 401, (3) Valid token but missing sessionId in body returns 400 with {error:'Missing sessionId'}, (4) Valid token + non-existent sessionId (cs_test_doesnotexist) returns clean 500 error with Stripe error details {error:'Failed to reconcile payment', details:'No such checkout.session: cs_test_doesnotexist'} - NOT a crash. All authentication, validation, and error handling working correctly. Endpoint properly secured and handles Stripe API errors gracefully."
 
+  - task: "AI Speaking Practice (Premium) - Gemini audio STT + evaluation"
+    implemented: true
+    working: "NA"
+    file: "app/api/[[...path]]/route.js, app/dashboard/speaking/page.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Built real AI Speaking Practice (no new API keys - reuses existing GEMINI_API_KEY). Endpoints: GET /api/ai/speaking/prompts (premium-gated, returns 4 TEF/TCF prompts; 403 FEATURE_LOCKED for non-premium), POST /api/ai/speaking (gate check), POST /api/ai/speaking/evaluate (premium-gated, rate-limited 'speaking' bucket, accepts {audioBase64, mimeType, promptId}, guards >12MB payload with 413, calls Gemini gemini-2.0-flash-001 with inlineData audio + responseSchema for one-pass transcription+evaluation -> returns transcript, scores (fluency/pronunciation/grammar/vocabulary/taskAchievement), totalScore, clbLevel, cefrLevel, strengths, improvements, overallFeedback, modelAnswer; saves to speaking_evaluations on success only). Frontend page /dashboard/speaking: prompt selector, MediaRecorder audio recording with timer/auto-stop, base64 upload, results display with score bars + strengths/improvements/transcript/model answer; locked state with upgrade CTA for non-premium; nav link added in dashboard header. Manual verify: free->403 prompts+evaluate, premium->prompts list (4), premium evaluate missing audio->400. NEEDS: full audio->Gemini eval path requires a REAL browser recording (mic) - verify via UI as premium user. Gemini audio call mirrors the working writing-eval REST pattern."
+
+
   - task: "3-Tier Subscription Model - usage limits, gating, /usage, rate limiting, legacy"
     implemented: true
     working: true

@@ -21,7 +21,7 @@ Restructure pricing to limit API cost on lower tiers and maximize MRR.
 | Processing priority | Standard | Standard | Fast queue |
 
 ### Decisions / Assumptions (proceeding)
-- AI Speaking Practice: **Premium-gated "Coming Soon"** now; real voice feature is a later phase (needs speech integration + keys).
+- AI Speaking Practice: **BUILT** (no new keys — reuses GEMINI_API_KEY for audio STT+eval). Endpoints + `/dashboard/speaking` recorder page. Premium-gated.
 - Legacy: existing $9 subscribers → mapped to **Standard** + legacy banner (180-day unlimited writing). Launch date = 2026-06-01.
 - Rate limiting: **MongoDB-backed** app-level (Free 1/min, Standard 5/min, Premium 20/min) on AI endpoints.
 - Stripe: dynamic `price_data` with new amounts (no dashboard product setup). Webhook sets tier from `metadata.tier`.

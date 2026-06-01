@@ -1742,6 +1742,13 @@ function Dashboard({ user, token, onLogout, onReset }) {
                 <span className="hidden sm:inline">Practice Tests</span>
               </Button>
             </Link>
+
+            <Link href="/dashboard/speaking">
+              <Button variant="outline" size="sm" className="gap-2">
+                <Mic className="h-4 w-4" />
+                <span className="hidden sm:inline">Speaking</span>
+              </Button>
+            </Link>
             
             <Button
               variant="ghost"
