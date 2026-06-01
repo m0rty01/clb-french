@@ -55,11 +55,16 @@ async function handleStripeWebhook(request) {
     const stripeInstance = getStripe()
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
 
-    if (stripeInstance && webhookSecret && signature) {
-      // Verify the signature against the raw body. Only failure here returns 400.
+    if (webhookSecret) {
+      // Secret is configured -> ONLY process cryptographically verified events.
+      if (!stripeInstance || !signature) {
+        console.warn('Stripe webhook: secret configured but missing stripe-signature; acknowledging without processing')
+        return handleCORS(NextResponse.json({ received: true }, { status: 200 }))
+      }
       try {
         event = stripeInstance.webhooks.constructEvent(rawBody, signature, webhookSecret)
       } catch (err) {
+        // Signature verification failure is the ONLY case that returns 400.
         console.error('Stripe webhook signature verification failed:', err.message)
         return handleCORS(NextResponse.json(
           { error: `Webhook signature verification failed: ${err.message}` },
@@ -67,7 +72,7 @@ async function handleStripeWebhook(request) {
         ))
       }
     } else {
-      // No secret configured (or no signature) -> fall back to parsing without verification.
+      // No secret configured (transition/dev) -> parse without verification.
       // Still acknowledge with 200 so Stripe does not disable the endpoint.
       try {
         event = JSON.parse(rawBody)
@@ -75,9 +80,7 @@ async function handleStripeWebhook(request) {
         console.error('Stripe webhook: unable to parse body:', parseErr.message)
         return handleCORS(NextResponse.json({ received: true }, { status: 200 }))
       }
-      if (!webhookSecret) {
-        console.warn('Stripe webhook processed WITHOUT signature verification (STRIPE_WEBHOOK_SECRET not set)')
-      }
+      console.warn('Stripe webhook processed WITHOUT signature verification (STRIPE_WEBHOOK_SECRET not set)')
     }
   } catch (outerErr) {
     // Reading body failed - acknowledge anyway to avoid endpoint disablement.

@@ -105,6 +105,32 @@
 user_problem_statement: "CLB French Trainer - A discipline-focused French learning app with CLB 5 (4 months) and CLB 7 (8-12 months) pathways. Features daily routine tracking, progress monitoring, and references to 'Practice Makes Perfect: Complete French Grammar' book."
 
 backend:
+  - task: "Stripe Webhook hardening (signature verification + always-200)"
+    implemented: true
+    working: true
+    file: "app/api/[[...path]]/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "ROOT CAUSE FIX: Stripe reported 7/10 live webhook deliveries failing ('other errors'). The webhook ran AFTER connectToMongo() inside the main try, and the outer catch returned HTTP 500 on any transient DB hiccup -> Stripe marked it failed. Moved webhook to a dedicated handleStripeWebhook() dispatched at the VERY TOP of handleRoute (before Mongo). Now verifies signature via stripe.webhooks.constructEvent with STRIPE_WEBHOOK_SECRET; returns HTTP 400 ONLY on signature-verification failure; returns HTTP 200 for everything else (unhandled types, parse errors, internal/db errors). Added invoice.payment_succeeded (renewal) handling. Verified via curl + signed payload (generateTestHeaderString): valid signed event -> 200 processed; invalid signature -> 400; no-signature with secret set -> 200 not processed; malformed -> 200. STRIPE_WEBHOOK_SECRET added to .env. NOTE: live domain needs redeploy to take effect."
+
+  - task: "Stripe Checkout reconciliation fallback (POST /api/stripe/reconcile)"
+    implemented: true
+    working: true
+    file: "app/api/[[...path]]/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Added safety net so paying users upgrade even if a webhook fails. success_url now carries session_id={CHECKOUT_SESSION_ID}. New authenticated endpoint retrieves the Checkout Session from Stripe, verifies it belongs to the requesting user, and upgrades the user (applyPaidSubscription) if payment_status==='paid'. Dashboard calls it automatically on the payment=success redirect before refreshing user. Verified: 401 without auth, 400 without sessionId. Full paid-session path needs a real Stripe session to exercise."
+
+
+backend:
   - task: "User Registration API"
     implemented: true
     working: true
