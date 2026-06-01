@@ -205,14 +205,28 @@ async function synthesizeSpeechREST(text, languageCode = 'fr-FR', speakingRate =
 
 // Stripe Price Configuration (in cents) - Freemium Model
 const STRIPE_PRICES = {
-  premium_monthly: {
+  // Standard tier - $9/mo or $79/yr
+  standard_monthly: {
     amount: 900, // $9.00/month
+    name: 'Standard Monthly',
+    tier: 'standard',
+    interval: 'month'
+  },
+  standard_yearly: {
+    amount: 7900, // $79.00/year
+    name: 'Standard Yearly',
+    tier: 'standard',
+    interval: 'year'
+  },
+  // Premium tier - $34/mo or $249/yr
+  premium_monthly: {
+    amount: 3400, // $34.00/month
     name: 'Premium Monthly',
     tier: 'premium',
     interval: 'month'
   },
   premium_yearly: {
-    amount: 7000, // $70.00/year (~$5.83/month - 35% savings)
+    amount: 24900, // $249.00/year
     name: 'Premium Yearly',
     tier: 'premium',
     interval: 'year'
@@ -222,55 +236,63 @@ const STRIPE_PRICES = {
 // Admin email with full access
 const ADMIN_EMAIL = 'ravijha97.01@gmail.com'
 
-// Subscription tier limits - Freemium Model
+// Subscription tier limits - 3-Tier Model (Free / Standard / Premium)
+// NOTE: 999 is the "unlimited" sentinel used throughout the codebase.
+const UNLIMITED = 999
 const SUBSCRIPTION_LIMITS = {
   free: {
-    // Legacy properties (for backward compatibility)
-    maxDays: 999,                      // No day limit in freemium
-    pathways: ['clb5', 'clb7'],        // Access to both pathways
-    canAccessAllTopics: true,
-    // New freemium properties
-    maxTestsPerMonth: 3,               // 3 practice tests per month for all sections
-    testsHistoryLimit: 3,              // View last 3 test results
-    aiWritingEvaluationsPerMonth: 6,   // 6 AI writing evaluations per month
-    canAccessAllSections: true,        // Access all test types (TEF & TCF)
-    canAccessDailyGrammar: true,       // Daily grammar lessons
-    canAccessProgressTracking: true,   // Basic progress tracking
-    canAccessFullAnalytics: false,     // No detailed analytics
-    canDownloadResults: false,         // Cannot download results
-    canAccessPerformanceTrends: false, // No performance trends
-    canAccessWeakAreas: false,         // No weak areas analysis
-    adFree: false,                     // Has ads
-    prioritySupport: false
-  },
-  premium: {
-    // Legacy properties
+    // Legacy / backward-compat properties
     maxDays: 999,
     pathways: ['clb5', 'clb7'],
     canAccessAllTopics: true,
-    // New freemium properties
-    maxTestsPerMonth: 999,             // Unlimited tests
-    testsHistoryLimit: 999,            // Unlimited history
-    aiWritingEvaluationsPerMonth: 999, // Unlimited AI evaluations
+    maxTestsPerMonth: 1,               // 1 mock test per 30 days
+    testsHistoryLimit: 3,
+    aiWritingEvaluationsPerMonth: 2,   // 2 AI writing evaluations per 30 days
     canAccessAllSections: true,
     canAccessDailyGrammar: true,
     canAccessProgressTracking: true,
-    canAccessFullAnalytics: true,      // Full analytics & reports
-    canDownloadResults: true,          // Download/export results
-    canAccessPerformanceTrends: true,  // Performance over time
-    canAccessWeakAreas: true,          // Weak areas analysis
-    adFree: true,                      // Ad-free experience
-    prioritySupport: true
+    canAccessFullAnalytics: false,
+    canDownloadResults: false,
+    canAccessPerformanceTrends: false,
+    canAccessWeakAreas: false,
+    adFree: false,
+    prioritySupport: false,
+    // 3-tier properties
+    aiSpeakingEnabled: false,
+    canAccessDailyArchives: false,     // current day only
+    analyticsLevel: 'day',
+    fastQueue: false,
+    rateLimitPerMin: 1
   },
-  admin: {
-    // Legacy properties
+  standard: {
     maxDays: 999,
     pathways: ['clb5', 'clb7'],
     canAccessAllTopics: true,
-    // New freemium properties
-    maxTestsPerMonth: 999,
-    testsHistoryLimit: 999,
-    aiWritingEvaluationsPerMonth: 999,
+    maxTestsPerMonth: UNLIMITED,       // Unlimited mock tests
+    testsHistoryLimit: UNLIMITED,
+    aiWritingEvaluationsPerMonth: 15,  // 15 AI writing evaluations per 30 days
+    canAccessAllSections: true,
+    canAccessDailyGrammar: true,
+    canAccessProgressTracking: true,
+    canAccessFullAnalytics: true,      // Full performance trends
+    canDownloadResults: false,
+    canAccessPerformanceTrends: true,
+    canAccessWeakAreas: false,
+    adFree: true,
+    prioritySupport: false,
+    aiSpeakingEnabled: false,
+    canAccessDailyArchives: true,
+    analyticsLevel: 'trends',
+    fastQueue: false,
+    rateLimitPerMin: 5
+  },
+  premium: {
+    maxDays: 999,
+    pathways: ['clb5', 'clb7'],
+    canAccessAllTopics: true,
+    maxTestsPerMonth: UNLIMITED,
+    testsHistoryLimit: UNLIMITED,
+    aiWritingEvaluationsPerMonth: UNLIMITED,
     canAccessAllSections: true,
     canAccessDailyGrammar: true,
     canAccessProgressTracking: true,
@@ -279,7 +301,34 @@ const SUBSCRIPTION_LIMITS = {
     canAccessPerformanceTrends: true,
     canAccessWeakAreas: true,
     adFree: true,
-    prioritySupport: true
+    prioritySupport: true,
+    aiSpeakingEnabled: true,           // Unlimited AI speaking practice
+    canAccessDailyArchives: true,
+    analyticsLevel: 'deep',
+    fastQueue: true,
+    rateLimitPerMin: 20
+  },
+  admin: {
+    maxDays: 999,
+    pathways: ['clb5', 'clb7'],
+    canAccessAllTopics: true,
+    maxTestsPerMonth: UNLIMITED,
+    testsHistoryLimit: UNLIMITED,
+    aiWritingEvaluationsPerMonth: UNLIMITED,
+    canAccessAllSections: true,
+    canAccessDailyGrammar: true,
+    canAccessProgressTracking: true,
+    canAccessFullAnalytics: true,
+    canDownloadResults: true,
+    canAccessPerformanceTrends: true,
+    canAccessWeakAreas: true,
+    adFree: true,
+    prioritySupport: true,
+    aiSpeakingEnabled: true,
+    canAccessDailyArchives: true,
+    analyticsLevel: 'deep',
+    fastQueue: true,
+    rateLimitPerMin: 60
   }
 }
 
@@ -300,6 +349,104 @@ function getUserTier(user) {
 function getTierLimits(user) {
   const tier = getUserTier(user)
   return SUBSCRIPTION_LIMITS[tier] || SUBSCRIPTION_LIMITS.free
+}
+
+// ===== 3-Tier usage helpers =====
+const LAUNCH_DATE = new Date('2026-06-01T00:00:00Z')
+const CYCLE_MS = 30 * 24 * 60 * 60 * 1000
+const LEGACY_GRANDFATHER_MS = 180 * 24 * 60 * 60 * 1000
+
+// Returns the start Date of the user's current 30-day usage cycle.
+// Anchored at subscriptionStartDate (paid) or createdAt (free); falls back to a rolling 30-day window.
+function getCycleStart(user) {
+  const anchorRaw = user?.subscriptionStartDate || user?.createdAt
+  const anchor = anchorRaw ? new Date(anchorRaw) : null
+  const now = Date.now()
+  if (!anchor || isNaN(anchor.getTime()) || anchor.getTime() > now) {
+    return new Date(now - CYCLE_MS)
+  }
+  const cyclesPassed = Math.floor((now - anchor.getTime()) / CYCLE_MS)
+  return new Date(anchor.getTime() + cyclesPassed * CYCLE_MS)
+}
+
+// Legacy early-adopter: an active paid subscriber whose subscription started before launch,
+// within 180 days of launch. They keep unlimited writing during this window.
+function isLegacyUser(user) {
+  if (!user?.subscriptionStartDate) return false
+  const tier = user.subscriptionTier
+  if (!tier || tier === 'free') return false
+  const start = new Date(user.subscriptionStartDate)
+  if (isNaN(start.getTime()) || start.getTime() >= LAUNCH_DATE.getTime()) return false
+  return Date.now() < (LAUNCH_DATE.getTime() + LEGACY_GRANDFATHER_MS)
+}
+
+// Compute a full usage summary (remaining counts) for the current cycle.
+async function getUsageSummary(db, user) {
+  const tier = getUserTier(user)
+  const limits = getTierLimits(user)
+  const cycleStart = getCycleStart(user)
+  const cycleEnd = new Date(cycleStart.getTime() + CYCLE_MS)
+  const legacy = isLegacyUser(user)
+
+  const [writingUsed, mockTestsUsed] = await Promise.all([
+    db.collection('writing_evaluations').countDocuments({ userId: user.id, createdAt: { $gte: cycleStart } }),
+    db.collection('test_results').countDocuments({ email: user.email, completedAt: { $gte: cycleStart } }),
+  ])
+
+  // Legacy users get unlimited writing during the grandfather window.
+  const writingLimit = legacy ? UNLIMITED : limits.aiWritingEvaluationsPerMonth
+  const mockLimit = limits.maxTestsPerMonth
+
+  const remaining = (limit, used) => (limit >= UNLIMITED ? UNLIMITED : Math.max(0, limit - used))
+
+  return {
+    tier,
+    isLegacy: legacy,
+    cycleStart: cycleStart.toISOString(),
+    cycleEnd: cycleEnd.toISOString(),
+    writing: {
+      limit: writingLimit,
+      used: writingUsed,
+      remaining: remaining(writingLimit, writingUsed),
+      unlimited: writingLimit >= UNLIMITED,
+    },
+    mockTests: {
+      limit: mockLimit,
+      used: mockTestsUsed,
+      remaining: remaining(mockLimit, mockTestsUsed),
+      unlimited: mockLimit >= UNLIMITED,
+    },
+    speaking: {
+      enabled: limits.aiSpeakingEnabled,
+      unlimited: limits.aiSpeakingEnabled,
+    },
+    analyticsLevel: limits.analyticsLevel,
+    fastQueue: limits.fastQueue,
+    canAccessDailyArchives: limits.canAccessDailyArchives,
+  }
+}
+
+// MongoDB-backed per-minute rate limiter for AI endpoints. Returns { allowed, retryAfter, limit }.
+async function checkRateLimit(db, user, bucket = 'ai') {
+  try {
+    const limits = getTierLimits(user)
+    const perMin = limits.rateLimitPerMin || 1
+    const windowStart = new Date(Date.now() - 60 * 1000)
+    const count = await db.collection('rate_limit_log').countDocuments({
+      userId: user.id,
+      bucket,
+      ts: { $gte: windowStart },
+    })
+    if (count >= perMin) {
+      return { allowed: false, retryAfter: 60, limit: perMin }
+    }
+    await db.collection('rate_limit_log').insertOne({ userId: user.id, bucket, ts: new Date() })
+    return { allowed: true, limit: perMin }
+  } catch (e) {
+    // Fail open - never block a legitimate request due to rate-limiter errors.
+    console.error('Rate limiter error (failing open):', e?.message)
+    return { allowed: true, limit: 0 }
+  }
 }
 
 // MongoDB connection with better error handling
@@ -1676,7 +1823,7 @@ async function handleRoute(request, { params }) {
                 currency: 'usd',
                 product_data: {
                   name: `CLB French Trainer - ${priceConfig.name}`,
-                  description: `${priceConfig.tier === 'basic' ? 'Full CLB 5 pathway access' : 'Full access to both CLB 5 & CLB 7 pathways'}`,
+                  description: `${priceConfig.tier === 'standard' ? 'Unlimited mock tests + 15 AI writing evaluations/month' : 'Unlimited mock tests, AI writing & speaking practice'}`,
                 },
                 unit_amount: priceConfig.amount,
                 recurring: {
@@ -1790,9 +1937,9 @@ async function handleRoute(request, { params }) {
       const body = await request.json()
       const { tier } = body
       
-      if (!tier || !['basic', 'premium'].includes(tier)) {
+      if (!tier || !['standard', 'premium'].includes(tier)) {
         return handleCORS(NextResponse.json(
-          { error: 'Invalid tier. Must be basic or premium' },
+          { error: 'Invalid tier. Must be standard or premium' },
           { status: 400 }
         ))
       }
@@ -1843,9 +1990,9 @@ async function handleRoute(request, { params }) {
       const body = await request.json()
       const { userEmail, tier } = body
       
-      if (!userEmail || !tier || !['free', 'basic', 'premium'].includes(tier)) {
+      if (!userEmail || !tier || !['free', 'standard', 'premium'].includes(tier)) {
         return handleCORS(NextResponse.json(
-          { error: 'userEmail and valid tier (free, basic, premium) required' },
+          { error: 'userEmail and valid tier (free, standard, premium) required' },
           { status: 400 }
         ))
       }
@@ -1894,48 +2041,82 @@ async function handleRoute(request, { params }) {
       }
       
       const tierLimits = getTierLimits(user)
-      
-      // Count tests taken this month for freemium limit
-      const startOfMonth = new Date()
-      startOfMonth.setDate(1)
-      startOfMonth.setHours(0, 0, 0, 0)
-      
-      const testsThisMonth = await db.collection('test_results').countDocuments({
-        email: user.email,
-        completedAt: { $gte: startOfMonth }
-      })
-      
-      // Count AI evaluations this month (changed from weekly)
-      const aiEvaluationsThisMonth = await db.collection('writing_evaluations').countDocuments({
-        userId: decoded.userId,
-        createdAt: { $gte: startOfMonth }
-      })
-      
-      const isPremiumOrAdmin = getUserTier(user) === 'premium' || isAdmin(user.email)
-      const testsRemaining = isPremiumOrAdmin ? 999 : Math.max(0, tierLimits.maxTestsPerMonth - testsThisMonth)
-      const aiEvaluationsRemaining = isPremiumOrAdmin ? 999 : Math.max(0, tierLimits.aiWritingEvaluationsPerMonth - aiEvaluationsThisMonth)
-      
+      const usage = await getUsageSummary(db, user)
+
+      const testsThisMonth = usage.mockTests.used
+      const aiEvaluationsThisMonth = usage.writing.used
+      const testsRemaining = usage.mockTests.unlimited ? 999 : usage.mockTests.remaining
+      const aiEvaluationsRemaining = usage.writing.unlimited ? 999 : usage.writing.remaining
+
       return handleCORS(NextResponse.json({
         subscriptionTier: getUserTier(user),
         isAdmin: isAdmin(user.email),
-        // New freemium model
+        isLegacy: usage.isLegacy,
+        cycleStart: usage.cycleStart,
+        cycleEnd: usage.cycleEnd,
+        // Usage model
         maxTestsPerMonth: tierLimits.maxTestsPerMonth,
         testsThisMonth: testsThisMonth,
         testsRemaining: testsRemaining,
-        aiWritingEvaluationsPerMonth: tierLimits.aiWritingEvaluationsPerMonth,
+        aiWritingEvaluationsPerMonth: usage.writing.limit,
         aiEvaluationsThisMonth: aiEvaluationsThisMonth,
         aiEvaluationsRemaining: aiEvaluationsRemaining,
+        aiSpeakingEnabled: tierLimits.aiSpeakingEnabled,
         canAccessFullAnalytics: tierLimits.canAccessFullAnalytics,
         canDownloadResults: tierLimits.canDownloadResults,
+        canAccessDailyArchives: tierLimits.canAccessDailyArchives,
+        analyticsLevel: tierLimits.analyticsLevel,
         // For backward compatibility - show all tests as accessible
-        mockExamsPerSkill: isPremiumOrAdmin ? 20 : 20, // All tests are accessible in freemium
+        mockExamsPerSkill: 20,
         accessibleExams: {
           listening: 20,
           reading: 20,
           writing: 20,
           speaking: 20
         },
-        totalAccessible: 80 // All tests accessible, but usage is limited per month
+        totalAccessible: 80
+      }))
+    }
+
+    // Usage summary for dashboard counters - GET /api/usage
+    if (route === '/usage' && method === 'GET') {
+      const decoded = verifyToken(request)
+      if (!decoded) {
+        return handleCORS(NextResponse.json({ error: 'Unauthorized' }, { status: 401 }))
+      }
+      const user = await db.collection('users').findOne({ id: decoded.userId })
+      if (!user) {
+        return handleCORS(NextResponse.json({ error: 'User not found' }, { status: 404 }))
+      }
+      const usage = await getUsageSummary(db, user)
+      return handleCORS(NextResponse.json(usage))
+    }
+
+    // AI Speaking Practice (Premium only) - POST /api/ai/speaking
+    // Feature build is a follow-up phase; this gates access by tier.
+    if (route === '/ai/speaking' && method === 'POST') {
+      const decoded = verifyToken(request)
+      if (!decoded) {
+        return handleCORS(NextResponse.json({ error: 'Unauthorized' }, { status: 401 }))
+      }
+      const user = await db.collection('users').findOne({ id: decoded.userId })
+      if (!user) {
+        return handleCORS(NextResponse.json({ error: 'User not found' }, { status: 404 }))
+      }
+      const tierLimits = getTierLimits(user)
+      if (!tierLimits.aiSpeakingEnabled) {
+        return handleCORS(NextResponse.json({
+          error: 'AI Speaking Practice is a Premium feature',
+          code: 'FEATURE_LOCKED',
+          message: 'Upgrade to Premium to unlock AI Speaking Practice.',
+          upgradeRequired: true,
+          requiredTier: 'premium'
+        }, { status: 403 }))
+      }
+      // Premium user: feature is being built (Coming Soon).
+      return handleCORS(NextResponse.json({
+        status: 'coming_soon',
+        message: 'AI Speaking Practice is launching soon for Premium members.'
       }))
     }
 
@@ -2056,25 +2237,34 @@ async function handleRoute(request, { params }) {
       }
       
       const tierLimits = getTierLimits(user)
-      const isPremiumOrAdmin = getUserTier(user) === 'premium' || isAdmin(user.email)
-      
-      // Check monthly AI evaluation limit for free users (changed from weekly)
-      if (!isPremiumOrAdmin) {
-        const startOfMonth = new Date()
-        startOfMonth.setDate(1)
-        startOfMonth.setHours(0, 0, 0, 0)
-        
-        const aiEvaluationsThisMonth = await db.collection('writing_evaluations').countDocuments({
+      const writingLimit = isLegacyUser(user) ? UNLIMITED : tierLimits.aiWritingEvaluationsPerMonth
+
+      // Rate limit (per-minute) to protect LLM endpoint from script-botting
+      const rl = await checkRateLimit(db, user, 'writing')
+      if (!rl.allowed) {
+        return handleCORS(NextResponse.json({
+          error: 'Rate limit exceeded',
+          message: `You're sending requests too quickly. Please wait a moment and try again.`,
+          retryAfter: rl.retryAfter
+        }, { status: 429 }))
+      }
+
+      // Enforce 30-day cycle usage limit (unlimited tiers skip this)
+      if (writingLimit < UNLIMITED) {
+        const cycleStart = getCycleStart(user)
+        const aiEvaluationsThisCycle = await db.collection('writing_evaluations').countDocuments({
           userId: decoded.userId,
-          createdAt: { $gte: startOfMonth }
+          createdAt: { $gte: cycleStart }
         })
-        
-        if (aiEvaluationsThisMonth >= tierLimits.aiWritingEvaluationsPerMonth) {
+
+        if (aiEvaluationsThisCycle >= writingLimit) {
+          const upgradeTarget = getUserTier(user) === 'free' ? 'Standard or Premium' : 'Premium'
           return handleCORS(NextResponse.json({
-            error: 'Monthly AI evaluation limit reached',
-            message: `You've used all ${tierLimits.aiWritingEvaluationsPerMonth} AI writing evaluations this month. Upgrade to Premium for unlimited evaluations.`,
-            aiEvaluationsThisMonth,
-            maxPerMonth: tierLimits.aiWritingEvaluationsPerMonth,
+            error: 'AI evaluation limit reached',
+            code: 'LIMIT_REACHED',
+            message: `You've used all ${writingLimit} AI writing evaluations in your current cycle. Upgrade to ${upgradeTarget} for more.`,
+            aiEvaluationsThisMonth: aiEvaluationsThisCycle,
+            maxPerMonth: writingLimit,
             upgradeRequired: true
           }, { status: 403 }))
         }
@@ -2260,24 +2450,21 @@ Be strict but fair. TEF is a standardized test - evaluate accordingly. Return ON
       }
       
       const tierLimits = getTierLimits(user)
-      const isPremiumOrAdmin = getUserTier(user) === 'premium' || isAdmin(user.email)
-      
-      // Check monthly test limit for free users
-      if (!isPremiumOrAdmin) {
-        const startOfMonth = new Date()
-        startOfMonth.setDate(1)
-        startOfMonth.setHours(0, 0, 0, 0)
-        
-        const testsThisMonth = await db.collection('test_results').countDocuments({
+
+      // Enforce 30-day cycle mock-test limit (unlimited tiers skip this)
+      if (tierLimits.maxTestsPerMonth < UNLIMITED) {
+        const cycleStart = getCycleStart(user)
+        const testsThisCycle = await db.collection('test_results').countDocuments({
           email: decoded.email,
-          completedAt: { $gte: startOfMonth }
+          completedAt: { $gte: cycleStart }
         })
-        
-        if (testsThisMonth >= tierLimits.maxTestsPerMonth) {
+
+        if (testsThisCycle >= tierLimits.maxTestsPerMonth) {
           return handleCORS(NextResponse.json({
-            error: 'Monthly test limit reached',
-            message: `You've used all ${tierLimits.maxTestsPerMonth} tests this month. Upgrade to Premium for unlimited tests.`,
-            testsThisMonth,
+            error: 'Mock test limit reached',
+            code: 'LIMIT_REACHED',
+            message: `You've used all ${tierLimits.maxTestsPerMonth} mock test(s) in your current cycle. Upgrade to Standard or Premium for unlimited tests.`,
+            testsThisMonth: testsThisCycle,
             maxTestsPerMonth: tierLimits.maxTestsPerMonth,
             upgradeRequired: true
           }, { status: 403 }))

@@ -63,15 +63,76 @@ const levelColors = {
 function SubscriptionBanner({ user, onUpgrade, subscriptionInfo }) {
   const tier = user?.subscriptionTier || 'free'
   const isAdmin = user?.email?.toLowerCase() === 'ravijha97.01@gmail.com'
-  
-  // Use subscription info from API if available, otherwise fall back to defaults
-  const testsRemaining = subscriptionInfo?.testsRemaining ?? 3
-  const maxTests = subscriptionInfo?.maxTestsPerMonth ?? 3
-  
-  if (tier === 'admin' || tier === 'premium' || isAdmin) {
-    return null // Don't show banner for premium/admin
+  const isLegacy = subscriptionInfo?.isLegacy
+
+  const testsRemaining = subscriptionInfo?.testsRemaining ?? 1
+  const maxTests = subscriptionInfo?.maxTestsPerMonth ?? 1
+  const writingRemaining = subscriptionInfo?.aiEvaluationsRemaining
+  const writingMax = subscriptionInfo?.aiWritingEvaluationsPerMonth
+  const unlimited = (n) => n >= 999
+
+  if (isAdmin) {
+    return null
   }
-  
+
+  // Legacy early-adopter banner (highest priority)
+  if (isLegacy) {
+    return (
+      <Card className="mb-6 border-2 border-indigo-400/50 bg-gradient-to-r from-indigo-50 to-violet-50 dark:from-indigo-950/20 dark:to-violet-950/20">
+        <CardContent className="pt-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
+              <Sparkles className="h-5 w-5 text-indigo-500" />
+            </div>
+            <div>
+              <p className="font-semibold">You're on our Legacy Early Adopter plan! 🎉</p>
+              <p className="text-sm text-muted-foreground">
+                Enjoy unlimited writing metrics at your current rate for the next 6 months.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  // Standard tier: prompt to upgrade to Premium for AI Speaking + unlimited writing
+  if (tier === 'standard') {
+    return (
+      <Card className="mb-6 border-2 border-blue-400/50 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20">
+        <CardContent className="pt-4">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                <Crown className="h-5 w-5 text-blue-500" />
+              </div>
+              <div>
+                <p className="font-semibold">
+                  Standard Plan{' '}
+                  {!unlimited(writingMax) && writingRemaining != null && (
+                    <span className="text-muted-foreground font-normal">· {writingRemaining} of {writingMax} AI writing evals left</span>
+                  )}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Upgrade to Premium for unlimited AI writing, AI Speaking Practice & deep diagnostics
+                </p>
+              </div>
+            </div>
+            <Button onClick={onUpgrade} className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white">
+              <Crown className="mr-2 h-4 w-4" />
+              Upgrade to Premium
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (tier === 'premium') {
+    return null
+  }
+
+  // Free tier
   return (
     <Card className="mb-6 border-2 border-orange-400/50 bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20">
       <CardContent className="pt-4">
@@ -82,16 +143,20 @@ function SubscriptionBanner({ user, onUpgrade, subscriptionInfo }) {
             </div>
             <div>
               <p className="font-semibold">
-                Free Plan: {testsRemaining} of {maxTests} tests remaining this month
+                Free Plan: {testsRemaining}/{maxTests} mock test{maxTests !== 1 ? 's' : ''}
+                {writingRemaining != null && !unlimited(writingMax) && (
+                  <span> · {writingRemaining}/{writingMax} AI writing evals</span>
+                )}
+                <span className="text-muted-foreground font-normal"> remaining this cycle</span>
               </p>
               <p className="text-sm text-muted-foreground">
-                Upgrade to Premium for unlimited tests, AI evaluations & detailed analytics
+                Upgrade for unlimited mock tests, more AI evaluations & detailed analytics
               </p>
             </div>
           </div>
           <Button onClick={onUpgrade} className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white">
             <Crown className="mr-2 h-4 w-4" />
-            Upgrade - $9/mo
+            Upgrade - from $9/mo
           </Button>
         </div>
       </CardContent>
@@ -157,15 +222,14 @@ function SampleAnswerButton({ sampleAnswer, title }) {
   )
 }
 
-// Upgrade Modal Component - Freemium Model
-function UpgradeModal({ isOpen, onClose, token, onUpgradeSuccess }) {
-  const [upgrading, setUpgrading] = useState(false)
+// Upgrade Modal Component - 3-Tier Model (Standard / Premium)
+function UpgradeModal({ isOpen, onClose, token, onUpgradeSuccess, reason }) {
+  const [upgrading, setUpgrading] = useState(null) // priceKey being processed
   const [billingCycle, setBillingCycle] = useState('monthly') // 'monthly' or 'yearly'
   const router = useRouter()
-  
+
   const handleStripeCheckout = async (priceKey) => {
-    setUpgrading(true)
-    
+    setUpgrading(priceKey)
     try {
       const res = await fetch('/api/stripe/create-checkout', {
         method: 'POST',
@@ -175,37 +239,67 @@ function UpgradeModal({ isOpen, onClose, token, onUpgradeSuccess }) {
         },
         body: JSON.stringify({ priceKey })
       })
-      
       const data = await res.json()
-      
       if (res.ok && data.url) {
-        // Redirect to Stripe Checkout
         window.location.href = data.url
       } else {
         throw new Error(data.error || 'Failed to create checkout session')
       }
     } catch (error) {
       toast.error(error.message)
-      setUpgrading(false)
+      setUpgrading(null)
     }
   }
 
-  const monthlyPrice = 9
-  const yearlyPrice = 70
-  const savingsPercent = Math.round((1 - (yearlyPrice / (monthlyPrice * 12))) * 100)
-  
   if (!isOpen) return null
-  
+
+  const plans = [
+    {
+      tier: 'standard',
+      name: 'Standard',
+      monthly: 9,
+      yearly: 79,
+      priceKey: billingCycle === 'monthly' ? 'standard_monthly' : 'standard_yearly',
+      tagline: 'Best for consistent progress',
+      features: [
+        { text: 'Unlimited mock tests (Reading/Listening)', included: true },
+        { text: '15 AI writing evaluations / month', included: true },
+        { text: 'Full performance trends', included: true },
+        { text: 'Ad-free experience', included: true },
+        { text: 'AI Speaking Practice', included: false },
+        { text: 'Deep diagnostics + custom drills', included: false },
+      ],
+      popular: false,
+    },
+    {
+      tier: 'premium',
+      name: 'Premium',
+      monthly: 34,
+      yearly: 249,
+      priceKey: billingCycle === 'monthly' ? 'premium_monthly' : 'premium_yearly',
+      tagline: 'For aggressive, condensed timelines',
+      features: [
+        { text: 'Everything in Standard', included: true },
+        { text: 'Unlimited AI writing evaluations', included: true },
+        { text: 'AI Speaking Practice (Coming Soon)', included: true },
+        { text: 'Deep diagnostics + custom AI drills', included: true },
+        { text: 'Priority fast LLM queue', included: true },
+        { text: 'Priority support', included: true },
+      ],
+      popular: true,
+    },
+  ]
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <Card className="w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+      <Card className="w-full max-w-3xl mx-4 max-h-[92vh] overflow-y-auto">
         <CardHeader className="text-center pb-2">
           <CardTitle className="flex items-center justify-center gap-2 text-2xl">
             <Crown className="h-7 w-7 text-orange-500" />
-            Upgrade to Premium
+            Choose Your Plan
           </CardTitle>
           <CardDescription>
-            Unlock unlimited practice and detailed analytics
+            {reason || 'Upgrade to unlock more practice, AI feedback, and analytics'}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
@@ -215,8 +309,8 @@ function UpgradeModal({ isOpen, onClose, token, onUpgradeSuccess }) {
               <button
                 onClick={() => setBillingCycle('monthly')}
                 className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                  billingCycle === 'monthly' 
-                    ? 'bg-background text-foreground shadow-sm' 
+                  billingCycle === 'monthly'
+                    ? 'bg-background text-foreground shadow-sm'
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
@@ -225,90 +319,77 @@ function UpgradeModal({ isOpen, onClose, token, onUpgradeSuccess }) {
               <button
                 onClick={() => setBillingCycle('yearly')}
                 className={`px-4 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-1 ${
-                  billingCycle === 'yearly' 
-                    ? 'bg-background text-foreground shadow-sm' 
+                  billingCycle === 'yearly'
+                    ? 'bg-background text-foreground shadow-sm'
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
                 Yearly
                 <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-xs">
-                  Save {savingsPercent}%
+                  Save
                 </Badge>
               </button>
             </div>
           </div>
 
-          {/* Price Display */}
-          <div className="text-center py-4">
-            {billingCycle === 'monthly' ? (
-              <div>
-                <span className="text-5xl font-bold">${monthlyPrice}</span>
-                <span className="text-muted-foreground text-lg">/month</span>
-              </div>
-            ) : (
-              <div>
-                <span className="text-5xl font-bold">${yearlyPrice}</span>
-                <span className="text-muted-foreground text-lg">/year</span>
-                <p className="text-sm text-green-600 dark:text-green-400 mt-1">
-                  Just ${(yearlyPrice / 12).toFixed(2)}/month
-                </p>
-              </div>
-            )}
+          {/* Plan cards */}
+          <div className="grid sm:grid-cols-2 gap-4">
+            {plans.map((plan) => {
+              const price = billingCycle === 'monthly' ? plan.monthly : plan.yearly
+              const isProcessing = upgrading === plan.priceKey
+              return (
+                <div
+                  key={plan.tier}
+                  className={`rounded-xl border p-5 flex flex-col ${
+                    plan.popular
+                      ? 'border-2 border-orange-400 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20'
+                      : 'border-border'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <h3 className={`text-lg font-bold ${plan.popular ? 'text-orange-600 dark:text-orange-400' : ''}`}>{plan.name}</h3>
+                    {plan.popular && (
+                      <Badge className="bg-orange-500 text-white">Recommended</Badge>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">{plan.tagline}</p>
+                  <div className="mt-3">
+                    <span className="text-4xl font-bold">${price}</span>
+                    <span className="text-muted-foreground text-sm">/{billingCycle === 'monthly' ? 'mo' : 'yr'}</span>
+                  </div>
+                  <ul className="space-y-2 text-sm mt-4 flex-1">
+                    {plan.features.map((f, i) => (
+                      <li key={i} className={`flex items-start gap-2 ${f.included ? '' : 'text-muted-foreground'}`}>
+                        {f.included ? (
+                          <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
+                        ) : (
+                          <X className="h-4 w-4 text-muted-foreground/60 flex-shrink-0 mt-0.5" />
+                        )}
+                        <span>{f.text}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <Button
+                    className={`w-full h-11 mt-5 ${
+                      plan.popular
+                        ? 'bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white'
+                        : ''
+                    }`}
+                    variant={plan.popular ? 'default' : 'outline'}
+                    onClick={() => handleStripeCheckout(plan.priceKey)}
+                    disabled={!!upgrading}
+                  >
+                    {isProcessing ? (
+                      <><span className="animate-spin mr-2">⏳</span>Redirecting...</>
+                    ) : (
+                      <>{plan.popular && <Crown className="mr-2 h-4 w-4" />}Choose {plan.name}</>
+                    )}
+                  </Button>
+                </div>
+              )
+            })}
           </div>
-          
-          {/* Premium Features */}
-          <div className="bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20 rounded-lg p-4 border border-orange-200 dark:border-orange-800">
-            <p className="font-medium text-sm mb-3">Everything in Free, plus:</p>
-            <ul className="space-y-2.5 text-sm">
-              <li className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
-                <span><strong>Unlimited</strong> practice tests</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
-                <span><strong>Unlimited</strong> AI writing evaluations</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
-                <span>Full analytics & detailed reports</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
-                <span>Performance trends over time</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
-                <span>Weak areas analysis</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
-                <span>Download/export results</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
-                <span>Priority support & ad-free</span>
-              </li>
-            </ul>
-          </div>
-          
-          <Button 
-            className="w-full h-12 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-medium"
-            onClick={() => handleStripeCheckout(billingCycle === 'monthly' ? 'premium_monthly' : 'premium_yearly')}
-            disabled={upgrading}
-          >
-            {upgrading ? (
-              <>
-                <span className="animate-spin mr-2">⏳</span>
-                Redirecting to checkout...
-              </>
-            ) : (
-              <>
-                <Crown className="mr-2 h-5 w-5" />
-                Upgrade to Premium
-              </>
-            )}
-          </Button>
-          
+
           <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
             <span className="flex items-center gap-1">
               <Shield className="h-3 w-3" />
@@ -317,7 +398,7 @@ function UpgradeModal({ isOpen, onClose, token, onUpgradeSuccess }) {
             <span>•</span>
             <span>Cancel anytime</span>
           </div>
-          
+
           <div className="flex gap-2">
             <Button variant="outline" className="flex-1" onClick={() => router.push('/pricing')}>
               View Full Comparison

@@ -4,60 +4,106 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Cookies from 'js-cookie'
-import { 
-  Check, 
-  X, 
-  Crown, 
-  Sparkles, 
-  Shield, 
+import {
+  Check,
+  X,
+  Crown,
+  Sparkles,
+  Shield,
   ArrowLeft,
-  MessageCircle,
-  Zap,
-  BarChart3,
-  Download,
-  TrendingUp,
-  Target,
-  HeadphonesIcon,
-  BookOpen,
-  FileText,
   Mic,
-  PenTool
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 
+const PLANS = [
+  {
+    tier: 'free',
+    name: 'Free',
+    monthly: 0,
+    yearly: 0,
+    description: 'Build a study habit',
+    cta: 'Start Free',
+    popular: false,
+    features: [
+      { text: '1 mock test per 30 days', included: true },
+      { text: '2 AI writing evaluations / 30 days', included: true },
+      { text: 'Daily grammar (current day)', included: true },
+      { text: 'TEF & TCF test types', included: true },
+      { text: 'Unlimited mock tests', included: false },
+      { text: 'AI Speaking Practice', included: false },
+      { text: 'Deep diagnostics', included: false },
+    ],
+  },
+  {
+    tier: 'standard',
+    name: 'Standard',
+    monthly: 9,
+    yearly: 79,
+    description: 'Best for consistent progress',
+    cta: 'Choose Standard',
+    popular: false,
+    features: [
+      { text: 'Unlimited mock tests (Read/Listen)', included: true },
+      { text: '15 AI writing evaluations / month', included: true },
+      { text: 'Full performance trends', included: true },
+      { text: 'Grammar & vocab archives', included: true },
+      { text: 'Ad-free experience', included: true },
+      { text: 'AI Speaking Practice', included: false },
+      { text: 'Deep diagnostics + custom drills', included: false },
+    ],
+  },
+  {
+    tier: 'premium',
+    name: 'Premium',
+    monthly: 34,
+    yearly: 249,
+    description: 'For aggressive, condensed timelines',
+    cta: 'Choose Premium',
+    popular: true,
+    features: [
+      { text: 'Everything in Standard', included: true },
+      { text: 'Unlimited AI writing evaluations', included: true },
+      { text: 'AI Speaking Practice (Coming Soon)', included: true },
+      { text: 'Deep diagnostics + custom AI drills', included: true },
+      { text: 'Priority fast LLM queue', included: true },
+      { text: 'Priority support', included: true },
+    ],
+  },
+]
+
 export default function PricingPage() {
   const router = useRouter()
   const [billingCycle, setBillingCycle] = useState('monthly')
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(null) // tier being processed
 
-  const handleUpgrade = async () => {
+  const handleSelect = async (plan) => {
+    if (plan.tier === 'free') {
+      router.push('/dashboard')
+      return
+    }
+
     const token = Cookies.get('token')
-    
     if (!token) {
       toast.error('Please sign in to upgrade')
       router.push('/dashboard')
       return
     }
 
-    setLoading(true)
-    
+    setLoading(plan.tier)
     try {
-      const priceKey = billingCycle === 'monthly' ? 'premium_monthly' : 'premium_yearly'
-      
+      const priceKey = `${plan.tier}_${billingCycle === 'monthly' ? 'monthly' : 'yearly'}`
       const res = await fetch('/api/stripe/create-checkout', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({ priceKey })
+        body: JSON.stringify({ priceKey }),
       })
-      
       const data = await res.json()
-      
       if (res.ok && data.url) {
         window.location.href = data.url
       } else {
@@ -65,14 +111,9 @@ export default function PricingPage() {
       }
     } catch (error) {
       toast.error(error.message)
-      setLoading(false)
+      setLoading(null)
     }
   }
-
-  const monthlyPrice = 9
-  const yearlyPrice = 70
-  const yearlyMonthlyEquivalent = (yearlyPrice / 12).toFixed(2)
-  const savingsPercent = Math.round((1 - (yearlyPrice / (monthlyPrice * 12))) * 100)
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/30">
@@ -83,7 +124,7 @@ export default function PricingPage() {
             <ArrowLeft className="h-5 w-5" />
             <span className="hidden sm:inline">Back to Dashboard</span>
           </Link>
-          <Link href="https://clbfrench.ravijha.co/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+          <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
               <span className="text-white text-lg">🇫🇷</span>
             </div>
@@ -94,346 +135,118 @@ export default function PricingPage() {
       </header>
 
       <main className="max-w-5xl mx-auto px-4 py-12">
-        {/* Hero Section */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">
-            Pricing Plans
-          </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Start practicing for free, then upgrade to Premium for unlimited access. Cancel anytime.
+        {/* Hero */}
+        <div className="text-center mb-10">
+          <h1 className="text-4xl md:text-5xl font-bold mb-4">Pricing Plans</h1>
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            Start free, then choose the plan that fits your timeline. Cancel anytime.
           </p>
         </div>
 
-        {/* Billing Toggle */}
-        <div className="flex justify-center mb-10">
-          <div className="inline-flex items-center bg-muted p-1.5 rounded-full">
+        {/* Billing toggle */}
+        <div className="flex items-center justify-center mb-10">
+          <div className="inline-flex items-center bg-muted p-1 rounded-full">
             <button
               onClick={() => setBillingCycle('monthly')}
-              className={`px-6 py-2.5 rounded-full text-sm font-medium transition-all ${
-                billingCycle === 'monthly'
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
+              className={`px-5 py-2 rounded-full text-sm font-medium transition-all ${
+                billingCycle === 'monthly' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              Monthly billing
+              Monthly
             </button>
             <button
               onClick={() => setBillingCycle('yearly')}
-              className={`px-6 py-2.5 rounded-full text-sm font-medium transition-all flex items-center gap-2 ${
-                billingCycle === 'yearly'
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
+              className={`px-5 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-2 ${
+                billingCycle === 'yearly' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              Yearly billing
-              {billingCycle !== 'yearly' && (
-                <Badge className="bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
-                  Save {savingsPercent}%
-                </Badge>
-              )}
+              Annual
+              <Badge className="bg-green-100 text-green-700 text-xs">Save 25%+</Badge>
             </button>
           </div>
         </div>
 
-        {/* Pricing Cards */}
-        <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto mb-16">
-          {/* Free Tier */}
-          <Card className="relative overflow-hidden border-2 hover:border-muted-foreground/30 transition-colors">
-            <CardContent className="p-8">
-              <div className="mb-6">
-                <h2 className="text-2xl font-semibold text-muted-foreground mb-2">Free</h2>
-                <p className="text-muted-foreground text-sm">Perfect for getting started.</p>
-              </div>
-              
-              <div className="mb-6">
-                <div className="flex items-baseline gap-1">
-                  <span className="text-5xl font-bold">$0</span>
-                  <span className="text-muted-foreground">/month</span>
-                </div>
-              </div>
-
-              <Button 
-                variant="outline" 
-                className="w-full mb-8 h-12"
-                onClick={() => router.push('/dashboard')}
+        {/* Plans */}
+        <div className="grid md:grid-cols-3 gap-6 items-start">
+          {PLANS.map((plan) => {
+            const price = billingCycle === 'monthly' ? plan.monthly : plan.yearly
+            const period = plan.monthly === 0 ? '/forever' : (billingCycle === 'monthly' ? '/mo' : '/yr')
+            const isProcessing = loading === plan.tier
+            return (
+              <Card
+                key={plan.tier}
+                className={`relative flex flex-col ${
+                  plan.popular
+                    ? 'border-2 border-orange-400 shadow-xl bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20'
+                    : 'border shadow-lg'
+                }`}
               >
-                Get Started Free
-              </Button>
-
-              <div className="space-y-4">
-                <p className="font-medium text-sm">What's included</p>
-                <ul className="space-y-3">
-                  <li className="flex items-start gap-3 text-sm">
-                    <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                    <span>3 practice tests per month (all sections)</span>
-                  </li>
-                  <li className="flex items-start gap-3 text-sm">
-                    <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                    <span>Access to TEF & TCF test types</span>
-                  </li>
-                  <li className="flex items-start gap-3 text-sm">
-                    <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                    <span>6 AI writing evaluations per month</span>
-                  </li>
-                  <li className="flex items-start gap-3 text-sm">
-                    <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                    <span>View last 3 test results</span>
-                  </li>
-                  <li className="flex items-start gap-3 text-sm">
-                    <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                    <span>Daily grammar lessons & vocabulary</span>
-                  </li>
-                  <li className="flex items-start gap-3 text-sm">
-                    <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                    <span>Basic progress tracking</span>
-                  </li>
-                </ul>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Premium Tier */}
-          <Card className="relative overflow-hidden border-2 border-orange-400 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20">
-            {/* Popular Badge */}
-            <div className="absolute top-4 right-4">
-              <Badge className="bg-orange-500 text-white">Most Popular</Badge>
-            </div>
-            
-            <CardContent className="p-8">
-              <div className="mb-6">
-                <h2 className="text-2xl font-semibold text-orange-600 dark:text-orange-400 mb-2">Premium</h2>
-                <p className="text-muted-foreground text-sm">Practice as much as you want.</p>
-              </div>
-              
-              <div className="mb-6">
-                {billingCycle === 'monthly' ? (
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-5xl font-bold">${monthlyPrice}</span>
-                    <span className="text-muted-foreground">/month</span>
-                  </div>
-                ) : (
-                  <div>
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-5xl font-bold">${yearlyPrice}</span>
-                      <span className="text-muted-foreground">/year</span>
-                    </div>
-                    <p className="text-sm text-green-600 dark:text-green-400 mt-1">
-                      ${yearlyMonthlyEquivalent}/month · Save ${(monthlyPrice * 12) - yearlyPrice}/year
-                    </p>
+                {plan.popular && (
+                  <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+                    <Badge className="bg-orange-500 text-white px-4 py-1">Recommended</Badge>
                   </div>
                 )}
-              </div>
+                <CardContent className="p-6 flex flex-col flex-1">
+                  <div className="text-center mb-4">
+                    <h2 className={`text-2xl font-bold ${plan.popular ? 'text-orange-600 dark:text-orange-400' : ''}`}>{plan.name}</h2>
+                    <p className="text-sm text-muted-foreground mt-1">{plan.description}</p>
+                  </div>
 
-              <Button 
-                className="w-full mb-8 h-12 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white"
-                onClick={handleUpgrade}
-                disabled={loading}
-              >
-                {loading ? (
-                  <>
-                    <span className="animate-spin mr-2">⏳</span>
-                    Redirecting...
-                  </>
-                ) : (
-                  <>
-                    <Crown className="mr-2 h-5 w-5" />
-                    Upgrade to Premium
-                  </>
-                )}
-              </Button>
+                  <div className="text-center mb-6">
+                    <span className="text-5xl font-bold">${price}</span>
+                    <span className="text-muted-foreground">{period}</span>
+                    {billingCycle === 'yearly' && plan.monthly > 0 && (
+                      <p className="text-sm text-green-600 dark:text-green-400 mt-1">
+                        ≈ ${(plan.yearly / 12).toFixed(2)}/month
+                      </p>
+                    )}
+                  </div>
 
-              <div className="space-y-4">
-                <p className="font-medium text-sm">Everything in Free, plus</p>
-                <ul className="space-y-3">
-                  <li className="flex items-start gap-3 text-sm">
-                    <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                    <span><strong>Unlimited</strong> practice tests</span>
-                  </li>
-                  <li className="flex items-start gap-3 text-sm">
-                    <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                    <span><strong>Unlimited</strong> AI writing evaluations</span>
-                  </li>
-                  <li className="flex items-start gap-3 text-sm">
-                    <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                    <span>Full analytics & detailed reports</span>
-                  </li>
-                  <li className="flex items-start gap-3 text-sm">
-                    <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                    <span>Performance trends over time</span>
-                  </li>
-                  <li className="flex items-start gap-3 text-sm">
-                    <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                    <span>Weak areas analysis</span>
-                  </li>
-                  <li className="flex items-start gap-3 text-sm">
-                    <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                    <span>Download/export test results</span>
-                  </li>
-                  <li className="flex items-start gap-3 text-sm">
-                    <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                    <span>Priority support</span>
-                  </li>
-                  <li className="flex items-start gap-3 text-sm">
-                    <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                    <span>Ad-free experience</span>
-                  </li>
-                </ul>
-              </div>
-            </CardContent>
-          </Card>
+                  <Button
+                    className={`w-full mb-6 ${plan.popular ? 'bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white' : ''}`}
+                    variant={plan.popular ? 'default' : 'outline'}
+                    onClick={() => handleSelect(plan)}
+                    disabled={!!loading}
+                  >
+                    {isProcessing ? (
+                      <><span className="animate-spin mr-2">⏳</span>Redirecting...</>
+                    ) : (
+                      <>
+                        {plan.popular && <Crown className="mr-2 h-4 w-4" />}
+                        {plan.cta}
+                      </>
+                    )}
+                  </Button>
+
+                  <ul className="space-y-3 text-left flex-1">
+                    {plan.features.map((f, i) => (
+                      <li key={i} className={`flex items-start gap-2 text-sm ${f.included ? '' : 'opacity-50'}`}>
+                        {f.included ? (
+                          <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                        ) : (
+                          <X className="h-5 w-5 text-gray-400 flex-shrink-0 mt-0.5" />
+                        )}
+                        <span className={f.included ? '' : 'line-through'}>{f.text}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            )
+          })}
         </div>
 
-        {/* Enterprise Section */}
-        <Card className="max-w-4xl mx-auto mb-16 bg-gradient-to-r from-slate-50 to-gray-50 dark:from-slate-950/50 dark:to-gray-950/50">
-          <CardContent className="p-8">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-              <div>
-                <h2 className="text-2xl font-semibold mb-2">Large Groups</h2>
-                <p className="text-muted-foreground">
-                  CLB French Trainer for organizations with 50+ users. Custom pricing available.
-                </p>
-              </div>
-              <Button 
-                variant="outline" 
-                size="lg" 
-                className="whitespace-nowrap"
-                onClick={() => window.open('https://m.me/ravijha01', '_blank')}
-              >
-                <MessageCircle className="mr-2 h-4 w-4" />
-                Contact Us
-              </Button>
-            </div>
-            <div className="mt-6 pt-6 border-t">
-              <p className="font-medium text-sm mb-3">What's included</p>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="flex items-center gap-2 text-sm">
-                  <Check className="h-4 w-4 text-green-500" />
-                  <span>Everything in Premium</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Check className="h-4 w-4 text-green-500" />
-                  <span>Team management</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Check className="h-4 w-4 text-green-500" />
-                  <span>Priority support</span>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Feature Comparison */}
-        <div className="max-w-4xl mx-auto mb-16">
-          <h2 className="text-2xl font-bold text-center mb-8">Compare Plans</h2>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left py-4 px-4 font-medium">Feature</th>
-                  <th className="text-center py-4 px-4 font-medium">Free</th>
-                  <th className="text-center py-4 px-4 font-medium text-orange-600">Premium</th>
-                </tr>
-              </thead>
-              <tbody className="text-sm">
-                <tr className="border-b">
-                  <td className="py-4 px-4 flex items-center gap-2">
-                    <FileText className="h-4 w-4 text-muted-foreground" />
-                    Practice Tests
-                  </td>
-                  <td className="py-4 px-4 text-center">3/month</td>
-                  <td className="py-4 px-4 text-center font-medium text-orange-600">Unlimited</td>
-                </tr>
-                <tr className="border-b">
-                  <td className="py-4 px-4 flex items-center gap-2">
-                    <PenTool className="h-4 w-4 text-muted-foreground" />
-                    AI Writing Evaluation
-                  </td>
-                  <td className="py-4 px-4 text-center">6/month</td>
-                  <td className="py-4 px-4 text-center font-medium text-orange-600">Unlimited</td>
-                </tr>
-                <tr className="border-b">
-                  <td className="py-4 px-4 flex items-center gap-2">
-                    <BarChart3 className="h-4 w-4 text-muted-foreground" />
-                    Test History
-                  </td>
-                  <td className="py-4 px-4 text-center">Last 3</td>
-                  <td className="py-4 px-4 text-center font-medium text-orange-600">Unlimited</td>
-                </tr>
-                <tr className="border-b">
-                  <td className="py-4 px-4 flex items-center gap-2">
-                    <BookOpen className="h-4 w-4 text-muted-foreground" />
-                    Daily Grammar & Vocabulary
-                  </td>
-                  <td className="py-4 px-4 text-center"><Check className="h-5 w-5 text-green-500 mx-auto" /></td>
-                  <td className="py-4 px-4 text-center"><Check className="h-5 w-5 text-green-500 mx-auto" /></td>
-                </tr>
-                <tr className="border-b">
-                  <td className="py-4 px-4 flex items-center gap-2">
-                    <Target className="h-4 w-4 text-muted-foreground" />
-                    Full Analytics & Reports
-                  </td>
-                  <td className="py-4 px-4 text-center"><X className="h-5 w-5 text-muted-foreground/40 mx-auto" /></td>
-                  <td className="py-4 px-4 text-center"><Check className="h-5 w-5 text-green-500 mx-auto" /></td>
-                </tr>
-                <tr className="border-b">
-                  <td className="py-4 px-4 flex items-center gap-2">
-                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                    Performance Trends
-                  </td>
-                  <td className="py-4 px-4 text-center"><X className="h-5 w-5 text-muted-foreground/40 mx-auto" /></td>
-                  <td className="py-4 px-4 text-center"><Check className="h-5 w-5 text-green-500 mx-auto" /></td>
-                </tr>
-                <tr className="border-b">
-                  <td className="py-4 px-4 flex items-center gap-2">
-                    <Download className="h-4 w-4 text-muted-foreground" />
-                    Download Results
-                  </td>
-                  <td className="py-4 px-4 text-center"><X className="h-5 w-5 text-muted-foreground/40 mx-auto" /></td>
-                  <td className="py-4 px-4 text-center"><Check className="h-5 w-5 text-green-500 mx-auto" /></td>
-                </tr>
-                <tr className="border-b">
-                  <td className="py-4 px-4 flex items-center gap-2">
-                    <HeadphonesIcon className="h-4 w-4 text-muted-foreground" />
-                    Priority Support
-                  </td>
-                  <td className="py-4 px-4 text-center"><X className="h-5 w-5 text-muted-foreground/40 mx-auto" /></td>
-                  <td className="py-4 px-4 text-center"><Check className="h-5 w-5 text-green-500 mx-auto" /></td>
-                </tr>
-                <tr>
-                  <td className="py-4 px-4 flex items-center gap-2">
-                    <Zap className="h-4 w-4 text-muted-foreground" />
-                    Ad-free Experience
-                  </td>
-                  <td className="py-4 px-4 text-center"><X className="h-5 w-5 text-muted-foreground/40 mx-auto" /></td>
-                  <td className="py-4 px-4 text-center"><Check className="h-5 w-5 text-green-500 mx-auto" /></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+        {/* Trust row */}
+        <div className="flex items-center justify-center gap-6 text-sm text-muted-foreground mt-12 flex-wrap">
+          <span className="flex items-center gap-2"><Shield className="h-4 w-4" /> Secure payment via Stripe</span>
+          <span className="flex items-center gap-2"><Sparkles className="h-4 w-4" /> Cancel anytime</span>
+          <span className="flex items-center gap-2"><Mic className="h-4 w-4" /> AI Speaking launching soon (Premium)</span>
         </div>
 
-        {/* Trust Indicators */}
-        <div className="text-center text-sm text-muted-foreground">
-          <div className="flex items-center justify-center gap-6 flex-wrap">
-            <span className="flex items-center gap-2">
-              <Shield className="h-4 w-4" />
-              Secure payment via Stripe
-            </span>
-            <span>•</span>
-            <span>Cancel anytime</span>
-            <span>•</span>
-            <span>No hidden fees</span>
-          </div>
-        </div>
+        <p className="text-center text-muted-foreground mt-8 text-sm">
+          All plans include access to our mobile-friendly platform.
+        </p>
       </main>
-
-      {/* Footer */}
-      <footer className="border-t mt-16 py-8">
-        <div className="max-w-6xl mx-auto px-4 text-center text-sm text-muted-foreground">
-          <p>© 2025 CLB French Trainer. All rights reserved.</p>
-        </div>
-      </footer>
     </div>
   )
 }

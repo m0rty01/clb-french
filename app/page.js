@@ -174,50 +174,63 @@ function ExitIntentPopup({ isOpen, onClose, onSubmit }) {
   )
 }
 
-// Pricing plans - Freemium Model
+// Pricing plans - 3-Tier Model
 const pricingPlans = [
   {
     name: "Free",
-    price: "$0",
-    period: "/month",
+    monthlyPrice: 0,
+    yearlyPrice: 0,
     description: "Perfect for getting started",
     features: [
-      "3 practice tests per month (all sections)",
+      "1 mock test per 30 days (Reading/Listening)",
+      "2 AI writing evaluations per 30 days",
+      "Daily grammar lesson (current day)",
       "Access to TEF & TCF test types",
-      "6 AI writing evaluations per month",
-      "View last 3 test results",
-      "Daily grammar lessons & vocabulary",
       "Basic progress tracking"
     ],
     notIncluded: [
-      "Unlimited practice tests",
-      "Unlimited AI evaluations",
-      "Full analytics & reports",
-      "Download results",
-      "Priority support"
+      "Unlimited mock tests",
+      "Full performance analytics",
+      "AI Speaking Practice"
     ],
     cta: "Start Free",
     popular: false
   },
   {
-    name: "Premium",
-    price: "$9",
-    period: "/month",
-    yearlyPrice: "$70/year",
-    yearlySavings: "Save 35%",
-    description: "Unlimited practice & analytics",
+    name: "Standard",
+    monthlyPrice: 9,
+    yearlyPrice: 79,
+    description: "Best for consistent progress",
     features: [
-      "✨ Unlimited practice tests",
-      "✨ Unlimited AI writing evaluations",
-      "📊 Full analytics & detailed reports",
-      "📈 Performance trends over time",
-      "🎯 Weak areas analysis",
-      "💾 Download/export test results",
-      "🎧 Priority support",
+      "✨ Unlimited mock tests (Reading/Listening)",
+      "✨ 15 AI writing evaluations per month",
+      "📊 Full performance trends & archives",
+      "📚 Grammar & vocab archives",
       "🚫 Ad-free experience"
     ],
+    notIncluded: [
+      "AI Speaking Practice",
+      "Unlimited AI writing",
+      "Deep diagnostics & custom drills"
+    ],
+    cta: "Choose Standard",
+    popular: false
+  },
+  {
+    name: "Premium",
+    monthlyPrice: 34,
+    yearlyPrice: 249,
+    description: "For aggressive, condensed timelines",
+    features: [
+      "✨ Everything in Standard",
+      "✨ Unlimited AI writing evaluations",
+      "🎙️ AI Speaking Practice (Coming Soon)",
+      "🧠 Deep diagnostics + custom AI drills",
+      "⚡ Priority fast LLM queue",
+      "🎧 Priority support"
+    ],
     notIncluded: [],
-    cta: "Upgrade to Premium",
+    cta: "Choose Premium",
     popular: true
   }
 ]
@@ -295,6 +308,7 @@ export default function HomePage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [showExitPopup, setShowExitPopup] = useState(false)
   const [hasShownPopup, setHasShownPopup] = useState(false)
+  const [pricingCycle, setPricingCycle] = useState('monthly') // 'monthly' | 'yearly'
   
   // Exit intent detection
   useEffect(() => {
@@ -561,21 +575,47 @@ export default function HomePage() {
       {/* Pricing Section */}
       <section id="pricing" className="py-20 bg-gradient-to-b from-background to-muted/30">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
+          <div className="text-center mb-10">
             <Badge className="mb-4 bg-orange-100 text-orange-700">Pricing</Badge>
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
               Simple, Transparent Pricing
             </h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Start practicing for free, then upgrade to Premium for unlimited access. Cancel anytime.
+              Start free, then pick the plan that matches your timeline. Cancel anytime.
             </p>
             <p className="text-sm text-muted-foreground mt-2">
               🎉 No credit card required to start!
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            {pricingPlans.map((plan, index) => (
+          {/* Billing cycle toggle */}
+          <div className="flex items-center justify-center mb-10">
+            <div className="inline-flex items-center bg-muted p-1 rounded-full">
+              <button
+                onClick={() => setPricingCycle('monthly')}
+                className={`px-5 py-2 rounded-full text-sm font-medium transition-all ${
+                  pricingCycle === 'monthly' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                Monthly
+              </button>
+              <button
+                onClick={() => setPricingCycle('yearly')}
+                className={`px-5 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-2 ${
+                  pricingCycle === 'yearly' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                Annual
+                <Badge className="bg-green-100 text-green-700 text-xs">Save 25%+</Badge>
+              </button>
+            </div>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto items-start">
+            {pricingPlans.map((plan, index) => {
+              const price = pricingCycle === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice
+              const period = plan.monthlyPrice === 0 ? '/forever' : (pricingCycle === 'monthly' ? '/mo' : '/yr')
+              return (
               <Card 
                 key={index} 
                 className={`relative ${plan.popular ? 'border-2 border-orange-400 shadow-xl bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20' : 'border shadow-lg'}`}
@@ -592,12 +632,13 @@ export default function HomePage() {
                 <CardContent className="text-center">
                   {/* Price */}
                   <div className="mb-6">
-                    <span className="text-5xl font-bold">{plan.price}</span>
-                    <span className="text-muted-foreground">{plan.period}</span>
-                    {plan.yearlyPrice && (
+                    <span className="text-5xl font-bold">${price}</span>
+                    <span className="text-muted-foreground">{period}</span>
+                    {pricingCycle === 'yearly' && plan.monthlyPrice > 0 && (
                       <div className="mt-2">
-                        <p className="text-sm text-muted-foreground">{plan.yearlyPrice}</p>
-                        <Badge variant="secondary" className="mt-1 bg-green-100 text-green-700">{plan.yearlySavings}</Badge>
+                        <p className="text-sm text-green-600 dark:text-green-400">
+                          ≈ ${(plan.yearlyPrice / 12).toFixed(2)}/month
+                        </p>
                       </div>
                     )}
                   </div>
@@ -629,7 +670,8 @@ export default function HomePage() {
                   </div>
                 </CardContent>
               </Card>
-            ))}
+              )
+            })}
           </div>
 
           {/* Pricing Comparison Note */}
