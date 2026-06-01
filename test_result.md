@@ -493,6 +493,21 @@ frontend:
         agent: "main"
         comment: "Handles URL params from Stripe redirect (payment=success&tier=X or payment=cancelled). Shows toast notifications and refreshes user data."
 
+  - task: "3-Tier Pricing UI (landing + /pricing + dashboard modal/banner)"
+    implemented: true
+    working: true
+    file: "app/page.js, app/pricing/page.js, app/dashboard/page.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Implemented 3-tier pricing UI. Landing pricing section + /pricing page show Free/Standard/Premium with monthly/annual toggle (Standard $9/$79, Premium $34/$249). Dashboard UpgradeModal rewritten to 2-paid-tier comparison (Standard/Premium) with billing toggle + correct priceKeys. SubscriptionBanner handles free (orange, usage counters), standard (blue, upgrade-to-premium), legacy (indigo banner). Screenshot-verified /pricing and landing render correctly. NEEDS UI test: dashboard banner + Upgrade modal open/toggle, /pricing toggle, free-user usage counters display."
+      - working: true
+        agent: "testing"
+        comment: "✅ COMPREHENSIVE 3-TIER PRICING UI TESTING COMPLETE (All tests passed): Tested all UI components as specified in review request. TEST 1 - PUBLIC /pricing PAGE (✅ PASSED): All 3 plan cards visible (Free $0, Standard $9/mo, Premium $34/mo), Premium 'Recommended' badge visible, Premium 'Choose Premium' button VISIBLE with orange gradient styling, Annual toggle works correctly (prices change to Standard $79/yr, Premium $249/yr with '≈ $/month' subtext), Monthly toggle restores prices to $9/$34. TEST 2 - LANDING PAGE PRICING SECTION (✅ PASSED): 3 tiers visible with 'Most Popular' badge on Premium, Premium 'Choose Premium' button VISIBLE with orange gradient styling, monthly/annual toggle functional. TEST 3 - DASHBOARD AS FREE USER (✅ PASSED): Free Plan subscription banner VISIBLE showing usage counters ('Free Plan: 1/1 mock test - 2/2 AI writing evals remaining this cycle'), 'Upgrade - from $9/mo' button VISIBLE with orange gradient styling, Upgrade modal opens correctly showing 2 paid plans (Standard $9/mo and Premium $34/mo with 'Recommended' badge), Monthly/Annual toggle in modal functional (prices change to $79/$249), Both 'Choose Standard' and 'Choose Premium' buttons VISIBLE (Premium has orange gradient), 'View Full Comparison' button present. All UI elements render correctly, no empty/invisible boxes found, billing toggle works on all pages, usage counters display properly. 3-tier subscription model UI is production-ready. NOTE: Did NOT test payment flow (LIVE Stripe keys - followed guardrails)."
+
 metadata:
   created_by: "main_agent"
   version: "1.0"
@@ -500,8 +515,7 @@ metadata:
   run_ui: false
 
 test_plan:
-  current_focus:
-    - "3-Tier Subscription Model - usage limits, gating, /usage, rate limiting, legacy"
+  current_focus: []
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
@@ -525,3 +539,5 @@ agent_communication:
     message: "✅ STRIPE WEBHOOK & RECONCILIATION TESTING COMPLETE (14/14 tests passed - 100% success): Comprehensive testing of hardened Stripe webhook and reconciliation endpoint completed successfully. WEBHOOK TESTS (8/8 passed): (1) Valid signed checkout.session.completed event → 200 with {received:true}, (2) Invalid signature → 400 (signature verification failure), (3) No signature header → 200 (acknowledged but NOT processed), (4) Malformed body with bogus signature → 400, (5) Malformed body with no signature → 200, (6) Valid signed unhandled event (customer.updated) → 200, (7) Valid signed customer.subscription.deleted → 200, (8) CRITICAL: Webhook NEVER returns 500 - all tests returned 2xx or 400 as expected. RECONCILE TESTS (4/4 passed): (1) No auth → 401 with {error:'Unauthorized'}, (2) Invalid token → 401, (3) Valid token but missing sessionId → 400 with {error:'Missing sessionId'}, (4) Valid token + non-existent sessionId → clean 500 error with Stripe details (NOT a crash). AUTH REGRESSION (2/2 passed): Register and login endpoints still working correctly. All critical requirements verified: webhook returns 400 ONLY on signature failure, webhook never returns 500, reconcile endpoint properly secured with auth, reconcile handles Stripe errors gracefully. Both endpoints are production-ready and fully hardened."
   - agent: "testing"
     message: "✅ 3-TIER SUBSCRIPTION MODEL TESTING COMPLETE (25/25 tests passed - 100% success): Comprehensive testing of Free/Standard/Premium subscription tiers completed successfully. All tier limits, feature gating, rate limiting, and usage tracking verified. GET /api/usage correctly returns tier-specific limits for all tiers (free: 2 writing/1 mock/no speaking, standard: 15 writing/unlimited mock/no speaking, premium: unlimited all/speaking enabled). GET /api/tests/access returns all required subscription fields with correct values. POST /api/ai/speaking properly gates feature (403 FEATURE_LOCKED for free/standard, 200 coming_soon for premium). POST /api/tests/results enforces mock test limits (free: 1st succeeds, 2nd gets 403 LIMIT_REACHED; standard: unlimited). POST /api/writing/evaluate rate limiting working correctly (free: 1/min with 429 on 2nd call, premium: 20/min handles 5 rapid calls). POST /api/stripe/create-checkout accepts all 4 new price keys (standard_monthly, standard_yearly, premium_monthly, premium_yearly) and returns valid Stripe URLs. POST /api/subscription/upgrade accepts standard/premium, rejects invalid tiers. All authentication, validation, and error handling working correctly. 3-tier subscription model is production-ready and fully functional."
+  - agent: "testing"
+    message: "✅ 3-TIER PRICING UI TESTING COMPLETE (All tests passed): Comprehensive UI testing of Free/Standard/Premium pricing across all pages completed successfully. PUBLIC /pricing PAGE: All 3 plan cards visible (Free $0, Standard $9/mo, Premium $34/mo), Premium 'Recommended' badge visible, Premium 'Choose Premium' button VISIBLE with orange gradient styling, Annual toggle works correctly (prices change to $79/$249 with '≈ $/month' subtext), Monthly toggle restores prices. LANDING PAGE: 3 tiers visible with 'Most Popular' badge on Premium, Premium button VISIBLE with orange gradient. DASHBOARD FREE USER: Free Plan banner VISIBLE showing usage counters ('1/1 mock test - 2/2 AI writing evals remaining this cycle'), 'Upgrade - from $9/mo' button VISIBLE with orange gradient, Upgrade modal opens showing 2 paid plans (Standard/Premium), Monthly/Annual toggle functional ($9/$34 → $79/$249), Both 'Choose Standard' and 'Choose Premium' buttons VISIBLE (Premium has orange gradient), 'View Full Comparison' button present. All UI elements render correctly, no empty/invisible boxes, billing toggle works on all pages, usage counters display properly. 3-tier subscription UI is production-ready. Did NOT test payment flow (LIVE Stripe keys)."
