@@ -2120,17 +2120,38 @@ function AppContent() {
     
     // Handle payment success
     if (paymentStatus === 'success' && tier) {
-      toast.success(`🎉 Payment successful! You've been upgraded to ${tier.charAt(0).toUpperCase() + tier.slice(1)}!`, {
-        duration: 5000,
-        description: 'Your new features are now available.'
-      })
-      // Clear URL params
-      router.replace('/dashboard', { scroll: false })
-      // Refresh user data to get new tier
+      const sessionId = searchParams.get('session_id')
       const savedToken = Cookies.get('token')
-      if (savedToken) {
-        fetchUser(savedToken)
+      // Clear URL params immediately
+      router.replace('/dashboard', { scroll: false })
+
+      // Reconcile with Stripe directly so the upgrade applies even if the
+      // webhook was delayed or failed. Falls back to a plain refresh.
+      const finalizeUpgrade = async () => {
+        try {
+          if (sessionId && savedToken) {
+            await fetch('/api/stripe/reconcile', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${savedToken}`
+              },
+              body: JSON.stringify({ sessionId })
+            })
+          }
+        } catch (e) {
+          console.error('Reconcile failed:', e)
+        } finally {
+          toast.success(`🎉 Payment successful! You've been upgraded to ${tier.charAt(0).toUpperCase() + tier.slice(1)}!`, {
+            duration: 5000,
+            description: 'Your new features are now available.'
+          })
+          if (savedToken) {
+            fetchUser(savedToken)
+          }
+        }
       }
+      finalizeUpgrade()
     } else if (paymentStatus === 'cancelled') {
       toast.info('Payment cancelled. You can upgrade anytime!', {
         duration: 4000

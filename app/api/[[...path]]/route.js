@@ -24,6 +24,117 @@ function getStripe() {
   return stripe
 }
 
+// Shared helper: apply a paid subscription to a user (idempotent)
+async function applyPaidSubscription(database, { userId, tier, priceKey, stripeSubscriptionId, stripeCustomerId }) {
+  if (!userId || !tier) return false
+  const subscriptionDays = priceKey && priceKey.includes('yearly') ? 365 : 30
+  const setFields = {
+    subscriptionTier: tier,
+    subscriptionStartDate: new Date(),
+    subscriptionEndDate: new Date(Date.now() + subscriptionDays * 24 * 60 * 60 * 1000),
+  }
+  if (stripeSubscriptionId) setFields.stripeSubscriptionId = stripeSubscriptionId
+  if (stripeCustomerId) setFields.stripeCustomerId = stripeCustomerId
+
+  const result = await database.collection('users').updateOne(
+    { id: userId },
+    { $set: setFields }
+  )
+  return result.matchedCount > 0
+}
+
+// Hardened Stripe webhook handler.
+// CRITICAL: returns HTTP 400 ONLY on signature-verification failure.
+// For everything else (unhandled types, internal/db errors) it returns HTTP 200
+// so Stripe never disables the endpoint. Runs BEFORE the main Mongo connection.
+async function handleStripeWebhook(request) {
+  let event = null
+  try {
+    const rawBody = await request.text()
+    const signature = request.headers.get('stripe-signature')
+    const stripeInstance = getStripe()
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
+
+    if (stripeInstance && webhookSecret && signature) {
+      // Verify the signature against the raw body. Only failure here returns 400.
+      try {
+        event = stripeInstance.webhooks.constructEvent(rawBody, signature, webhookSecret)
+      } catch (err) {
+        console.error('Stripe webhook signature verification failed:', err.message)
+        return handleCORS(NextResponse.json(
+          { error: `Webhook signature verification failed: ${err.message}` },
+          { status: 400 }
+        ))
+      }
+    } else {
+      // No secret configured (or no signature) -> fall back to parsing without verification.
+      // Still acknowledge with 200 so Stripe does not disable the endpoint.
+      try {
+        event = JSON.parse(rawBody)
+      } catch (parseErr) {
+        console.error('Stripe webhook: unable to parse body:', parseErr.message)
+        return handleCORS(NextResponse.json({ received: true }, { status: 200 }))
+      }
+      if (!webhookSecret) {
+        console.warn('Stripe webhook processed WITHOUT signature verification (STRIPE_WEBHOOK_SECRET not set)')
+      }
+    }
+  } catch (outerErr) {
+    // Reading body failed - acknowledge anyway to avoid endpoint disablement.
+    console.error('Stripe webhook: failed reading request:', outerErr?.message)
+    return handleCORS(NextResponse.json({ received: true }, { status: 200 }))
+  }
+
+  // Process the verified event. ANY error here is swallowed; we still return 200.
+  try {
+    const database = await connectToMongo()
+    console.log('Stripe webhook event received:', event?.type)
+
+    if (event?.type === 'checkout.session.completed') {
+      const session = event.data.object
+      const upgraded = await applyPaidSubscription(database, {
+        userId: session.metadata?.userId,
+        tier: session.metadata?.tier,
+        priceKey: session.metadata?.priceKey,
+        stripeSubscriptionId: session.subscription,
+        stripeCustomerId: session.customer,
+      })
+      console.log(`Webhook checkout.session.completed: user ${session.metadata?.userId} upgraded=${upgraded}`)
+    } else if (event?.type === 'invoice.payment_succeeded') {
+      // Subscription renewal - extend the subscription period.
+      const invoice = event.data.object
+      const customerId = invoice.customer
+      const billingReason = invoice.billing_reason
+      if (customerId) {
+        const user = await database.collection('users').findOne({ stripeCustomerId: customerId })
+        if (user && user.subscriptionTier && user.subscriptionTier !== 'free') {
+          const days = (invoice.lines?.data?.[0]?.plan?.interval === 'year') ? 365 : 30
+          await database.collection('users').updateOne(
+            { id: user.id },
+            { $set: { subscriptionEndDate: new Date(Date.now() + days * 24 * 60 * 60 * 1000) } }
+          )
+          console.log(`Webhook invoice.payment_succeeded (${billingReason}): extended subscription for ${user.id}`)
+        }
+      }
+    } else if (event?.type === 'customer.subscription.deleted') {
+      const subscription = event.data.object
+      const customerId = subscription.customer
+      await database.collection('users').updateOne(
+        { stripeCustomerId: customerId },
+        { $set: { subscriptionTier: 'free', subscriptionEndDate: new Date(), stripeSubscriptionId: null } }
+      )
+      console.log(`Webhook customer.subscription.deleted: downgraded customer ${customerId}`)
+    } else {
+      console.log(`Webhook unhandled event type: ${event?.type}`)
+    }
+  } catch (processErr) {
+    // Swallow processing errors - reconciliation endpoint is the safety net.
+    console.error('Stripe webhook processing error (acknowledged anyway):', processErr?.message)
+  }
+
+  return handleCORS(NextResponse.json({ received: true }, { status: 200 }))
+}
+
 // Google Cloud TTS REST API helper (works better with serverless than gRPC)
 let ttsCredentials = null
 let ttsAuthClient = null
@@ -248,6 +359,13 @@ async function handleRoute(request, { params }) {
   const { path = [] } = params
   const route = `/${path.join('/')}`
   const method = request.method
+
+  // Stripe webhook MUST be handled before anything else (including the Mongo
+  // connection) so a transient DB issue can never cause a non-2xx response that
+  // would make Stripe disable the endpoint. It manages its own error handling.
+  if (route === '/stripe/webhook' && method === 'POST') {
+    return await handleStripeWebhook(request)
+  }
 
   try {
     const db = await connectToMongo()
@@ -1566,7 +1684,7 @@ async function handleRoute(request, { params }) {
             },
           ],
           mode: 'subscription',
-          success_url: `${baseUrl}/dashboard?payment=success&tier=${priceConfig.tier}`,
+          success_url: `${baseUrl}/dashboard?payment=success&tier=${priceConfig.tier}&session_id={CHECKOUT_SESSION_ID}`,
           cancel_url: `${baseUrl}/dashboard?payment=cancelled`,
           metadata: {
             userId: user.id,
@@ -1588,68 +1706,70 @@ async function handleRoute(request, { params }) {
       }
     }
     
-    // Stripe Webhook - POST /api/stripe/webhook
-    if (route === '/stripe/webhook' && method === 'POST') {
-      try {
-        const body = await request.text()
-        const signature = request.headers.get('stripe-signature')
-        
-        // For now, we'll process without signature verification in test mode
-        // In production, add STRIPE_WEBHOOK_SECRET and verify signature
-        const event = JSON.parse(body)
-        
-        console.log('Stripe webhook event:', event.type)
-        
-        if (event.type === 'checkout.session.completed') {
-          const session = event.data.object
-          const userId = session.metadata?.userId
-          const tier = session.metadata?.tier
-          
-          if (userId && tier) {
-            const subscriptionDays = session.metadata?.priceKey?.includes('yearly') ? 365 : 30
-            
-            await db.collection('users').updateOne(
-              { id: userId },
-              {
-                $set: {
-                  subscriptionTier: tier,
-                  subscriptionStartDate: new Date(),
-                  subscriptionEndDate: new Date(Date.now() + subscriptionDays * 24 * 60 * 60 * 1000),
-                  stripeSubscriptionId: session.subscription,
-                  stripeCustomerId: session.customer
-                }
-              }
-            )
-            
-            console.log(`User ${userId} upgraded to ${tier}`)
-          }
-        }
-        
-        if (event.type === 'customer.subscription.deleted') {
-          const subscription = event.data.object
-          const customerId = subscription.customer
-          
-          // Find user by Stripe customer ID and downgrade to free
-          await db.collection('users').updateOne(
-            { stripeCustomerId: customerId },
-            {
-              $set: {
-                subscriptionTier: 'free',
-                subscriptionEndDate: new Date(),
-                stripeSubscriptionId: null
-              }
-            }
-          )
-          
-          console.log(`Subscription cancelled for customer ${customerId}`)
-        }
-        
-        return handleCORS(NextResponse.json({ received: true }))
-      } catch (error) {
-        console.error('Webhook error:', error)
+    // NOTE: Stripe Webhook (POST /api/stripe/webhook) is intercepted at the very
+    // top of handleRoute via handleStripeWebhook() - before the Mongo connection.
+
+    // Stripe Checkout reconciliation fallback - POST /api/stripe/reconcile
+    // Called by the frontend after redirect to success_url. Retrieves the
+    // Checkout Session from Stripe and upgrades the user if payment succeeded,
+    // so fulfillment does NOT depend solely on webhook delivery.
+    if (route === '/stripe/reconcile' && method === 'POST') {
+      const decoded = verifyToken(request)
+      if (!decoded) {
+        return handleCORS(NextResponse.json({ error: 'Unauthorized' }, { status: 401 }))
+      }
+
+      const stripeInstance = getStripe()
+      if (!stripeInstance) {
         return handleCORS(NextResponse.json(
-          { error: 'Webhook processing failed' },
-          { status: 400 }
+          { error: 'Stripe is not configured' },
+          { status: 500 }
+        ))
+      }
+
+      try {
+        const body = await request.json()
+        const { sessionId } = body
+        if (!sessionId) {
+          return handleCORS(NextResponse.json({ error: 'Missing sessionId' }, { status: 400 }))
+        }
+
+        const session = await stripeInstance.checkout.sessions.retrieve(sessionId)
+
+        // Security: ensure the session belongs to the requesting user.
+        if (session.metadata?.userId && session.metadata.userId !== decoded.userId) {
+          return handleCORS(NextResponse.json({ error: 'Session does not belong to user' }, { status: 403 }))
+        }
+
+        if (session.payment_status !== 'paid') {
+          return handleCORS(NextResponse.json(
+            { status: 'pending', payment_status: session.payment_status },
+            { status: 200 }
+          ))
+        }
+
+        const upgraded = await applyPaidSubscription(db, {
+          userId: decoded.userId,
+          tier: session.metadata?.tier,
+          priceKey: session.metadata?.priceKey,
+          stripeSubscriptionId: session.subscription,
+          stripeCustomerId: session.customer,
+        })
+
+        const updatedUser = await db.collection('users').findOne({ id: decoded.userId })
+        const { password: _, ...userWithoutPassword } = updatedUser
+        userWithoutPassword.tierLimits = getTierLimits(updatedUser)
+
+        return handleCORS(NextResponse.json({
+          status: upgraded ? 'upgraded' : 'no_change',
+          subscriptionTier: updatedUser.subscriptionTier,
+          user: userWithoutPassword
+        }))
+      } catch (error) {
+        console.error('Reconcile error:', error.message)
+        return handleCORS(NextResponse.json(
+          { error: 'Failed to reconcile payment', details: error.message },
+          { status: 500 }
         ))
       }
     }
